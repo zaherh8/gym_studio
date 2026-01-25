@@ -1,0 +1,147 @@
+/* See the Tailwind configuration guide for advanced usage
+   https://tailwindcss.com/docs/configuration */
+
+@import "tailwindcss" source(none);
+@source "../css";
+@source "../js";
+@source "../../lib/gym_studio_web";
+
+/* A Tailwind plugin that makes "hero-#{ICON}" classes available.
+   The heroicons installation itself is managed by your mix.exs */
+@plugin "../vendor/heroicons";
+
+/* daisyUI Tailwind Plugin. You can update this file by fetching the latest version with:
+   curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui.js
+   Make sure to look at the daisyUI changelog: https://daisyui.com/docs/changelog/ */
+@plugin "../vendor/daisyui" {
+  themes: false;
+}
+
+/* daisyUI theme plugin. You can update this file by fetching the latest version with:
+  curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui-theme.js
+  We ship with two themes, a light one inspired on Phoenix colors and a dark one inspired
+  on Elixir colors. Build your own at: https://daisyui.com/theme-generator/ */
+/* GymStudio Warm Light Theme - Welcoming & Energetic */
+@plugin "../vendor/daisyui-theme" {
+  name: "gymstudio";
+  default: true;
+  prefersdark: false;
+  color-scheme: "light";
+  /* Base: Warm white and cream backgrounds */
+  --color-base-100: oklch(98% 0.005 70);
+  --color-base-200: oklch(95% 0.008 65);
+  --color-base-300: oklch(92% 0.01 60);
+  --color-base-content: oklch(25% 0.01 30);
+  /* Primary: True Red - matching logo */
+  --color-primary: oklch(55% 0.25 25);
+  --color-primary-content: oklch(98% 0 0);
+  /* Secondary: Deep red/maroon */
+  --color-secondary: oklch(45% 0.2 25);
+  --color-secondary-content: oklch(98% 0 0);
+  /* Accent: Bright red highlight */
+  --color-accent: oklch(60% 0.24 28);
+  --color-accent-content: oklch(98% 0 0);
+  /* Neutral: Soft warm gray */
+  --color-neutral: oklch(40% 0.01 30);
+  --color-neutral-content: oklch(98% 0 0);
+  /* Status colors */
+  --color-info: oklch(60% 0.18 240);
+  --color-info-content: oklch(98% 0 0);
+  --color-success: oklch(60% 0.18 145);
+  --color-success-content: oklch(98% 0 0);
+  --color-warning: oklch(70% 0.18 70);
+  --color-warning-content: oklch(20% 0.02 70);
+  --color-error: oklch(55% 0.22 25);
+  --color-error-content: oklch(98% 0 0);
+  /* Soft rounded corners for warmth */
+  --radius-selector: 0.75rem;
+  --radius-field: 0.75rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* GymStudio Dark Theme - Optional dark mode */
+@plugin "../vendor/daisyui-theme" {
+  name: "gymstudio-dark";
+  default: false;
+  prefersdark: true;
+  color-scheme: "dark";
+  /* Base: Softer dark backgrounds with warmth */
+  --color-base-100: oklch(20% 0.01 30);
+  --color-base-200: oklch(17% 0.01 30);
+  --color-base-300: oklch(14% 0.01 30);
+  --color-base-content: oklch(92% 0.005 60);
+  /* Primary: True Red - matching logo */
+  --color-primary: oklch(58% 0.24 25);
+  --color-primary-content: oklch(98% 0 0);
+  /* Secondary: Deep red/maroon */
+  --color-secondary: oklch(50% 0.2 25);
+  --color-secondary-content: oklch(98% 0 0);
+  /* Accent: Bright red highlight */
+  --color-accent: oklch(62% 0.23 28);
+  --color-accent-content: oklch(98% 0 0);
+  /* Neutral: Warm dark gray */
+  --color-neutral: oklch(30% 0.01 30);
+  --color-neutral-content: oklch(90% 0 0);
+  /* Status colors */
+  --color-info: oklch(62% 0.18 240);
+  --color-info-content: oklch(97% 0.01 245);
+  --color-success: oklch(65% 0.18 145);
+  --color-success-content: oklch(98% 0.01 145);
+  --color-warning: oklch(70% 0.18 70);
+  --color-warning-content: oklch(20% 0.02 70);
+  --color-error: oklch(58% 0.22 25);
+  --color-error-content: oklch(98% 0 0);
+  /* Soft rounded corners */
+  --radius-selector: 0.75rem;
+  --radius-field: 0.75rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* Add variants based on LiveView classes */
+@custom-variant phx-click-loading (.phx-click-loading&, .phx-click-loading &);
+@custom-variant phx-submit-loading (.phx-submit-loading&, .phx-submit-loading &);
+@custom-variant phx-change-loading (.phx-change-loading&, .phx-change-loading &);
+
+/* Use the data attribute for dark mode  */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* Make LiveView wrapper divs transparent for layout */
+[data-phx-session], [data-phx-teleported-src] { display: contents }
+
+/* This file is for your main application CSS */
+
+/* ==========================================================================
+   Reusable Text Color Utilities for Light/Dark Backgrounds
+   ========================================================================== */
+
+/* Text on LIGHT backgrounds (white, gray-50, base-100, etc.) */
+.text-on-light {
+  color: oklch(15% 0.01 30); /* Very dark gray, almost black */
+}
+.text-on-light-muted {
+  color: oklch(40% 0.01 30); /* Medium gray for secondary text */
+}
+.text-on-light-subtle {
+  color: oklch(55% 0.01 30); /* Lighter gray for tertiary text */
+}
+
+/* Text on DARK backgrounds (neutral, dark sections, hero overlays) */
+.text-on-dark {
+  color: oklch(98% 0 0); /* White */
+}
+.text-on-dark-muted {
+  color: oklch(85% 0 0); /* Light gray for secondary text */
+}
+.text-on-dark-subtle {
+  color: oklch(70% 0 0); /* Dimmer for tertiary text */
+}

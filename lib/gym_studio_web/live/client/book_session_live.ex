@@ -1,0 +1,342 @@
+defmodule GymStudioWeb.Client.BookSessionLive do
+  use GymStudioWeb, :live_view
+  alias GymStudio.{Accounts, Scheduling}
+
+  # Operating hours by day of week (1 = Monday, 7 = Sunday)
+  @operating_hours %{
+    1 => {7, 22},  # Monday: 7 AM - 10 PM
+    2 => {7, 22},  # Tuesday
+    3 => {7, 22},  # Wednesday
+    4 => {7, 22},  # Thursday
+    5 => {7, 22},  # Friday
+    6 => {8, 13},  # Saturday: 8 AM - 1 PM
+    7 => nil       # Sunday: Closed
+  }
+
+  @impl true
+  def mount(_params, _session, socket) do
+    user = socket.assigns.current_scope.user
+    client = Accounts.get_client_by_user_id(user.id)
+
+    available_dates = generate_available_dates()
+    selected_date = List.first(available_dates)
+
+    socket =
+      socket
+      |> assign(page_title: "Book a Session")
+      |> assign(client: client)
+      |> assign(available_dates: available_dates)
+      |> assign(selected_date: selected_date)
+      |> assign(available_slots: generate_time_slots(selected_date))
+      |> assign(selected_slot: nil)
+      |> assign(step: 1)
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("select_date", %{"date" => date_string}, socket) do
+    case Date.from_iso8601(date_string) do
+      {:ok, date} ->
+        socket =
+          socket
+          |> assign(selected_date: date)
+          |> assign(available_slots: generate_time_slots(date))
+          |> assign(selected_slot: nil)
+          |> assign(step: 2)
+
+        {:noreply, socket}
+
+      _ ->
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("select_slot", %{"slot" => slot}, socket) do
+    socket =
+      socket
+      |> assign(selected_slot: slot)
+      |> assign(step: 3)
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("confirm_booking", _params, socket) do
+    client = socket.assigns.client
+    selected_date = socket.assigns.selected_date
+    selected_slot = socket.assigns.selected_slot
+
+    if client && selected_slot do
+      {hour, _} = Integer.parse(selected_slot)
+      scheduled_at = DateTime.new!(selected_date, Time.new!(hour, 0, 0), "Etc/UTC")
+
+      case Scheduling.book_session(%{
+        client_id: client.id,
+        scheduled_at: scheduled_at,
+        duration_minutes: 60
+      }) do
+        {:ok, session} ->
+          socket =
+            socket
+            |> put_flash(:info, "Session booked successfully! You'll be notified once a trainer confirms your booking.")
+            |> push_navigate(to: ~p"/client/sessions/#{session.id}")
+
+          {:noreply, socket}
+
+        {:error, _reason} ->
+          {:noreply, put_flash(socket, :error, "Could not book session. Please try again.")}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Please select a time slot.")}
+    end
+  end
+
+  @impl true
+  def handle_event("back_to_date", _params, socket) do
+    {:noreply, assign(socket, step: 1, selected_slot: nil)}
+  end
+
+  @impl true
+  def handle_event("back_to_time", _params, socket) do
+    {:noreply, assign(socket, step: 2)}
+  end
+
+  # Generate available dates for the next 2 weeks (excluding Sundays)
+  defp generate_available_dates do
+    today = Date.utc_today()
+
+    Enum.reduce(0..13, [], fn days_ahead, acc ->
+      date = Date.add(today, days_ahead)
+      day_of_week = Date.day_of_week(date)
+
+      # Skip Sundays (day 7)
+      if day_of_week == 7 do
+        acc
+      else
+        acc ++ [date]
+      end
+    end)
+  end
+
+  # Generate time slots based on operating hours for a given date
+  defp generate_time_slots(nil), do: []
+  defp generate_time_slots(date) do
+    day_of_week = Date.day_of_week(date)
+
+    case Map.get(@operating_hours, day_of_week) do
+      nil -> []
+      {start_hour, end_hour} ->
+        Enum.map(start_hour..(end_hour - 1), fn hour ->
+          %{
+            hour: hour,
+            label: format_time(hour),
+            value: Integer.to_string(hour)
+          }
+        end)
+    end
+  end
+
+  defp format_time(hour) when hour < 12, do: "#{hour}:00 AM"
+  defp format_time(12), do: "12:00 PM"
+  defp format_time(hour), do: "#{hour - 12}:00 PM"
+
+  defp format_date_short(date) do
+    Calendar.strftime(date, "%a %d")
+  end
+
+  defp format_date_full(date) do
+    Calendar.strftime(date, "%A, %B %d, %Y")
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div class="min-h-screen bg-gray-100 py-8">
+      <div class="container mx-auto px-4">
+        <div class="max-w-2xl mx-auto">
+          <!-- Header -->
+          <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Book a Session</h1>
+            <p class="text-gray-600">Select your preferred date and time</p>
+          </div>
+
+          <%= if @client == nil do %>
+            <div class="bg-white rounded-2xl shadow-lg p-8 text-center">
+              <div class="text-amber-500 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h2 class="text-xl font-semibold text-gray-800 mb-2">Profile Setup Required</h2>
+              <p class="text-gray-600">Your client profile is not set up yet. Please contact an administrator.</p>
+            </div>
+          <% else %>
+            <!-- Progress Steps -->
+            <div class="flex justify-center mb-8">
+              <div class="flex items-center space-x-4">
+                <div class={"flex items-center justify-center w-10 h-10 rounded-full font-semibold #{if @step >= 1, do: "bg-primary text-white", else: "bg-gray-300 text-gray-600"}"}>
+                  1
+                </div>
+                <div class={"w-16 h-1 #{if @step >= 2, do: "bg-primary", else: "bg-gray-300"}"}></div>
+                <div class={"flex items-center justify-center w-10 h-10 rounded-full font-semibold #{if @step >= 2, do: "bg-primary text-white", else: "bg-gray-300 text-gray-600"}"}>
+                  2
+                </div>
+                <div class={"w-16 h-1 #{if @step >= 3, do: "bg-primary", else: "bg-gray-300"}"}></div>
+                <div class={"flex items-center justify-center w-10 h-10 rounded-full font-semibold #{if @step >= 3, do: "bg-primary text-white", else: "bg-gray-300 text-gray-600"}"}>
+                  3
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 1: Select Date -->
+            <div class={"bg-white rounded-2xl shadow-lg p-6 mb-6 #{if @step != 1, do: "opacity-60"}"}>
+              <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Select Date
+                </h2>
+                <%= if @step > 1 do %>
+                  <button phx-click="back_to_date" class="text-primary hover:underline text-sm">
+                    Change
+                  </button>
+                <% end %>
+              </div>
+
+              <%= if @step == 1 do %>
+                <div class="overflow-x-auto pb-2">
+                  <div class="flex gap-3" style="min-width: max-content;">
+                    <%= for date <- @available_dates do %>
+                      <button
+                        type="button"
+                        phx-click="select_date"
+                        phx-value-date={Date.to_string(date)}
+                        class={"flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all min-w-[80px] #{if @selected_date == date, do: "border-primary bg-primary/10 text-primary", else: "border-gray-200 hover:border-primary/50"}"}
+                      >
+                        <span class="text-xs font-medium uppercase text-gray-500">
+                          <%= Calendar.strftime(date, "%a") %>
+                        </span>
+                        <span class="text-2xl font-bold">
+                          <%= Calendar.strftime(date, "%d") %>
+                        </span>
+                        <span class="text-xs text-gray-500">
+                          <%= Calendar.strftime(date, "%b") %>
+                        </span>
+                      </button>
+                    <% end %>
+                  </div>
+                </div>
+              <% else %>
+                <p class="text-gray-700 font-medium"><%= format_date_full(@selected_date) %></p>
+              <% end %>
+            </div>
+
+            <!-- Step 2: Select Time -->
+            <div class={"bg-white rounded-2xl shadow-lg p-6 mb-6 #{if @step < 2, do: "opacity-40 pointer-events-none"}"}>
+              <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Select Time
+                </h2>
+                <%= if @step > 2 do %>
+                  <button phx-click="back_to_time" class="text-primary hover:underline text-sm">
+                    Change
+                  </button>
+                <% end %>
+              </div>
+
+              <%= if @step == 2 do %>
+                <%= if Enum.empty?(@available_slots) do %>
+                  <p class="text-gray-500 text-center py-4">No available time slots for this date.</p>
+                <% else %>
+                  <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                    <%= for slot <- @available_slots do %>
+                      <button
+                        type="button"
+                        phx-click="select_slot"
+                        phx-value-slot={slot.value}
+                        class={"py-3 px-4 rounded-xl border-2 text-center font-medium transition-all #{if @selected_slot == slot.value, do: "border-primary bg-primary text-white", else: "border-gray-200 hover:border-primary/50"}"}
+                      >
+                        <%= slot.label %>
+                      </button>
+                    <% end %>
+                  </div>
+                <% end %>
+              <% else %>
+                <%= if @selected_slot do %>
+                  <p class="text-gray-700 font-medium">
+                    <%= format_time(String.to_integer(@selected_slot)) %> - <%= format_time(String.to_integer(@selected_slot) + 1) %>
+                  </p>
+                <% end %>
+              <% end %>
+            </div>
+
+            <!-- Step 3: Confirm Booking -->
+            <div class={"bg-white rounded-2xl shadow-lg p-6 #{if @step < 3, do: "opacity-40 pointer-events-none"}"}>
+              <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Confirm Booking
+              </h2>
+
+              <%= if @step == 3 do %>
+                <div class="bg-gray-50 rounded-xl p-4 mb-4">
+                  <div class="flex items-center gap-4 mb-3">
+                    <div class="bg-primary/10 p-3 rounded-lg">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p class="text-sm text-gray-500">Date</p>
+                      <p class="font-semibold text-gray-800"><%= format_date_full(@selected_date) %></p>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-4">
+                    <div class="bg-primary/10 p-3 rounded-lg">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p class="text-sm text-gray-500">Time</p>
+                      <p class="font-semibold text-gray-800">
+                        <%= format_time(String.to_integer(@selected_slot)) %> - <%= format_time(String.to_integer(@selected_slot) + 1) %>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                  <div class="flex items-start gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p class="text-sm text-blue-700">
+                      A trainer will be assigned to your session and you'll receive a notification once confirmed.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  phx-click="confirm_booking"
+                  class="w-full btn btn-primary btn-lg"
+                >
+                  Confirm Booking
+                </button>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    """
+  end
+end

@@ -1,0 +1,65 @@
+# This file excludes paths from Docker's build context.
+#
+# Note: Build context is the set of files the docker build command can access.
+# It does not include file paths excluded by .gitignore.
+#
+# In addition to .gitignore files, we exclude:
+# - dev/test configs
+# - editor configs and dirs
+# - test, git, dependency directories
+
+.dockerignore
+
+# Ignore .git directory to prevent full history from being copied
+# but still allow git commands to work during build
+.git
+
+# Elixir/Phoenix
+deps/
+_build/
+.elixir_ls
+*.beam
+
+# Runtime files
+erl_crash.dump
+*.ez
+
+# Generated on crash by the VM
+*.plt
+*.plts
+
+# Node
+/assets/node_modules/
+
+# Test
+/test
+/cover
+
+# Dev/Test configs
+/config/*.secret.exs
+/config/.env
+.env
+.env.*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CI
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Documentation
+/doc
+README.md
+CHANGELOG.md
+AGENTS.md
+CLAUDE.md
