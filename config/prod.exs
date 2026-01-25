@@ -21,5 +21,8 @@ config :gym_studio, GymStudioWeb.Endpoint,
 # Do not print debug messages in production
 config :logger, level: :info
 
+# Disable Swoosh API client in production (emails not configured yet)
+config :swoosh, api_client: false
+
 # Runtime production configuration, including reading
 # of environment variables, is done on config/runtime.exs.

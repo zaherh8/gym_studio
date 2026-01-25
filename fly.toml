@@ -14,6 +14,7 @@ primary_region = 'cdg'
 [env]
   PHX_HOST = 'gym-studio.fly.dev'
   PORT = '8080'
+  ECTO_IPV6 = 'true'
 
 [http_service]
   internal_port = 8080
