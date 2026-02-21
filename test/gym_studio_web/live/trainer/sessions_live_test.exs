@@ -1,4 +1,4 @@
-defmodule GymStudioWeb.Trainer.DashboardLiveTest do
+defmodule GymStudioWeb.Trainer.SessionsLiveTest do
   use GymStudioWeb.ConnCase
 
   import Phoenix.LiveViewTest
@@ -6,7 +6,7 @@ defmodule GymStudioWeb.Trainer.DashboardLiveTest do
   import GymStudio.PackagesFixtures
   import GymStudio.SchedulingFixtures
 
-  describe "Trainer Dashboard" do
+  describe "Trainer Sessions" do
     setup do
       trainer_user = user_fixture(%{role: :trainer})
       trainer = trainer_fixture(%{user_id: trainer_user.id})
@@ -20,47 +20,20 @@ defmodule GymStudioWeb.Trainer.DashboardLiveTest do
       %{trainer_user: trainer_user, trainer: trainer, admin: admin}
     end
 
-    test "requires authentication", %{conn: conn} do
-      {:error, {:redirect, %{to: redirect_path}}} = live(conn, ~p"/trainer")
-      assert redirect_path == ~p"/users/log-in"
-    end
-
-    test "renders dashboard for authenticated trainer", %{
-      conn: conn,
-      trainer_user: trainer_user
-    } do
+    test "renders sessions page with empty state", %{conn: conn, trainer_user: trainer_user} do
       conn = log_in_user(conn, trainer_user)
-      {:ok, _view, html} = live(conn, ~p"/trainer")
+      {:ok, _view, html} = live(conn, ~p"/trainer/sessions")
 
-      assert html =~ "Trainer Dashboard"
-      assert html =~ "Total Clients"
-      assert html =~ "Sessions This Week"
-      assert html =~ "Pending Requests"
+      assert html =~ "My Sessions"
+      assert html =~ "No sessions found"
     end
 
-    test "displays warning when trainer profile not set up", %{conn: conn} do
-      user = user_fixture(%{role: :trainer})
-      conn = log_in_user(conn, user)
-      {:ok, _view, html} = live(conn, ~p"/trainer")
-
-      assert html =~ "Your trainer profile is not set up yet"
-    end
-
-    test "displays pending approval status", %{conn: conn} do
-      trainer_user = user_fixture(%{role: :trainer})
-      _trainer = trainer_fixture(%{user_id: trainer_user.id})
-      conn = log_in_user(conn, trainer_user)
-      {:ok, _view, html} = live(conn, ~p"/trainer")
-
-      assert html =~ "Your trainer account is currently pending"
-    end
-
-    test "displays today's sessions with client name", %{
+    test "displays sessions with client name and email", %{
       conn: conn,
       trainer_user: trainer_user,
       admin: admin
     } do
-      client_user = user_fixture(%{role: :client, name: "Jane Client"})
+      client_user = user_fixture(%{role: :client, name: "Alice Smith"})
       _client = client_fixture(%{user_id: client_user.id})
 
       package =
@@ -70,31 +43,30 @@ defmodule GymStudioWeb.Trainer.DashboardLiveTest do
           package_type: "standard_12"
         })
 
-      today = Date.utc_today()
-      today_at_2pm = DateTime.new!(today, ~T[14:00:00], "Etc/UTC")
+      tomorrow = DateTime.utc_now() |> DateTime.add(1, :day) |> DateTime.truncate(:second)
 
       _session =
         training_session_fixture(%{
           client_id: client_user.id,
           trainer_id: trainer_user.id,
           package_id: package.id,
-          scheduled_at: today_at_2pm,
+          scheduled_at: tomorrow,
           status: "confirmed"
         })
 
       conn = log_in_user(conn, trainer_user)
-      {:ok, _view, html} = live(conn, ~p"/trainer")
+      {:ok, _view, html} = live(conn, ~p"/trainer/sessions")
 
-      assert html =~ "Jane Client"
-      assert html =~ "14:00"
+      assert html =~ "Alice Smith"
+      assert html =~ "badge-success"
     end
 
-    test "displays pending session requests with confirm and cancel buttons", %{
+    test "filters sessions by status", %{
       conn: conn,
       trainer_user: trainer_user,
       admin: admin
     } do
-      client_user = user_fixture(%{role: :client, name: "Bob Pending"})
+      client_user = user_fixture(%{role: :client, name: "Filter Client"})
       _client = client_fixture(%{user_id: client_user.id})
 
       package =
@@ -116,11 +88,15 @@ defmodule GymStudioWeb.Trainer.DashboardLiveTest do
         })
 
       conn = log_in_user(conn, trainer_user)
-      {:ok, _view, html} = live(conn, ~p"/trainer")
+      {:ok, view, _html} = live(conn, ~p"/trainer/sessions")
 
-      assert html =~ "Bob Pending"
-      assert html =~ "Confirm"
-      assert html =~ "Cancel"
+      # Filter to confirmed - should show empty
+      html = render_click(view, "filter", %{"status" => "confirmed"})
+      assert html =~ "No sessions found"
+
+      # Filter to pending - should show session
+      html = render_click(view, "filter", %{"status" => "pending"})
+      assert html =~ "Filter Client"
     end
 
     test "confirms a pending session", %{
@@ -150,13 +126,13 @@ defmodule GymStudioWeb.Trainer.DashboardLiveTest do
         })
 
       conn = log_in_user(conn, trainer_user)
-      {:ok, view, _html} = live(conn, ~p"/trainer")
+      {:ok, view, _html} = live(conn, ~p"/trainer/sessions")
 
       html = render_click(view, "confirm_session", %{"session_id" => session.id})
       assert html =~ "badge-success"
     end
 
-    test "cancels a session with reason via modal", %{
+    test "cancels a session with reason", %{
       conn: conn,
       trainer_user: trainer_user,
       admin: admin
@@ -183,25 +159,18 @@ defmodule GymStudioWeb.Trainer.DashboardLiveTest do
         })
 
       conn = log_in_user(conn, trainer_user)
-      {:ok, view, _html} = live(conn, ~p"/trainer")
+      {:ok, view, _html} = live(conn, ~p"/trainer/sessions")
 
       # Open cancel modal
-      html =
-        render_click(view, "open_cancel_modal", %{"session_id" => session.id})
-
+      html = render_click(view, "open_cancel_modal", %{"session_id" => session.id})
       assert html =~ "Cancel Session"
-      assert html =~ "Reason for cancellation"
 
-      # Update reason and confirm
-      render_click(view, "update_cancel_reason", %{"reason" => "Client requested"})
+      render_click(view, "update_cancel_reason", %{"reason" => "Schedule conflict"})
       html = render_click(view, "cancel_session")
-
-      # Session should no longer appear in pending requests
-      refute html =~ "Confirm"
-      assert html =~ "No pending session requests"
+      assert html =~ "badge-error"
     end
 
-    test "completes a confirmed session with notes via modal", %{
+    test "completes a session with notes", %{
       conn: conn,
       trainer_user: trainer_user,
       admin: admin
@@ -229,64 +198,18 @@ defmodule GymStudioWeb.Trainer.DashboardLiveTest do
         })
 
       conn = log_in_user(conn, trainer_user)
-      {:ok, view, _html} = live(conn, ~p"/trainer")
+      {:ok, view, _html} = live(conn, ~p"/trainer/sessions")
 
       # Open complete modal
-      html =
-        render_click(view, "open_complete_modal", %{"session_id" => session.id})
-
+      html = render_click(view, "open_complete_modal", %{"session_id" => session.id})
       assert html =~ "Complete Session"
 
-      # Add notes and complete
-      render_click(view, "update_trainer_notes", %{"notes" => "Great progress"})
+      render_click(view, "update_trainer_notes", %{"notes" => "Client did great"})
       html = render_click(view, "complete_session")
-
       assert html =~ "badge-info"
     end
 
-    test "displays empty states", %{conn: conn, trainer_user: trainer_user} do
-      conn = log_in_user(conn, trainer_user)
-      {:ok, _view, html} = live(conn, ~p"/trainer")
-
-      assert html =~ "No sessions scheduled for today"
-      assert html =~ "No pending session requests"
-      assert html =~ "No upcoming sessions"
-    end
-
-    test "displays upcoming sessions for next 7 days", %{
-      conn: conn,
-      trainer_user: trainer_user,
-      admin: admin
-    } do
-      client_user = user_fixture(%{role: :client, name: "Future Client"})
-      _client = client_fixture(%{user_id: client_user.id})
-
-      package =
-        package_fixture(%{
-          client_id: client_user.id,
-          assigned_by_id: admin.id,
-          package_type: "standard_12"
-        })
-
-      three_days = DateTime.utc_now() |> DateTime.add(3, :day) |> DateTime.truncate(:second)
-
-      _session =
-        training_session_fixture(%{
-          client_id: client_user.id,
-          trainer_id: trainer_user.id,
-          package_id: package.id,
-          scheduled_at: three_days,
-          status: "confirmed"
-        })
-
-      conn = log_in_user(conn, trainer_user)
-      {:ok, _view, html} = live(conn, ~p"/trainer")
-
-      assert html =~ "Future Client"
-      assert html =~ "Upcoming Sessions"
-    end
-
-    test "displays stats for trainer", %{
+    test "shows status badges with correct colors", %{
       conn: conn,
       trainer_user: trainer_user,
       admin: admin
@@ -303,19 +226,19 @@ defmodule GymStudioWeb.Trainer.DashboardLiveTest do
 
       tomorrow = DateTime.utc_now() |> DateTime.add(1, :day) |> DateTime.truncate(:second)
 
-      _session =
+      _pending =
         training_session_fixture(%{
           client_id: client_user.id,
           trainer_id: trainer_user.id,
           package_id: package.id,
           scheduled_at: tomorrow,
-          status: "confirmed"
+          status: "pending"
         })
 
       conn = log_in_user(conn, trainer_user)
-      {:ok, _view, html} = live(conn, ~p"/trainer")
+      {:ok, _view, html} = live(conn, ~p"/trainer/sessions")
 
-      assert html =~ "Total Clients"
+      assert html =~ "badge-warning"
     end
   end
 end

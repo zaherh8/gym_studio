@@ -422,7 +422,7 @@ defmodule GymStudio.Scheduling do
   def confirm_session(%TrainingSession{} = session) do
     if session.status == "pending" and session.trainer_id do
       session
-      |> TrainingSession.changeset(%{status: "confirmed"})
+      |> Ecto.Changeset.change(%{status: "confirmed"})
       |> Repo.update()
     else
       {:error, :invalid_status}
@@ -438,11 +438,20 @@ defmodule GymStudio.Scheduling do
   end
 
   @doc """
-  Completes a session by ID.
+  Cancels a session by ID with a specific user and reason.
   """
-  def complete_session_by_id(session_id) when is_binary(session_id) do
+  def cancel_session_by_id(session_id, cancelled_by_id, reason)
+      when is_binary(session_id) do
     session = get_session!(session_id)
-    complete_session(session)
+    cancel_session(session, cancelled_by_id, reason)
+  end
+
+  @doc """
+  Completes a session by ID with optional attrs (e.g. trainer_notes).
+  """
+  def complete_session_by_id(session_id, attrs \\ %{}) when is_binary(session_id) do
+    session = get_session!(session_id)
+    complete_session(session, attrs)
   end
 
   @doc """
@@ -508,6 +517,22 @@ defmodule GymStudio.Scheduling do
   end
 
   defp filter_by_date_range(query, nil, nil), do: query
+
+  defp filter_by_date_range(query, %Date{} = from_date, nil) do
+    from_dt = DateTime.new!(from_date, ~T[00:00:00], "Etc/UTC")
+    where(query, [s], s.scheduled_at >= ^from_dt)
+  end
+
+  defp filter_by_date_range(query, nil, %Date{} = to_date) do
+    to_dt = DateTime.new!(to_date, ~T[23:59:59], "Etc/UTC")
+    where(query, [s], s.scheduled_at <= ^to_dt)
+  end
+
+  defp filter_by_date_range(query, %Date{} = from_date, %Date{} = to_date) do
+    from_dt = DateTime.new!(from_date, ~T[00:00:00], "Etc/UTC")
+    to_dt = DateTime.new!(to_date, ~T[23:59:59], "Etc/UTC")
+    where(query, [s], s.scheduled_at >= ^from_dt and s.scheduled_at <= ^to_dt)
+  end
 
   defp filter_by_date_range(query, from_date, nil) do
     where(query, [s], s.scheduled_at >= ^from_date)
