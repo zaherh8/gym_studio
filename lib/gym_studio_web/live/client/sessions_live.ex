@@ -7,17 +7,13 @@ defmodule GymStudioWeb.Client.SessionsLive do
     user = socket.assigns.current_scope.user
     client = Accounts.get_client_by_user_id(user.id)
 
-    sessions =
-      if client do
-        Scheduling.list_sessions_for_client(client.id)
-      else
-        []
-      end
+    sessions = Scheduling.list_sessions_for_client(user.id)
 
     socket =
       socket
       |> assign(page_title: "My Sessions")
       |> assign(client: client)
+      |> assign(user: user)
       |> assign(sessions: sessions)
       |> assign(filter: "all")
 
@@ -26,16 +22,12 @@ defmodule GymStudioWeb.Client.SessionsLive do
 
   @impl true
   def handle_event("filter", %{"status" => status}, socket) do
-    client = socket.assigns.client
+    user = socket.assigns.user
 
     sessions =
-      if client do
-        case status do
-          "all" -> Scheduling.list_sessions_for_client(client.id)
-          _ -> Scheduling.list_sessions_for_client(client.id, status: status)
-        end
-      else
-        []
+      case status do
+        "all" -> Scheduling.list_sessions_for_client(user.id)
+        _ -> Scheduling.list_sessions_for_client(user.id, status: status)
       end
 
     {:noreply, assign(socket, sessions: sessions, filter: status)}
@@ -45,8 +37,8 @@ defmodule GymStudioWeb.Client.SessionsLive do
   def handle_event("cancel_session", %{"session_id" => session_id}, socket) do
     case Scheduling.cancel_session(session_id) do
       {:ok, _session} ->
-        client = socket.assigns.client
-        sessions = Scheduling.list_sessions_for_client(client.id)
+        user = socket.assigns.user
+        sessions = Scheduling.list_sessions_for_client(user.id)
 
         socket =
           socket

@@ -64,16 +64,16 @@ defmodule GymStudioWeb.Client.BookSessionLive do
 
   @impl true
   def handle_event("confirm_booking", _params, socket) do
-    client = socket.assigns.client
+    user = socket.assigns.current_scope.user
     selected_date = socket.assigns.selected_date
     selected_slot = socket.assigns.selected_slot
 
-    if client && selected_slot do
+    if selected_slot do
       {hour, _} = Integer.parse(selected_slot)
       scheduled_at = DateTime.new!(selected_date, Time.new!(hour, 0, 0), "Etc/UTC")
 
       case Scheduling.book_session(%{
-        client_id: client.id,
+        client_id: user.id,
         scheduled_at: scheduled_at,
         duration_minutes: 60
       }) do
@@ -141,10 +141,6 @@ defmodule GymStudioWeb.Client.BookSessionLive do
   defp format_time(hour) when hour < 12, do: "#{hour}:00 AM"
   defp format_time(12), do: "12:00 PM"
   defp format_time(hour), do: "#{hour - 12}:00 PM"
-
-  defp format_date_short(date) do
-    Calendar.strftime(date, "%a %d")
-  end
 
   defp format_date_full(date) do
     Calendar.strftime(date, "%A, %B %d, %Y")

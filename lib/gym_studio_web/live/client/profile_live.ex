@@ -65,7 +65,13 @@ defmodule GymStudioWeb.Client.ProfileLive do
               <div class="space-y-4">
                 <div>
                   <label class="text-sm text-base-content/70">Emergency Contact</label>
-                  <p class="font-medium"><%= @client.emergency_contact || "Not set" %></p>
+                  <p class="font-medium">
+                    <%= if @client.emergency_contact_name do %>
+                      <%= @client.emergency_contact_name %> — <%= @client.emergency_contact_phone %>
+                    <% else %>
+                      Not set
+                    <% end %>
+                  </p>
                 </div>
                 <div>
                   <label class="text-sm text-base-content/70">Health Notes</label>

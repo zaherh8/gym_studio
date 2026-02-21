@@ -7,12 +7,7 @@ defmodule GymStudioWeb.Client.PackagesLive do
     user = socket.assigns.current_scope.user
     client = Accounts.get_client_by_user_id(user.id)
 
-    packages =
-      if client do
-        Packages.list_packages_for_client(client.id)
-      else
-        []
-      end
+    packages = Packages.list_packages_for_client(user.id)
 
     socket =
       socket
