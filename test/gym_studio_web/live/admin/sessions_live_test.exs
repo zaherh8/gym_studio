@@ -54,11 +54,18 @@ defmodule GymStudioWeb.Admin.SessionsLiveTest do
       assert html =~ "confirmed"
     end
 
-    test "assigns trainer to session", %{conn: conn, admin: admin, trainer: trainer, session: session} do
+    test "assigns trainer to session", %{
+      conn: conn,
+      admin: admin,
+      trainer: trainer,
+      session: session
+    } do
       conn = log_in_user(conn, admin)
       {:ok, view, _html} = live(conn, ~p"/admin/sessions")
 
-      html = render_click(view, "assign_trainer", %{"id" => session.id, "trainer_id" => trainer.id})
+      html =
+        render_click(view, "assign_trainer", %{"id" => session.id, "trainer_id" => trainer.id})
+
       assert html =~ "Session Trainer"
     end
   end
