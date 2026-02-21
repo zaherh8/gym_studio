@@ -54,7 +54,9 @@ defmodule GymStudioWeb.Client.DashboardLive do
         <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Welcome back!</h1>
+              <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
+                Welcome back, {@current_scope.user.name || "there"}!
+              </h1>
               <p class="text-gray-600 mt-1">Ready to crush your fitness goals?</p>
             </div>
             <!-- Package Info Badge -->
@@ -81,6 +83,11 @@ defmodule GymStudioWeb.Client.DashboardLive do
                   <p class="font-bold text-primary">
                     <span class="text-xl"><%= @active_package.remaining_sessions %></span>/{@active_package.total_sessions} sessions
                   </p>
+                  <%= if @active_package.expires_at do %>
+                    <p class="text-xs text-gray-500">
+                      Expires: {Calendar.strftime(@active_package.expires_at, "%b %d, %Y")}
+                    </p>
+                  <% end %>
                 </div>
               </div>
             <% else %>
@@ -331,8 +338,8 @@ defmodule GymStudioWeb.Client.DashboardLive do
   end
 
   defp status_badge_class("pending"), do: "bg-amber-100 text-amber-700"
-  defp status_badge_class("confirmed"), do: "bg-blue-100 text-blue-700"
-  defp status_badge_class("completed"), do: "bg-green-100 text-green-700"
+  defp status_badge_class("confirmed"), do: "bg-green-100 text-green-700"
+  defp status_badge_class("completed"), do: "bg-blue-100 text-blue-700"
   defp status_badge_class("cancelled"), do: "bg-red-100 text-red-700"
   defp status_badge_class(_), do: "bg-gray-100 text-gray-700"
 end

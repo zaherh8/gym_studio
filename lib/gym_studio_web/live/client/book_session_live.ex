@@ -1,6 +1,6 @@
 defmodule GymStudioWeb.Client.BookSessionLive do
   use GymStudioWeb, :live_view
-  alias GymStudio.{Accounts, Scheduling}
+  alias GymStudio.{Accounts, Packages, Scheduling}
 
   # Operating hours by day of week (1 = Monday, 7 = Sunday)
   @operating_hours %{
@@ -25,6 +25,16 @@ defmodule GymStudioWeb.Client.BookSessionLive do
     user = socket.assigns.current_scope.user
     client = Accounts.get_client_by_user_id(user.id)
 
+    active_package =
+      if client do
+        case Packages.get_active_package_for_client(client.user_id) do
+          {:ok, package} -> package
+          {:error, :no_active_package} -> nil
+        end
+      else
+        nil
+      end
+
     available_dates = generate_available_dates()
     selected_date = List.first(available_dates)
 
@@ -32,10 +42,12 @@ defmodule GymStudioWeb.Client.BookSessionLive do
       socket
       |> assign(page_title: "Book a Session")
       |> assign(client: client)
+      |> assign(active_package: active_package)
       |> assign(available_dates: available_dates)
       |> assign(selected_date: selected_date)
       |> assign(available_slots: generate_time_slots(selected_date))
       |> assign(selected_slot: nil)
+      |> assign(notes: "")
       |> assign(step: 1)
 
     {:ok, socket}
@@ -70,36 +82,63 @@ defmodule GymStudioWeb.Client.BookSessionLive do
   end
 
   @impl true
+  def handle_event("update_notes", %{"notes" => notes}, socket) do
+    {:noreply, assign(socket, notes: notes)}
+  end
+
+  @impl true
   def handle_event("confirm_booking", _params, socket) do
     user = socket.assigns.current_scope.user
     selected_date = socket.assigns.selected_date
     selected_slot = socket.assigns.selected_slot
+    active_package = socket.assigns.active_package
 
-    if selected_slot do
-      {hour, _} = Integer.parse(selected_slot)
-      scheduled_at = DateTime.new!(selected_date, Time.new!(hour, 0, 0), "Etc/UTC")
+    cond do
+      is_nil(active_package) ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           "You need an active package to book a session. Please contact your trainer."
+         )}
 
-      case Scheduling.book_session(%{
-             client_id: user.id,
-             scheduled_at: scheduled_at,
-             duration_minutes: 60
-           }) do
-        {:ok, session} ->
-          socket =
-            socket
-            |> put_flash(
-              :info,
-              "Session booked successfully! You'll be notified once a trainer confirms your booking."
-            )
-            |> push_navigate(to: ~p"/client/sessions/#{session.id}")
+      active_package.remaining_sessions <= 0 ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           "No remaining sessions in your package. Please contact your trainer to purchase a new one."
+         )}
 
-          {:noreply, socket}
+      is_nil(selected_slot) ->
+        {:noreply, put_flash(socket, :error, "Please select a time slot.")}
 
-        {:error, _reason} ->
-          {:noreply, put_flash(socket, :error, "Could not book session. Please try again.")}
-      end
-    else
-      {:noreply, put_flash(socket, :error, "Please select a time slot.")}
+      true ->
+        {hour, _} = Integer.parse(selected_slot)
+        scheduled_at = DateTime.new!(selected_date, Time.new!(hour, 0, 0), "Etc/UTC")
+
+        booking_attrs = %{
+          client_id: user.id,
+          scheduled_at: scheduled_at,
+          duration_minutes: 60,
+          notes: if(socket.assigns.notes != "", do: socket.assigns.notes, else: nil)
+        }
+
+        case Scheduling.book_session(booking_attrs) do
+          {:ok, _session} ->
+            socket =
+              socket
+              |> put_flash(
+                :info,
+                "Session booked successfully! You'll be notified once a trainer confirms your booking."
+              )
+              |> push_navigate(to: ~p"/client/sessions")
+
+            {:noreply, socket}
+
+          {:error, _reason} ->
+            {:noreply, put_flash(socket, :error, "Could not book session. Please try again.")}
+        end
     end
   end
 
@@ -195,6 +234,54 @@ defmodule GymStudioWeb.Client.BookSessionLive do
               </p>
             </div>
           <% else %>
+            <%= if is_nil(@active_package) do %>
+              <div class="alert alert-warning mb-6">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-6 w-6 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+                <div>
+                  <h3 class="font-bold">No Active Package</h3>
+                  <p class="text-sm">
+                    You need an active package with remaining sessions to book. Contact your trainer to get started.
+                  </p>
+                </div>
+              </div>
+            <% end %>
+            <%= if @active_package && @active_package.remaining_sessions <= 0 do %>
+              <div class="alert alert-error mb-6">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-6 w-6 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <div>
+                  <h3 class="font-bold">No Remaining Sessions</h3>
+                  <p class="text-sm">
+                    All sessions in your current package have been used. Please purchase a new package.
+                  </p>
+                </div>
+              </div>
+            <% end %>
             <!-- Progress Steps -->
             <div class="flex justify-center mb-8">
               <div class="flex items-center space-x-4">
@@ -392,6 +479,18 @@ defmodule GymStudioWeb.Client.BookSessionLive do
                       </p>
                     </div>
                   </div>
+                </div>
+
+                <div class="form-control mb-4">
+                  <label class="label">
+                    <span class="label-text font-medium">Session Notes (optional)</span>
+                  </label>
+                  <textarea
+                    phx-change="update_notes"
+                    name="notes"
+                    class="textarea textarea-bordered h-20"
+                    placeholder="Any goals or notes for this session..."
+                  >{@notes}</textarea>
                 </div>
 
                 <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">

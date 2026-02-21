@@ -26,7 +26,7 @@ defmodule GymStudioWeb.Client.DashboardLiveTest do
 
       {:ok, _view, html} = live(conn, ~p"/client")
 
-      assert html =~ "Welcome back!"
+      assert html =~ "Welcome back,"
       assert html =~ "Book Session"
       assert html =~ "My Sessions"
       assert html =~ "Packages"

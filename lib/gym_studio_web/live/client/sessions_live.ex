@@ -131,7 +131,7 @@ defmodule GymStudioWeb.Client.SessionsLive do
                       {Calendar.strftime(session.scheduled_at, "%H:%M")}
                     </div>
                   </td>
-                  <td>{session.trainer.email}</td>
+                  <td>{if session.trainer, do: session.trainer.email, else: "TBD"}</td>
                   <td>
                     <span class={"badge #{status_badge_class(session.status)}"}>
                       {session.status}
@@ -168,8 +168,8 @@ defmodule GymStudioWeb.Client.SessionsLive do
   end
 
   defp status_badge_class("pending"), do: "badge-warning"
-  defp status_badge_class("confirmed"), do: "badge-info"
-  defp status_badge_class("completed"), do: "badge-success"
+  defp status_badge_class("confirmed"), do: "badge-success"
+  defp status_badge_class("completed"), do: "badge-info"
   defp status_badge_class("cancelled"), do: "badge-error"
   defp status_badge_class(_), do: "badge-ghost"
 end
