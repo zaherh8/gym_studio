@@ -17,6 +17,10 @@ defmodule GymStudioWeb.UserSessionController do
   def create(conn, %{
         "user" => %{"phone_number" => phone_number, "password" => password} = user_params
       }) do
+    # Normalize: if number doesn't start with +, assume Lebanon (+961)
+    phone_number = normalize_phone_input(phone_number)
+    user_params = Map.put(user_params, "phone_number", phone_number)
+
     if user = Accounts.get_user_by_phone_number_and_password(phone_number, password) do
       conn
       |> put_flash(:info, "Welcome back!")
@@ -30,6 +34,21 @@ defmodule GymStudioWeb.UserSessionController do
       |> render(:new, form: form)
     end
   end
+
+  defp normalize_phone_input(phone_number) when is_binary(phone_number) do
+    cleaned = String.replace(phone_number, ~r/[^\d+]/, "")
+
+    if String.starts_with?(cleaned, "+") do
+      cleaned
+    else
+      # Strip leading zero and prepend Lebanon code
+      cleaned
+      |> String.trim_leading("0")
+      |> then(&("+961" <> &1))
+    end
+  end
+
+  defp normalize_phone_input(phone_number), do: phone_number
 
   def delete(conn, _params) do
     conn

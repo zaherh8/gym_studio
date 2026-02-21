@@ -99,9 +99,16 @@ defmodule GymStudio.AccountsTest do
       assert user.name == "John Doe"
     end
 
-    test "registers users without a name (name is optional)" do
-      {:ok, user} = Accounts.register_user(valid_user_attributes())
-      assert is_nil(user.name)
+    test "requires a name for registration" do
+      attrs = valid_user_attributes() |> Map.delete(:name)
+      {:error, changeset} = Accounts.register_user(attrs)
+      assert %{name: ["can't be blank"]} = errors_on(changeset)
+    end
+
+    test "validates name length" do
+      attrs = valid_user_attributes(name: "A")
+      {:error, changeset} = Accounts.register_user(attrs)
+      assert %{name: ["should be at least 2 character(s)"]} = errors_on(changeset)
     end
   end
 

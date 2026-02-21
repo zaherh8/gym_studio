@@ -156,10 +156,11 @@ defmodule GymStudioWeb.RegistrationLiveTest do
       |> form("form", %{otp_code: known_code})
       |> render_submit()
 
-      # Step 3: Set password
+      # Step 3: Set password and name
       lv
       |> form("form", %{
         "user" => %{
+          "name" => "Test User",
           "password" => "valid_password123",
           "password_confirmation" => "valid_password123"
         }
@@ -173,6 +174,7 @@ defmodule GymStudioWeb.RegistrationLiveTest do
       user = GymStudio.Accounts.get_user_by_phone_number(full_phone)
       assert user
       assert user.confirmed_at
+      assert user.name == "Test User"
     end
 
     test "creates account with optional email", %{conn: conn} do
@@ -212,10 +214,11 @@ defmodule GymStudioWeb.RegistrationLiveTest do
       |> form("form", %{otp_code: known_code})
       |> render_submit()
 
-      # Step 3: Set password with email
+      # Step 3: Set password with email and name
       lv
       |> form("form", %{
         "user" => %{
+          "name" => "Email User",
           "password" => "valid_password123",
           "password_confirmation" => "valid_password123",
           "email" => "test@example.com"

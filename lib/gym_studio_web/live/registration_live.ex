@@ -29,7 +29,9 @@ defmodule GymStudioWeb.RegistrationLive do
      |> assign(:phone_error, nil)
      |> assign(
        :form,
-       to_form(%{"password" => "", "password_confirmation" => "", "email" => ""}, as: "user")
+       to_form(%{"name" => "", "password" => "", "password_confirmation" => "", "email" => ""},
+         as: "user"
+       )
      )
      |> assign(:check_errors, false)}
   end
@@ -205,6 +207,14 @@ defmodule GymStudioWeb.RegistrationLive do
       phx-change="validate_password"
       class="space-y-4"
     >
+      <.input
+        field={@form[:name]}
+        type="text"
+        label="Full Name"
+        placeholder="Enter your full name"
+        required
+      />
+
       <.input
         field={@form[:password]}
         type="password"

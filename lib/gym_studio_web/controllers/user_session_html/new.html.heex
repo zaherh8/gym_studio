@@ -1,43 +1,92 @@
 <Layouts.app flash={@flash} current_scope={@current_scope}>
-  <div class="mx-auto max-w-sm space-y-4">
-    <div class="text-center">
-      <.header>
-        <p>Log in</p>
-        <:subtitle>
+  <div class="mx-auto max-w-md py-8 px-4">
+    <%!-- Brand Header --%>
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-black tracking-tight mb-2">
+        <span class="text-primary">REACT</span> GYM
+      </h1>
+      <p class="text-base-content/60 text-sm">Private Studio in Lebanon</p>
+    </div>
+
+    <div class="card bg-base-200 shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title justify-center text-2xl mb-1">Welcome back</h2>
+        <p class="text-center text-base-content/60 text-sm mb-4">
           <%= if @current_scope do %>
             You need to reauthenticate to perform sensitive actions on your account.
           <% else %>
-            Don't have an account? <.link
+            Don't have an account?
+            <.link
               navigate={~p"/users/register"}
-              class="font-semibold text-brand hover:underline"
-              phx-no-format
-            >Sign up</.link> for an account now.
+              class="font-semibold text-primary hover:underline"
+            >
+              Sign up
+            </.link>
           <% end %>
-        </:subtitle>
-      </.header>
+        </p>
+
+        <.form
+          :let={f}
+          for={@form}
+          as={:user}
+          id="login_form"
+          action={~p"/users/log-in"}
+          class="space-y-4"
+        >
+          <div class="fieldset">
+            <label class="label mb-1">Phone Number</label>
+            <div class="join w-full">
+              <span class="join-item flex items-center px-3 bg-base-300 border border-base-content/20 rounded-l-lg font-mono text-sm">
+                🇱🇧 +961
+              </span>
+              <input
+                type="tel"
+                name={f[:phone_number].name}
+                value={format_login_phone(f[:phone_number].value)}
+                placeholder="Enter phone number"
+                class="input join-item flex-1"
+                inputmode="tel"
+                autocomplete="tel"
+                readonly={!!@current_scope}
+                required
+                autofocus
+              />
+            </div>
+          </div>
+
+          <.input
+            field={f[:password]}
+            type="password"
+            label="Password"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+            required
+          />
+
+          <div class="flex items-center justify-between">
+            <label class="label cursor-pointer gap-2">
+              <input
+                type="checkbox"
+                name={f[:remember_me].name}
+                value="true"
+                class="checkbox checkbox-primary checkbox-sm"
+              />
+              <span class="label-text">Remember me</span>
+            </label>
+            <span class="text-sm text-base-content/40 cursor-not-allowed" title="Coming soon">
+              Forgot password?
+            </span>
+          </div>
+
+          <.button type="submit" class="btn btn-primary w-full">
+            Log in <span aria-hidden="true">→</span>
+          </.button>
+        </.form>
+      </div>
     </div>
 
-    <.form :let={f} for={@form} as={:user} id="login_form" action={~p"/users/log-in"}>
-      <.input
-        readonly={!!@current_scope}
-        field={f[:phone_number]}
-        type="tel"
-        label="Phone Number"
-        placeholder="+1 (555) 123-4567"
-        autocomplete="tel"
-        required
-        phx-mounted={JS.focus()}
-      />
-      <.input
-        field={f[:password]}
-        type="password"
-        label="Password"
-        autocomplete="current-password"
-        required
-      />
-      <.button class="btn btn-primary w-full" name={@form[:remember_me].name} value="true">
-        Log in <span aria-hidden="true">→</span>
-      </.button>
-    </.form>
+    <p class="text-center text-sm mt-6 text-base-content/60">
+      <.link navigate={~p"/"} class="hover:underline">← Back to home</.link>
+    </p>
   </div>
 </Layouts.app>

@@ -18,6 +18,7 @@ defmodule GymStudio.AccountsFixtures do
 
   def valid_user_attributes(attrs \\ %{}) do
     Enum.into(attrs, %{
+      name: "Test User #{System.unique_integer([:positive])}",
       email: unique_user_email(),
       phone_number: unique_phone_number(),
       password: valid_user_password(),
