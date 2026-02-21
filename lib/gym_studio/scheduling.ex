@@ -31,9 +31,29 @@ defmodule GymStudio.Scheduling do
       {:error, %Ecto.Changeset{}}
   """
   def book_session(attrs \\ %{}) do
-    %TrainingSession{}
-    |> TrainingSession.changeset(attrs)
-    |> Repo.insert()
+    result =
+      %TrainingSession{}
+      |> TrainingSession.changeset(attrs)
+      |> Repo.insert()
+
+    case result do
+      {:ok, session} ->
+        # Notify the client that their session is booked (pending)
+        GymStudio.Notifications.create_notification(%{
+          user_id: session.client_id,
+          title: "Session Booked",
+          message:
+            "Your session on #{Calendar.strftime(session.scheduled_at, "%A, %B %d at %I:%M %p")} has been booked and is pending confirmation.",
+          type: "booking_created",
+          action_url: "/client/sessions",
+          metadata: %{session_id: session.id}
+        })
+
+        result
+
+      _ ->
+        result
+    end
   end
 
   @doc """
@@ -53,12 +73,26 @@ defmodule GymStudio.Scheduling do
       {:error, %Ecto.Changeset{}}
   """
   def approve_session(%TrainingSession{} = session, trainer_id, approved_by_id) do
-    session
-    |> TrainingSession.approval_changeset(%{
-      trainer_id: trainer_id,
-      approved_by_id: approved_by_id
-    })
-    |> Repo.update()
+    result =
+      session
+      |> TrainingSession.approval_changeset(%{
+        trainer_id: trainer_id,
+        approved_by_id: approved_by_id
+      })
+      |> Repo.update()
+
+    case result do
+      {:ok, updated_session} ->
+        GymStudio.Notifications.notify_booking_confirmed(
+          updated_session.client_id,
+          updated_session
+        )
+
+        result
+
+      _ ->
+        result
+    end
   end
 
   @doc """
@@ -75,12 +109,27 @@ defmodule GymStudio.Scheduling do
       {:ok, %TrainingSession{}}
   """
   def cancel_session(%TrainingSession{} = session, cancelled_by_id, reason) do
-    session
-    |> TrainingSession.cancellation_changeset(%{
-      cancelled_by_id: cancelled_by_id,
-      cancellation_reason: reason
-    })
-    |> Repo.update()
+    result =
+      session
+      |> TrainingSession.cancellation_changeset(%{
+        cancelled_by_id: cancelled_by_id,
+        cancellation_reason: reason
+      })
+      |> Repo.update()
+
+    case result do
+      {:ok, updated_session} ->
+        GymStudio.Notifications.notify_booking_cancelled(
+          updated_session.client_id,
+          updated_session,
+          reason
+        )
+
+        result
+
+      _ ->
+        result
+    end
   end
 
   @doc """
@@ -97,9 +146,28 @@ defmodule GymStudio.Scheduling do
       {:error, %Ecto.Changeset{}}
   """
   def complete_session(%TrainingSession{} = session, attrs \\ %{}) do
-    session
-    |> TrainingSession.completion_changeset(attrs)
-    |> Repo.update()
+    result =
+      session
+      |> TrainingSession.completion_changeset(attrs)
+      |> Repo.update()
+
+    case result do
+      {:ok, updated_session} ->
+        GymStudio.Notifications.create_notification(%{
+          user_id: updated_session.client_id,
+          title: "Session Completed",
+          message:
+            "Your session on #{Calendar.strftime(updated_session.scheduled_at, "%A, %B %d at %I:%M %p")} has been marked as completed.",
+          type: "session_completed",
+          action_url: "/client/sessions",
+          metadata: %{session_id: updated_session.id}
+        })
+
+        result
+
+      _ ->
+        result
+    end
   end
 
   @doc """
