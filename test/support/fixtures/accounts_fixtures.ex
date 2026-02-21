@@ -9,7 +9,7 @@ defmodule GymStudio.AccountsFixtures do
   alias GymStudio.Accounts
   alias GymStudio.Accounts.Scope
 
-  def unique_user_email, do: "user#{System.unique_integer()}@example.com"
+  def unique_user_email, do: "user#{System.unique_integer([:positive, :monotonic])}@example.com"
 
   def unique_phone_number,
     do: "+1555#{:rand.uniform(9_999_999) |> Integer.to_string() |> String.pad_leading(7, "0")}"

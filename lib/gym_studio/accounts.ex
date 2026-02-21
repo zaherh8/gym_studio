@@ -673,4 +673,42 @@ defmodule GymStudio.Accounts do
   defp filter_users_by_active(query, active) do
     from(u in query, where: u.active == ^active)
   end
+
+  @doc """
+  Searches users by name, email, or phone number.
+
+  ## Options
+    * `:role` - Filter by role
+  """
+  def search_users(query_string, opts \\ []) do
+    pattern = "%#{query_string}%"
+
+    User
+    |> where(
+      [u],
+      ilike(u.name, ^pattern) or ilike(u.email, ^pattern) or ilike(u.phone_number, ^pattern)
+    )
+    |> filter_users_by_role(opts[:role])
+    |> Repo.all()
+  end
+
+  @doc """
+  Changes a user's role.
+  """
+  def change_user_role(%User{} = user, new_role) do
+    user
+    |> Ecto.Changeset.change(%{role: new_role})
+    |> Repo.update()
+  end
+
+  @doc """
+  Counts users grouped by role.
+  """
+  def count_users_by_role do
+    User
+    |> group_by([u], u.role)
+    |> select([u], {u.role, count(u.id)})
+    |> Repo.all()
+    |> Map.new()
+  end
 end

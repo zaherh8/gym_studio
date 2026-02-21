@@ -412,4 +412,38 @@ defmodule GymStudio.AccountsTest do
       refute inspect(%User{password: "123456"}) =~ "password: \"123456\""
     end
   end
+
+  describe "admin user management" do
+    test "change_user_role/2 changes the role" do
+      user = user_fixture(%{role: :client})
+      {:ok, updated} = Accounts.change_user_role(user, :trainer)
+      assert updated.role == :trainer
+    end
+
+    test "search_users/2 finds users by name" do
+      user = user_fixture(%{name: "Unique Searchable Name"})
+      results = Accounts.search_users("Unique Searchable")
+      assert Enum.any?(results, fn u -> u.id == user.id end)
+    end
+
+    test "search_users/2 finds users by phone" do
+      user = user_fixture()
+      results = Accounts.search_users(user.phone_number)
+      assert Enum.any?(results, fn u -> u.id == user.id end)
+    end
+
+    test "search_users/2 with role filter" do
+      _client = user_fixture(%{role: :client, name: "RoleFilter Test"})
+      _trainer = user_fixture(%{role: :trainer, name: "RoleFilter Test2"})
+      results = Accounts.search_users("RoleFilter", role: :client)
+      assert Enum.all?(results, fn u -> u.role == :client end)
+    end
+
+    test "count_users_by_role/0 returns role counts" do
+      _client = user_fixture(%{role: :client})
+      result = Accounts.count_users_by_role()
+      assert is_map(result)
+      assert Map.get(result, :client, 0) >= 1
+    end
+  end
 end

@@ -545,4 +545,161 @@ defmodule GymStudio.Scheduling do
   defp filter_by_date_range(query, from_date, to_date) do
     where(query, [s], s.scheduled_at >= ^from_date and s.scheduled_at <= ^to_date)
   end
+
+  # Analytics queries
+
+  @doc """
+  Counts sessions grouped by status.
+  """
+  def count_sessions_by_status do
+    TrainingSession
+    |> group_by([s], s.status)
+    |> select([s], {s.status, count(s.id)})
+    |> Repo.all()
+    |> Map.new()
+  end
+
+  @doc """
+  Counts sessions per week for the last N weeks.
+  Returns a list of {week_start_date, count} tuples.
+  """
+  def sessions_per_week(num_weeks \\ 4) do
+    today = Date.utc_today()
+    start_of_this_week = Date.beginning_of_week(today, :monday)
+
+    Enum.map(0..(num_weeks - 1), fn weeks_ago ->
+      week_start = Date.add(start_of_this_week, -7 * weeks_ago)
+      week_end = Date.add(week_start, 6)
+      from_dt = DateTime.new!(week_start, ~T[00:00:00], "Etc/UTC")
+      to_dt = DateTime.new!(week_end, ~T[23:59:59], "Etc/UTC")
+
+      count =
+        TrainingSession
+        |> where([s], s.scheduled_at >= ^from_dt and s.scheduled_at <= ^to_dt)
+        |> Repo.aggregate(:count) || 0
+
+      {week_start, week_end, count}
+    end)
+    |> Enum.reverse()
+  end
+
+  @doc """
+  Returns popular time slots based on session bookings.
+  Groups by hour of day and returns counts.
+  """
+  def popular_time_slots do
+    TrainingSession
+    |> select([s], {fragment("extract(hour from ?)::integer", s.scheduled_at), count(s.id)})
+    |> group_by([s], fragment("extract(hour from ?)", s.scheduled_at))
+    |> order_by([s], desc: count(s.id))
+    |> limit(10)
+    |> Repo.all()
+    |> Enum.map(fn {hour, count} -> {hour, count} end)
+  end
+
+  @doc """
+  Counts sessions per trainer.
+  Returns a list of {trainer_name, count} tuples.
+  """
+  def trainer_session_counts do
+    TrainingSession
+    |> where([s], not is_nil(s.trainer_id))
+    |> join(:inner, [s], t in assoc(s, :trainer))
+    |> group_by([s, t], [t.id, t.name, t.email])
+    |> select([s, t], {coalesce(t.name, t.email), count(s.id)})
+    |> order_by([s, t], desc: count(s.id))
+    |> Repo.all()
+  end
+
+  @doc """
+  Counts sessions today.
+  """
+  def count_sessions_today do
+    today = Date.utc_today()
+    from_dt = DateTime.new!(today, ~T[00:00:00], "Etc/UTC")
+    to_dt = DateTime.new!(today, ~T[23:59:59], "Etc/UTC")
+
+    TrainingSession
+    |> where([s], s.scheduled_at >= ^from_dt and s.scheduled_at <= ^to_dt)
+    |> where([s], s.status in ["pending", "confirmed", "completed"])
+    |> Repo.aggregate(:count) || 0
+  end
+
+  @doc """
+  Counts sessions this week (all trainers).
+  """
+  def count_all_sessions_this_week do
+    today = Date.utc_today()
+    start_of_week = Date.beginning_of_week(today, :monday)
+    end_of_week = Date.add(start_of_week, 6)
+    from_dt = DateTime.new!(start_of_week, ~T[00:00:00], "Etc/UTC")
+    to_dt = DateTime.new!(end_of_week, ~T[23:59:59], "Etc/UTC")
+
+    TrainingSession
+    |> where([s], s.scheduled_at >= ^from_dt and s.scheduled_at <= ^to_dt)
+    |> where([s], s.status in ["pending", "confirmed", "completed"])
+    |> Repo.aggregate(:count) || 0
+  end
+
+  @doc """
+  Lists all sessions with optional filters.
+
+  ## Options
+    * `:status` - Filter by status
+    * `:trainer_id` - Filter by trainer
+    * `:client_id` - Filter by client
+    * `:from_date` - Filter from date
+    * `:to_date` - Filter to date
+  """
+  def list_all_sessions(opts \\ []) do
+    TrainingSession
+    |> filter_by_status(opts[:status])
+    |> filter_by_trainer(opts[:trainer_id])
+    |> filter_by_client(opts[:client_id])
+    |> filter_by_date_range(opts[:from_date], opts[:to_date])
+    |> order_by([s], desc: s.scheduled_at)
+    |> preload([:client, :trainer, :package])
+    |> Repo.all()
+  end
+
+  defp filter_by_trainer(query, nil), do: query
+  defp filter_by_trainer(query, ""), do: query
+
+  defp filter_by_trainer(query, trainer_id) do
+    where(query, [s], s.trainer_id == ^trainer_id)
+  end
+
+  defp filter_by_client(query, nil), do: query
+  defp filter_by_client(query, ""), do: query
+
+  defp filter_by_client(query, client_id) do
+    where(query, [s], s.client_id == ^client_id)
+  end
+
+  @doc """
+  Admin override: directly set a session's status.
+  """
+  def admin_update_session(%TrainingSession{} = session, attrs) do
+    session
+    |> Ecto.Changeset.cast(attrs, [:status, :trainer_id, :notes])
+    |> Repo.update()
+  end
+
+  @doc """
+  Updates a session's status directly (admin override).
+  """
+  def update_session_status(%TrainingSession{} = session, new_status) do
+    session
+    |> Ecto.Changeset.change(%{status: new_status})
+    |> Repo.update()
+  end
+
+  @doc """
+  Assigns a trainer to a session.
+  """
+  def assign_trainer(%TrainingSession{} = session, trainer_id) do
+    session
+    |> Ecto.Changeset.change(%{trainer_id: trainer_id})
+    |> Repo.update()
+  end
 end

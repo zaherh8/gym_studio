@@ -543,4 +543,67 @@ defmodule GymStudio.SchedulingTest do
       assert cancelled.cancellation_reason == "Emergency came up"
     end
   end
+
+  describe "analytics queries" do
+    setup do
+      client = GymStudio.AccountsFixtures.user_fixture(%{role: :client})
+      trainer = GymStudio.AccountsFixtures.user_fixture(%{role: :trainer})
+      %{client: client, trainer: trainer}
+    end
+
+    test "count_sessions_by_status/0 returns status counts", %{client: client} do
+      _session = training_session_fixture(%{client_id: client.id})
+      result = Scheduling.count_sessions_by_status()
+      assert is_map(result)
+      assert Map.get(result, "pending", 0) >= 1
+    end
+
+    test "sessions_per_week/1 returns weekly data", %{client: client} do
+      _session = training_session_fixture(%{client_id: client.id})
+      result = Scheduling.sessions_per_week(4)
+      assert is_list(result)
+      assert length(result) == 4
+
+      assert Enum.all?(result, fn {start_date, _end_date, count} ->
+               is_struct(start_date, Date) and is_integer(count)
+             end)
+    end
+
+    test "popular_time_slots/0 returns slot data" do
+      result = Scheduling.popular_time_slots()
+      assert is_list(result)
+    end
+
+    test "trainer_session_counts/0 returns trainer data", %{client: client, trainer: trainer} do
+      _session =
+        training_session_fixture(%{
+          client_id: client.id,
+          trainer_id: trainer.id,
+          status: "confirmed"
+        })
+
+      result = Scheduling.trainer_session_counts()
+      assert is_list(result)
+      assert Enum.any?(result, fn {_name, count} -> count >= 1 end)
+    end
+
+    test "list_all_sessions/1 with filters", %{client: client} do
+      _session = training_session_fixture(%{client_id: client.id})
+      assert length(Scheduling.list_all_sessions()) >= 1
+      assert length(Scheduling.list_all_sessions(status: "pending")) >= 1
+      assert Scheduling.list_all_sessions(status: "completed") |> length() >= 0
+    end
+
+    test "update_session_status/2 overrides status", %{client: client} do
+      session = training_session_fixture(%{client_id: client.id})
+      {:ok, updated} = Scheduling.update_session_status(session, "confirmed")
+      assert updated.status == "confirmed"
+    end
+
+    test "assign_trainer/2 assigns trainer to session", %{client: client, trainer: trainer} do
+      session = training_session_fixture(%{client_id: client.id})
+      {:ok, updated} = Scheduling.assign_trainer(session, trainer.id)
+      assert updated.trainer_id == trainer.id
+    end
+  end
 end
