@@ -47,6 +47,7 @@ defmodule GymStudio.Accounts.User do
   def registration_changeset(user, attrs, opts \\ []) do
     user
     |> cast(attrs, [:name, :email, :phone_number, :role, :password])
+    |> validate_length(:name, max: 255)
     |> validate_phone_number(opts)
     |> maybe_validate_email(opts)
     |> validate_confirmation(:password, message: "does not match password")
