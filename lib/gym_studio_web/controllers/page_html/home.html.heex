@@ -177,74 +177,42 @@
       </p>
     </div>
 
-    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
-      <%!-- Trainer 1 --%>
-      <div class="group">
-        <div class="relative overflow-hidden rounded-2xl mb-4">
-          <div class="aspect-[3/4] bg-gradient-to-br from-neutral to-base-300 flex items-center justify-center">
-            <%!-- Replace with actual trainer photo --%>
-            <div class="text-center p-6">
-              <div class="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-3">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
+    <%= if @trainers != [] do %>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
+        <%= for trainer <- @trainers do %>
+          <div class="group">
+            <div class="relative overflow-hidden rounded-2xl mb-4">
+              <div class="aspect-[3/4] bg-gradient-to-br from-neutral to-base-300 flex items-center justify-center">
+                <%= if trainer.photo_url do %>
+                  <img src={trainer.photo_url} alt={trainer.user.name} class="w-full h-full object-cover" />
+                <% else %>
+                  <div class="text-center p-6">
+                    <div class="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <span class="text-white/40 text-sm">Photo Coming Soon</span>
+                  </div>
+                <% end %>
               </div>
-              <span class="text-white/40 text-sm">Photo Coming Soon</span>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </div>
+            <h3 class="text-xl font-bold mb-1 text-gray-900"><%= trainer.user.name %></h3>
+            <%= if trainer.specializations != [] do %>
+              <p class="text-primary font-medium text-sm mb-2"><%= Enum.join(trainer.specializations, " & ") %></p>
+            <% end %>
+            <%= if trainer.bio do %>
+              <p class="text-gray-600 text-sm leading-relaxed"><%= trainer.bio %></p>
+            <% end %>
           </div>
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        </div>
-        <h3 class="text-xl font-bold mb-1 text-gray-900">Sarah Martinez</h3>
-        <p class="text-primary font-medium text-sm mb-2">Strength & Nutrition</p>
-        <p class="text-gray-600 text-sm leading-relaxed">
-          Certified personal trainer with 8+ years experience in strength training and nutrition coaching.
-        </p>
+        <% end %>
       </div>
-
-      <%!-- Trainer 2 --%>
-      <div class="group">
-        <div class="relative overflow-hidden rounded-2xl mb-4">
-          <div class="aspect-[3/4] bg-gradient-to-br from-neutral to-base-300 flex items-center justify-center">
-            <div class="text-center p-6">
-              <div class="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-3">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-              <span class="text-white/40 text-sm">Photo Coming Soon</span>
-            </div>
-          </div>
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        </div>
-        <h3 class="text-xl font-bold mb-1 text-gray-900">Mike Johnson</h3>
-        <p class="text-primary font-medium text-sm mb-2">Functional Fitness</p>
-        <p class="text-gray-600 text-sm leading-relaxed">
-          Expert in functional fitness and athletic performance with a focus on injury prevention.
-        </p>
+    <% else %>
+      <div class="text-center py-12">
+        <p class="text-gray-500 text-lg">Our trainer profiles are being updated. Check back soon!</p>
       </div>
-
-      <%!-- Trainer 3 --%>
-      <div class="group sm:col-span-2 lg:col-span-1">
-        <div class="relative overflow-hidden rounded-2xl mb-4">
-          <div class="aspect-[3/4] bg-gradient-to-br from-neutral to-base-300 flex items-center justify-center">
-            <div class="text-center p-6">
-              <div class="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-3">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-              <span class="text-white/40 text-sm">Photo Coming Soon</span>
-            </div>
-          </div>
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        </div>
-        <h3 class="text-xl font-bold mb-1 text-gray-900">Lisa Chen</h3>
-        <p class="text-primary font-medium text-sm mb-2">Yoga & Wellness</p>
-        <p class="text-gray-600 text-sm leading-relaxed">
-          Yoga and mindfulness coach focused on holistic wellness and stress relief.
-        </p>
-      </div>
-    </div>
+    <% end %>
 
     <div class="text-center mt-10">
       <a href={~p"/trainers"} class="btn btn-outline btn-primary rounded-full">
@@ -480,8 +448,8 @@
           <div>
             <h3 class="font-bold text-lg mb-1 text-gray-900">Location</h3>
             <p class="text-gray-600 text-sm leading-relaxed">
-              123 Fitness Street<br />
-              Beirut, Lebanon
+              Horsh Tabet, Clover Park Bldg.<br />
+              4th Floor, Sin El Fil, Lebanon
             </p>
           </div>
         </div>
@@ -494,7 +462,7 @@
           </div>
           <div>
             <h3 class="font-bold text-lg mb-1 text-gray-900">Phone</h3>
-            <p class="text-gray-600 text-sm">+961 1 234 567</p>
+            <p class="text-gray-600 text-sm">+961 71 104 483</p>
           </div>
         </div>
 
@@ -521,7 +489,7 @@
           </div>
           <div>
             <h3 class="font-bold text-lg mb-1 text-gray-900">Email</h3>
-            <p class="text-gray-600 text-sm">hello@reactgym.com</p>
+            <p class="text-gray-600 text-sm">Coming soon</p>
           </div>
         </div>
       </div>
@@ -590,9 +558,8 @@
       <div>
         <h4 class="font-bold mb-4">Contact</h4>
         <ul class="space-y-2 text-sm text-neutral-content/70">
-          <li>Beirut, Lebanon</li>
-          <li>+961 1 234 567</li>
-          <li>hello@reactgym.com</li>
+          <li>Sin El Fil, Lebanon</li>
+          <li>+961 71 104 483</li>
         </ul>
       </div>
 
