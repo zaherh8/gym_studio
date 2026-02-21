@@ -15,6 +15,7 @@ defmodule GymStudio.Accounts.User do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "users" do
+    field :name, :string
     field :email, :string
     field :phone_number, :string
     field :password, :string, virtual: true, redact: true
@@ -45,7 +46,7 @@ defmodule GymStudio.Accounts.User do
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email, :phone_number, :role, :password])
+    |> cast(attrs, [:name, :email, :phone_number, :role, :password])
     |> validate_phone_number(opts)
     |> maybe_validate_email(opts)
     |> validate_confirmation(:password, message: "does not match password")

@@ -261,7 +261,7 @@
                 <%= if trainer.photo_url do %>
                   <img
                     src={trainer.photo_url}
-                    alt={trainer.user.email}
+                    alt={trainer.user.name || trainer.user.email}
                     class="w-full h-full object-cover"
                   />
                 <% else %>
@@ -289,7 +289,9 @@
               <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
               </div>
             </div>
-            <h3 class="text-xl font-bold mb-1 text-gray-900">{trainer.user.email}</h3>
+            <h3 class="text-xl font-bold mb-1 text-gray-900">
+              {trainer.user.name || trainer.user.email}
+            </h3>
             <%= if trainer.specializations != [] do %>
               <p class="text-primary font-medium text-sm mb-2">
                 {Enum.join(trainer.specializations, " & ")}

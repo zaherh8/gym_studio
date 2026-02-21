@@ -25,7 +25,7 @@ defmodule GymStudioWeb.Admin.TrainersLive do
           <tbody>
             <%= for trainer <- @trainers do %>
               <tr>
-                <td>{trainer.user.email}</td>
+                <td>{trainer.user.name || trainer.user.email}</td>
                 <td>
                   <span class={"badge #{status_badge_class(trainer.status)}"}>{trainer.status}</span>
                 </td>

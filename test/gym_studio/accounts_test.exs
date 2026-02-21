@@ -92,6 +92,17 @@ defmodule GymStudio.AccountsTest do
       assert is_nil(user.confirmed_at)
       assert is_nil(user.password)
     end
+
+    test "registers users with a name" do
+      attrs = valid_user_attributes(name: "John Doe")
+      {:ok, user} = Accounts.register_user(attrs)
+      assert user.name == "John Doe"
+    end
+
+    test "registers users without a name (name is optional)" do
+      {:ok, user} = Accounts.register_user(valid_user_attributes())
+      assert is_nil(user.name)
+    end
   end
 
   describe "sudo_mode?/2" do

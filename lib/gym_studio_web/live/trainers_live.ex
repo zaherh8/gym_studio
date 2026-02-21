@@ -46,13 +46,13 @@ defmodule GymStudioWeb.TrainersLive do
                     <div class="avatar placeholder">
                       <div class="bg-primary text-primary-content rounded-full w-32">
                         <span class="text-3xl">
-                          {String.first(trainer.user.email) |> String.upcase()}
+                          {String.first(trainer.user.name || trainer.user.email) |> String.upcase()}
                         </span>
                       </div>
                     </div>
                   </figure>
                   <div class="card-body items-center text-center">
-                    <h2 class="card-title">{trainer.user.email}</h2>
+                    <h2 class="card-title">{trainer.user.name || trainer.user.email}</h2>
                     <%= if trainer.bio do %>
                       <p class="text-base-content/70">{trainer.bio}</p>
                     <% end %>

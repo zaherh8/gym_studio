@@ -37,6 +37,7 @@ IO.puts("Creating admin user...")
 
 admin =
   SeedHelpers.create_user!(%{
+    name: "Admin",
     phone_number: "+1111111111",
     email: "admin@reactgym.com",
     password: "password123456",
@@ -53,6 +54,7 @@ IO.puts("Creating trainers...")
 
 trainer1_user =
   SeedHelpers.create_user!(%{
+    name: "John Smith",
     phone_number: "+2222222222",
     email: "john.trainer@reactgym.com",
     password: "password123456",
@@ -74,6 +76,7 @@ IO.puts("  Trainer 1 created: #{trainer1_user.phone_number} (John - Approved)")
 
 trainer2_user =
   SeedHelpers.create_user!(%{
+    name: "Sarah Johnson",
     phone_number: "+3333333333",
     email: "sarah.trainer@reactgym.com",
     password: "password123456",
@@ -95,6 +98,7 @@ IO.puts("  Trainer 2 created: #{trainer2_user.phone_number} (Sarah - Approved)")
 
 trainer3_user =
   SeedHelpers.create_user!(%{
+    name: "Mike Davis",
     phone_number: "+4444444444",
     email: "mike.trainer@reactgym.com",
     password: "password123456",
@@ -120,6 +124,7 @@ IO.puts("Creating clients...")
 
 client1_user =
   SeedHelpers.create_user!(%{
+    name: "Alice Cooper",
     phone_number: "+5555555555",
     email: "alice@example.com",
     password: "password123456",
@@ -141,6 +146,7 @@ IO.puts("  Client 1 created: #{client1_user.phone_number} (Alice)")
 
 client2_user =
   SeedHelpers.create_user!(%{
+    name: "Bob Martinez",
     phone_number: "+6666666666",
     email: "bob@example.com",
     password: "password123456",
@@ -162,6 +168,7 @@ IO.puts("  Client 2 created: #{client2_user.phone_number} (Bob)")
 
 client3_user =
   SeedHelpers.create_user!(%{
+    name: "Carol Williams",
     phone_number: "+7777777777",
     email: "carol@example.com",
     password: "password123456",
