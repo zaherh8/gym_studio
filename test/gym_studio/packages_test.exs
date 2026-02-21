@@ -148,8 +148,11 @@ defmodule GymStudio.PackagesTest do
     end
 
     test "returns package with nearest expiration first", %{client: client, admin: admin} do
-      later_expiration = DateTime.utc_now() |> DateTime.add(60, :day) |> DateTime.truncate(:second)
-      sooner_expiration = DateTime.utc_now() |> DateTime.add(30, :day) |> DateTime.truncate(:second)
+      later_expiration =
+        DateTime.utc_now() |> DateTime.add(60, :day) |> DateTime.truncate(:second)
+
+      sooner_expiration =
+        DateTime.utc_now() |> DateTime.add(30, :day) |> DateTime.truncate(:second)
 
       _later_package =
         package_fixture(
@@ -247,8 +250,13 @@ defmodule GymStudio.PackagesTest do
 
     test "returns all packages for a client", %{client: client, admin: admin} do
       package1 = package_fixture(client_id: client.id, assigned_by_id: admin.id)
+
       package2 =
-        package_fixture(client_id: client.id, assigned_by_id: admin.id, package_type: "standard_12")
+        package_fixture(
+          client_id: client.id,
+          assigned_by_id: admin.id,
+          package_type: "standard_12"
+        )
 
       packages = Packages.list_packages_for_client(client.id)
 
@@ -306,7 +314,11 @@ defmodule GymStudio.PackagesTest do
       %{client1: client1, client2: client2, admin: admin}
     end
 
-    test "returns all packages without filters", %{client1: client1, client2: client2, admin: admin} do
+    test "returns all packages without filters", %{
+      client1: client1,
+      client2: client2,
+      admin: admin
+    } do
       package1 = package_fixture(client_id: client1.id, assigned_by_id: admin.id)
       package2 = package_fixture(client_id: client2.id, assigned_by_id: admin.id)
 
@@ -338,8 +350,19 @@ defmodule GymStudio.PackagesTest do
     end
 
     test "filters by package_type", %{client1: client1, admin: admin} do
-      _standard8 = package_fixture(client_id: client1.id, assigned_by_id: admin.id, package_type: "standard_8")
-      _standard12 = package_fixture(client_id: client1.id, assigned_by_id: admin.id, package_type: "standard_12")
+      _standard8 =
+        package_fixture(
+          client_id: client1.id,
+          assigned_by_id: admin.id,
+          package_type: "standard_8"
+        )
+
+      _standard12 =
+        package_fixture(
+          client_id: client1.id,
+          assigned_by_id: admin.id,
+          package_type: "standard_12"
+        )
 
       standard8_packages = Packages.list_all_packages(package_type: "standard_8")
       assert length(standard8_packages) == 1
@@ -366,15 +389,33 @@ defmodule GymStudio.PackagesTest do
     end
 
     test "combines multiple filters", %{client1: client1, client2: client2, admin: admin} do
-      _match = package_fixture(client_id: client1.id, assigned_by_id: admin.id, package_type: "standard_8")
-      _wrong_client = package_fixture(client_id: client2.id, assigned_by_id: admin.id, package_type: "standard_8")
-      _wrong_type = package_fixture(client_id: client1.id, assigned_by_id: admin.id, package_type: "standard_12")
+      _match =
+        package_fixture(
+          client_id: client1.id,
+          assigned_by_id: admin.id,
+          package_type: "standard_8"
+        )
 
-      packages = Packages.list_all_packages(
-        client_id: client1.id,
-        package_type: "standard_8",
-        active: true
-      )
+      _wrong_client =
+        package_fixture(
+          client_id: client2.id,
+          assigned_by_id: admin.id,
+          package_type: "standard_8"
+        )
+
+      _wrong_type =
+        package_fixture(
+          client_id: client1.id,
+          assigned_by_id: admin.id,
+          package_type: "standard_12"
+        )
+
+      packages =
+        Packages.list_all_packages(
+          client_id: client1.id,
+          package_type: "standard_8",
+          active: true
+        )
 
       assert length(packages) == 1
       assert hd(packages).client_id == client1.id
@@ -426,7 +467,10 @@ defmodule GymStudio.PackagesTest do
 
     test "returns false for package with future expiration", %{client: client, admin: admin} do
       expires_at = DateTime.utc_now() |> DateTime.add(30, :day) |> DateTime.truncate(:second)
-      package = package_fixture(client_id: client.id, assigned_by_id: admin.id, expires_at: expires_at)
+
+      package =
+        package_fixture(client_id: client.id, assigned_by_id: admin.id, expires_at: expires_at)
+
       assert Packages.expired?(package) == false
     end
 
@@ -443,7 +487,10 @@ defmodule GymStudio.PackagesTest do
       %{client: client, admin: admin}
     end
 
-    test "returns true for active package with available sessions", %{client: client, admin: admin} do
+    test "returns true for active package with available sessions", %{
+      client: client,
+      admin: admin
+    } do
       package = package_fixture(client_id: client.id, assigned_by_id: admin.id)
       assert Packages.usable?(package) == true
     end

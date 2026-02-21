@@ -25,12 +25,14 @@ defmodule GymStudioWeb.Admin.TrainersLive do
           <tbody>
             <%= for trainer <- @trainers do %>
               <tr>
-                <td><%= trainer.user.email %></td>
+                <td>{trainer.user.email}</td>
                 <td>
-                  <span class={"badge #{status_badge_class(trainer.status)}"}><%= trainer.status %></span>
+                  <span class={"badge #{status_badge_class(trainer.status)}"}>{trainer.status}</span>
                 </td>
                 <td>
-                  <.link navigate={~p"/admin/trainers/#{trainer.id}"} class="btn btn-sm btn-ghost">View</.link>
+                  <.link navigate={~p"/admin/trainers/#{trainer.id}"} class="btn btn-sm btn-ghost">
+                    View
+                  </.link>
                 </td>
               </tr>
             <% end %>

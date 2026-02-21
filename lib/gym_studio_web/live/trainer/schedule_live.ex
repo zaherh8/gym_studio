@@ -25,7 +25,9 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
 
       %{trainer: trainer, current_week_start: week_start} ->
         week_end = Date.add(week_start, 6)
-        sessions = Scheduling.list_sessions_for_trainer(trainer.id, from: week_start, to: week_end)
+
+        sessions =
+          Scheduling.list_sessions_for_trainer(trainer.id, from: week_start, to: week_end)
 
         # Group sessions by date
         week_sessions =
@@ -92,8 +94,10 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
           </button>
           <div class="text-center">
             <h2 class="text-xl font-semibold">
-              <%= Calendar.strftime(@current_week_start, "%B %d") %> -
-              <%= Calendar.strftime(Date.add(@current_week_start, 6), "%B %d, %Y") %>
+              {Calendar.strftime(@current_week_start, "%B %d")} - {Calendar.strftime(
+                Date.add(@current_week_start, 6),
+                "%B %d, %Y"
+              )}
             </h2>
             <button phx-click="today" class="btn btn-ghost btn-xs">Today</button>
           </div>
@@ -101,19 +105,19 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
             Next Week &rarr;
           </button>
         </div>
-
-        <!-- Week Grid -->
+        
+    <!-- Week Grid -->
         <div class="grid grid-cols-7 gap-2">
           <!-- Day Headers -->
           <%= for day_offset <- 0..6 do %>
             <% day = Date.add(@current_week_start, day_offset) %>
             <div class={"text-center p-2 rounded-t-lg #{if day == Date.utc_today(), do: "bg-primary text-primary-content", else: "bg-base-200"}"}>
-              <div class="text-sm font-medium"><%= Calendar.strftime(day, "%a") %></div>
-              <div class="text-lg font-bold"><%= Calendar.strftime(day, "%d") %></div>
+              <div class="text-sm font-medium">{Calendar.strftime(day, "%a")}</div>
+              <div class="text-lg font-bold">{Calendar.strftime(day, "%d")}</div>
             </div>
           <% end %>
-
-          <!-- Day Contents -->
+          
+    <!-- Day Contents -->
           <%= for day_offset <- 0..6 do %>
             <% day = Date.add(@current_week_start, day_offset) %>
             <% day_sessions = Map.get(@week_sessions, day, []) %>
@@ -125,9 +129,9 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
                   <%= for session <- Enum.sort_by(day_sessions, & &1.scheduled_at) do %>
                     <div class={"p-2 rounded text-xs #{session_bg_class(session.status)}"}>
                       <div class="font-medium">
-                        <%= Calendar.strftime(session.scheduled_at, "%H:%M") %>
+                        {Calendar.strftime(session.scheduled_at, "%H:%M")}
                       </div>
-                      <div class="truncate"><%= session.client.user.email %></div>
+                      <div class="truncate">{session.client.user.email}</div>
                     </div>
                   <% end %>
                 </div>
@@ -135,8 +139,8 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
             </div>
           <% end %>
         </div>
-
-        <!-- Legend -->
+        
+    <!-- Legend -->
         <div class="flex gap-4 mt-6 text-sm">
           <div class="flex items-center gap-2">
             <div class="w-4 h-4 bg-warning rounded"></div>

@@ -66,17 +66,19 @@ defmodule GymStudioWeb.Trainer.DashboardLive do
       <% else %>
         <%= if @trainer.status != "approved" do %>
           <div class="alert alert-info mb-6">
-            <span>Your trainer account is currently <%= @trainer.status %>. You'll be notified when approved.</span>
+            <span>
+              Your trainer account is currently {@trainer.status}. You'll be notified when approved.
+            </span>
           </div>
         <% end %>
-
-        <!-- Stats Cards -->
+        
+    <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div class="card bg-base-100 shadow-xl">
             <div class="card-body">
               <div class="stat p-0">
                 <div class="stat-title">Total Clients</div>
-                <div class="stat-value text-primary"><%= @stats.total_clients %></div>
+                <div class="stat-value text-primary">{@stats.total_clients}</div>
               </div>
             </div>
           </div>
@@ -84,7 +86,7 @@ defmodule GymStudioWeb.Trainer.DashboardLive do
             <div class="card-body">
               <div class="stat p-0">
                 <div class="stat-title">Sessions This Week</div>
-                <div class="stat-value text-primary"><%= @stats.sessions_this_week %></div>
+                <div class="stat-value text-primary">{@stats.sessions_this_week}</div>
               </div>
             </div>
           </div>
@@ -92,7 +94,7 @@ defmodule GymStudioWeb.Trainer.DashboardLive do
             <div class="card-body">
               <div class="stat p-0">
                 <div class="stat-title">Pending Requests</div>
-                <div class="stat-value text-warning"><%= @stats.pending_count %></div>
+                <div class="stat-value text-warning">{@stats.pending_count}</div>
               </div>
             </div>
           </div>
@@ -110,12 +112,14 @@ defmodule GymStudioWeb.Trainer.DashboardLive do
                   <%= for session <- @todays_sessions do %>
                     <div class="flex justify-between items-center p-3 bg-base-200 rounded-lg">
                       <div>
-                        <p class="font-medium"><%= session.client.email %></p>
+                        <p class="font-medium">{session.client.email}</p>
                         <p class="text-sm text-base-content/70">
-                          <%= Calendar.strftime(session.scheduled_at, "%H:%M") %>
+                          {Calendar.strftime(session.scheduled_at, "%H:%M")}
                         </p>
                       </div>
-                      <span class={"badge #{status_badge_class(session.status)}"}><%= session.status %></span>
+                      <span class={"badge #{status_badge_class(session.status)}"}>
+                        {session.status}
+                      </span>
                     </div>
                   <% end %>
                 </div>
@@ -125,8 +129,8 @@ defmodule GymStudioWeb.Trainer.DashboardLive do
               </.link>
             </div>
           </div>
-
-          <!-- Pending Requests -->
+          
+    <!-- Pending Requests -->
           <div class="card bg-base-100 shadow-xl">
             <div class="card-body">
               <h2 class="card-title">Pending Session Requests</h2>
@@ -137,9 +141,9 @@ defmodule GymStudioWeb.Trainer.DashboardLive do
                   <%= for session <- @pending_sessions do %>
                     <div class="flex justify-between items-center p-3 bg-base-200 rounded-lg">
                       <div>
-                        <p class="font-medium"><%= session.client.email %></p>
+                        <p class="font-medium">{session.client.email}</p>
                         <p class="text-sm text-base-content/70">
-                          <%= Calendar.strftime(session.scheduled_at, "%b %d at %H:%M") %>
+                          {Calendar.strftime(session.scheduled_at, "%b %d at %H:%M")}
                         </p>
                       </div>
                       <button

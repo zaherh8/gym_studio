@@ -1,6 +1,6 @@
 defmodule GymStudioWeb.Admin.UsersLive do
   use GymStudioWeb, :live_view
-  
+
   @impl true
   def mount(_params, _session, socket) do
     {:ok, assign(socket, page_title: "Manage Users")}

@@ -132,7 +132,10 @@ defmodule GymStudio.Scheduling.TrainingSession do
     training_session
     |> cast(attrs, [:cancelled_by_id, :cancellation_reason])
     |> validate_required([:cancelled_by_id, :cancellation_reason])
-    |> validate_status_in(["pending", "confirmed"], "Only pending or confirmed sessions can be cancelled")
+    |> validate_status_in(
+      ["pending", "confirmed"],
+      "Only pending or confirmed sessions can be cancelled"
+    )
     |> foreign_key_constraint(:cancelled_by_id)
     |> put_change(:status, "cancelled")
     |> put_change(:cancelled_at, DateTime.utc_now(:second))

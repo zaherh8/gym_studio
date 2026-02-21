@@ -52,28 +52,35 @@ defmodule GymStudio.AccountsTest do
     test "requires phone_number and password to be set" do
       {:error, changeset} = Accounts.register_user(%{})
 
-      assert %{phone_number: ["can't be blank"], password: ["can't be blank"]} = errors_on(changeset)
+      assert %{phone_number: ["can't be blank"], password: ["can't be blank"]} =
+               errors_on(changeset)
     end
 
     test "validates phone_number format" do
-      {:error, changeset} = Accounts.register_user(%{phone_number: "not valid", password: valid_user_password()})
+      {:error, changeset} =
+        Accounts.register_user(%{phone_number: "not valid", password: valid_user_password()})
 
-      assert %{phone_number: ["must be in E.164 format (e.g., +9611234567)"]} = errors_on(changeset)
+      assert %{phone_number: ["must be in E.164 format (e.g., +9611234567)"]} =
+               errors_on(changeset)
     end
 
     test "validates email when given" do
-      {:error, changeset} = Accounts.register_user(%{
-        phone_number: unique_phone_number(),
-        password: valid_user_password(),
-        email: "not valid"
-      })
+      {:error, changeset} =
+        Accounts.register_user(%{
+          phone_number: unique_phone_number(),
+          password: valid_user_password(),
+          email: "not valid"
+        })
 
       assert %{email: ["must have the @ sign and no spaces"]} = errors_on(changeset)
     end
 
     test "validates phone_number uniqueness" do
       %{phone_number: phone_number} = user_fixture()
-      {:error, changeset} = Accounts.register_user(%{phone_number: phone_number, password: valid_user_password()})
+
+      {:error, changeset} =
+        Accounts.register_user(%{phone_number: phone_number, password: valid_user_password()})
+
       assert "has already been taken" in errors_on(changeset).phone_number
     end
 

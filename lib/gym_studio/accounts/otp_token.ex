@@ -46,7 +46,11 @@ defmodule GymStudio.Accounts.OtpToken do
   def create_changeset(attrs) do
     code = generate_code()
     hashed_code = hash_code(code)
-    expires_at = DateTime.utc_now() |> DateTime.add(@expiration_minutes, :minute) |> DateTime.truncate(:second)
+
+    expires_at =
+      DateTime.utc_now()
+      |> DateTime.add(@expiration_minutes, :minute)
+      |> DateTime.truncate(:second)
 
     %__MODULE__{}
     |> cast(attrs, [:phone_number, :purpose])

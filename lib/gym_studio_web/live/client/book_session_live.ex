@@ -4,13 +4,20 @@ defmodule GymStudioWeb.Client.BookSessionLive do
 
   # Operating hours by day of week (1 = Monday, 7 = Sunday)
   @operating_hours %{
-    1 => {7, 22},  # Monday: 7 AM - 10 PM
-    2 => {7, 22},  # Tuesday
-    3 => {7, 22},  # Wednesday
-    4 => {7, 22},  # Thursday
-    5 => {7, 22},  # Friday
-    6 => {8, 13},  # Saturday: 8 AM - 1 PM
-    7 => nil       # Sunday: Closed
+    # Monday: 7 AM - 10 PM
+    1 => {7, 22},
+    # Tuesday
+    2 => {7, 22},
+    # Wednesday
+    3 => {7, 22},
+    # Thursday
+    4 => {7, 22},
+    # Friday
+    5 => {7, 22},
+    # Saturday: 8 AM - 1 PM
+    6 => {8, 13},
+    # Sunday: Closed
+    7 => nil
   }
 
   @impl true
@@ -73,14 +80,17 @@ defmodule GymStudioWeb.Client.BookSessionLive do
       scheduled_at = DateTime.new!(selected_date, Time.new!(hour, 0, 0), "Etc/UTC")
 
       case Scheduling.book_session(%{
-        client_id: user.id,
-        scheduled_at: scheduled_at,
-        duration_minutes: 60
-      }) do
+             client_id: user.id,
+             scheduled_at: scheduled_at,
+             duration_minutes: 60
+           }) do
         {:ok, session} ->
           socket =
             socket
-            |> put_flash(:info, "Session booked successfully! You'll be notified once a trainer confirms your booking.")
+            |> put_flash(
+              :info,
+              "Session booked successfully! You'll be notified once a trainer confirms your booking."
+            )
             |> push_navigate(to: ~p"/client/sessions/#{session.id}")
 
           {:noreply, socket}
@@ -122,11 +132,14 @@ defmodule GymStudioWeb.Client.BookSessionLive do
 
   # Generate time slots based on operating hours for a given date
   defp generate_time_slots(nil), do: []
+
   defp generate_time_slots(date) do
     day_of_week = Date.day_of_week(date)
 
     case Map.get(@operating_hours, day_of_week) do
-      nil -> []
+      nil ->
+        []
+
       {start_hour, end_hour} ->
         Enum.map(start_hour..(end_hour - 1), fn hour ->
           %{
@@ -161,12 +174,25 @@ defmodule GymStudioWeb.Client.BookSessionLive do
           <%= if @client == nil do %>
             <div class="bg-white rounded-2xl shadow-lg p-8 text-center">
               <div class="text-amber-500 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-16 w-16 mx-auto"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
                 </svg>
               </div>
               <h2 class="text-xl font-semibold text-gray-800 mb-2">Profile Setup Required</h2>
-              <p class="text-gray-600">Your client profile is not set up yet. Please contact an administrator.</p>
+              <p class="text-gray-600">
+                Your client profile is not set up yet. Please contact an administrator.
+              </p>
             </div>
           <% else %>
             <!-- Progress Steps -->
@@ -185,13 +211,24 @@ defmodule GymStudioWeb.Client.BookSessionLive do
                 </div>
               </div>
             </div>
-
-            <!-- Step 1: Select Date -->
+            
+    <!-- Step 1: Select Date -->
             <div class={"bg-white rounded-2xl shadow-lg p-6 mb-6 #{if @step != 1, do: "opacity-60"}"}>
               <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-6 w-6 text-primary"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
                   </svg>
                   Select Date
                 </h2>
@@ -213,29 +250,40 @@ defmodule GymStudioWeb.Client.BookSessionLive do
                         class={"flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all min-w-[80px] #{if @selected_date == date, do: "border-primary bg-primary/10 text-primary", else: "border-gray-200 hover:border-primary/50"}"}
                       >
                         <span class="text-xs font-medium uppercase text-gray-500">
-                          <%= Calendar.strftime(date, "%a") %>
+                          {Calendar.strftime(date, "%a")}
                         </span>
                         <span class="text-2xl font-bold">
-                          <%= Calendar.strftime(date, "%d") %>
+                          {Calendar.strftime(date, "%d")}
                         </span>
                         <span class="text-xs text-gray-500">
-                          <%= Calendar.strftime(date, "%b") %>
+                          {Calendar.strftime(date, "%b")}
                         </span>
                       </button>
                     <% end %>
                   </div>
                 </div>
               <% else %>
-                <p class="text-gray-700 font-medium"><%= format_date_full(@selected_date) %></p>
+                <p class="text-gray-700 font-medium">{format_date_full(@selected_date)}</p>
               <% end %>
             </div>
-
-            <!-- Step 2: Select Time -->
+            
+    <!-- Step 2: Select Time -->
             <div class={"bg-white rounded-2xl shadow-lg p-6 mb-6 #{if @step < 2, do: "opacity-40 pointer-events-none"}"}>
               <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-6 w-6 text-primary"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                   Select Time
                 </h2>
@@ -258,7 +306,7 @@ defmodule GymStudioWeb.Client.BookSessionLive do
                         phx-value-slot={slot.value}
                         class={"py-3 px-4 rounded-xl border-2 text-center font-medium transition-all #{if @selected_slot == slot.value, do: "border-primary bg-primary text-white", else: "border-gray-200 hover:border-primary/50"}"}
                       >
-                        <%= slot.label %>
+                        {slot.label}
                       </button>
                     <% end %>
                   </div>
@@ -266,17 +314,30 @@ defmodule GymStudioWeb.Client.BookSessionLive do
               <% else %>
                 <%= if @selected_slot do %>
                   <p class="text-gray-700 font-medium">
-                    <%= format_time(String.to_integer(@selected_slot)) %> - <%= format_time(String.to_integer(@selected_slot) + 1) %>
+                    {format_time(String.to_integer(@selected_slot))} - {format_time(
+                      String.to_integer(@selected_slot) + 1
+                    )}
                   </p>
                 <% end %>
               <% end %>
             </div>
-
-            <!-- Step 3: Confirm Booking -->
+            
+    <!-- Step 3: Confirm Booking -->
             <div class={"bg-white rounded-2xl shadow-lg p-6 #{if @step < 3, do: "opacity-40 pointer-events-none"}"}>
               <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-6 w-6 text-primary"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 Confirm Booking
               </h2>
@@ -285,25 +346,49 @@ defmodule GymStudioWeb.Client.BookSessionLive do
                 <div class="bg-gray-50 rounded-xl p-4 mb-4">
                   <div class="flex items-center gap-4 mb-3">
                     <div class="bg-primary/10 p-3 rounded-lg">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-6 w-6 text-primary"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
                       </svg>
                     </div>
                     <div>
                       <p class="text-sm text-gray-500">Date</p>
-                      <p class="font-semibold text-gray-800"><%= format_date_full(@selected_date) %></p>
+                      <p class="font-semibold text-gray-800">{format_date_full(@selected_date)}</p>
                     </div>
                   </div>
                   <div class="flex items-center gap-4">
                     <div class="bg-primary/10 p-3 rounded-lg">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-6 w-6 text-primary"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                     </div>
                     <div>
                       <p class="text-sm text-gray-500">Time</p>
                       <p class="font-semibold text-gray-800">
-                        <%= format_time(String.to_integer(@selected_slot)) %> - <%= format_time(String.to_integer(@selected_slot) + 1) %>
+                        {format_time(String.to_integer(@selected_slot))} - {format_time(
+                          String.to_integer(@selected_slot) + 1
+                        )}
                       </p>
                     </div>
                   </div>
@@ -311,8 +396,19 @@ defmodule GymStudioWeb.Client.BookSessionLive do
 
                 <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
                   <div class="flex items-start gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5 text-blue-500 mt-0.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
                     </svg>
                     <p class="text-sm text-blue-700">
                       A trainer will be assigned to your session and you'll receive a notification once confirmed.

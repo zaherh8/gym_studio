@@ -28,7 +28,13 @@ defmodule GymStudio.Accounts.Client do
   """
   def changeset(client, attrs) do
     client
-    |> cast(attrs, [:user_id, :emergency_contact_name, :emergency_contact_phone, :health_notes, :goals])
+    |> cast(attrs, [
+      :user_id,
+      :emergency_contact_name,
+      :emergency_contact_phone,
+      :health_notes,
+      :goals
+    ])
     |> validate_required([:user_id])
     |> unique_constraint(:user_id)
     |> foreign_key_constraint(:user_id)

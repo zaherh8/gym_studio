@@ -26,13 +26,15 @@ defmodule GymStudioWeb.Admin.SessionsLive do
           <tbody>
             <%= for session <- @sessions do %>
               <tr>
-                <td><%= session.client.email %></td>
-                <td><%= Calendar.strftime(session.scheduled_at, "%Y-%m-%d %H:%M") %></td>
+                <td>{session.client.email}</td>
+                <td>{Calendar.strftime(session.scheduled_at, "%Y-%m-%d %H:%M")}</td>
                 <td>
-                  <span class={"badge #{status_badge_class(session.status)}"}><%= session.status %></span>
+                  <span class={"badge #{status_badge_class(session.status)}"}>{session.status}</span>
                 </td>
                 <td>
-                  <.link navigate={~p"/admin/sessions/#{session.id}"} class="btn btn-sm btn-ghost">View</.link>
+                  <.link navigate={~p"/admin/sessions/#{session.id}"} class="btn btn-sm btn-ghost">
+                    View
+                  </.link>
                 </td>
               </tr>
             <% end %>

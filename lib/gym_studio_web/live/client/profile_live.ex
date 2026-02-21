@@ -30,23 +30,23 @@ defmodule GymStudioWeb.Client.ProfileLive do
             <div class="space-y-4">
               <div>
                 <label class="text-sm text-base-content/70">Email</label>
-                <p class="font-medium"><%= @user.email %></p>
+                <p class="font-medium">{@user.email}</p>
               </div>
               <div>
                 <label class="text-sm text-base-content/70">Phone Number</label>
-                <p class="font-medium"><%= @user.phone_number || "Not set" %></p>
+                <p class="font-medium">{@user.phone_number || "Not set"}</p>
               </div>
               <div>
                 <label class="text-sm text-base-content/70">Account Status</label>
                 <p>
                   <span class={"badge #{if @user.active, do: "badge-success", else: "badge-error"}"}>
-                    <%= if @user.active, do: "Active", else: "Inactive" %>
+                    {if @user.active, do: "Active", else: "Inactive"}
                   </span>
                 </p>
               </div>
               <div>
                 <label class="text-sm text-base-content/70">Member Since</label>
-                <p class="font-medium"><%= Calendar.strftime(@user.inserted_at, "%B %d, %Y") %></p>
+                <p class="font-medium">{Calendar.strftime(@user.inserted_at, "%B %d, %Y")}</p>
               </div>
             </div>
             <div class="card-actions justify-end mt-4">
@@ -56,8 +56,8 @@ defmodule GymStudioWeb.Client.ProfileLive do
             </div>
           </div>
         </div>
-
-        <!-- Client Profile Card -->
+        
+    <!-- Client Profile Card -->
         <div class="card bg-base-100 shadow-xl">
           <div class="card-body">
             <h2 class="card-title">Client Profile</h2>
@@ -67,7 +67,7 @@ defmodule GymStudioWeb.Client.ProfileLive do
                   <label class="text-sm text-base-content/70">Emergency Contact</label>
                   <p class="font-medium">
                     <%= if @client.emergency_contact_name do %>
-                      <%= @client.emergency_contact_name %> — <%= @client.emergency_contact_phone %>
+                      {@client.emergency_contact_name} — {@client.emergency_contact_phone}
                     <% else %>
                       Not set
                     <% end %>
@@ -75,11 +75,11 @@ defmodule GymStudioWeb.Client.ProfileLive do
                 </div>
                 <div>
                   <label class="text-sm text-base-content/70">Health Notes</label>
-                  <p class="font-medium"><%= @client.health_notes || "None" %></p>
+                  <p class="font-medium">{@client.health_notes || "None"}</p>
                 </div>
                 <div>
                   <label class="text-sm text-base-content/70">Goals</label>
-                  <p class="font-medium"><%= @client.goals || "Not specified" %></p>
+                  <p class="font-medium">{@client.goals || "Not specified"}</p>
                 </div>
               </div>
             <% else %>
@@ -90,8 +90,8 @@ defmodule GymStudioWeb.Client.ProfileLive do
           </div>
         </div>
       </div>
-
-      <!-- Quick Links -->
+      
+    <!-- Quick Links -->
       <div class="card bg-base-100 shadow-xl mt-6">
         <div class="card-body">
           <h2 class="card-title">Quick Links</h2>

@@ -421,7 +421,9 @@ defmodule GymStudio.SchedulingTest do
 
     test "list_time_slots/1 with active_only option filters inactive slots" do
       active_slot = time_slot_fixture(%{active: true})
-      inactive_slot = time_slot_fixture(%{active: false, start_time: ~T[11:00:00], end_time: ~T[12:00:00]})
+
+      inactive_slot =
+        time_slot_fixture(%{active: false, start_time: ~T[11:00:00], end_time: ~T[12:00:00]})
 
       time_slots = Scheduling.list_time_slots(active_only: true)
       time_slot_ids = Enum.map(time_slots, & &1.id)
@@ -432,7 +434,9 @@ defmodule GymStudio.SchedulingTest do
 
     test "get_available_slots/1 returns slots for specific day" do
       monday_slot = time_slot_fixture(%{day_of_week: 1})
-      _tuesday_slot = time_slot_fixture(%{day_of_week: 2, start_time: ~T[11:00:00], end_time: ~T[12:00:00]})
+
+      _tuesday_slot =
+        time_slot_fixture(%{day_of_week: 2, start_time: ~T[11:00:00], end_time: ~T[12:00:00]})
 
       # Get a Monday (day_of_week = 1)
       monday_date = ~D[2026-02-02]
@@ -448,7 +452,12 @@ defmodule GymStudio.SchedulingTest do
       active_slot = time_slot_fixture(%{day_of_week: 1, active: true})
 
       _inactive_slot =
-        time_slot_fixture(%{day_of_week: 1, active: false, start_time: ~T[11:00:00], end_time: ~T[12:00:00]})
+        time_slot_fixture(%{
+          day_of_week: 1,
+          active: false,
+          start_time: ~T[11:00:00],
+          end_time: ~T[12:00:00]
+        })
 
       monday_date = ~D[2026-02-02]
       slots = Scheduling.get_available_slots(monday_date)

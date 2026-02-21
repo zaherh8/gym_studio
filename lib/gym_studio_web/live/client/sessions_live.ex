@@ -60,8 +60,8 @@ defmodule GymStudioWeb.Client.SessionsLive do
         <h1 class="text-3xl font-bold">My Sessions</h1>
         <.link navigate={~p"/client/book"} class="btn btn-primary">Book New Session</.link>
       </div>
-
-      <!-- Filters -->
+      
+    <!-- Filters -->
       <div class="tabs tabs-boxed mb-6 w-fit">
         <button
           phx-click="filter"
@@ -125,19 +125,24 @@ defmodule GymStudioWeb.Client.SessionsLive do
                 <tr>
                   <td>
                     <div class="font-medium">
-                      <%= Calendar.strftime(session.scheduled_at, "%B %d, %Y") %>
+                      {Calendar.strftime(session.scheduled_at, "%B %d, %Y")}
                     </div>
                     <div class="text-sm text-base-content/70">
-                      <%= Calendar.strftime(session.scheduled_at, "%H:%M") %>
+                      {Calendar.strftime(session.scheduled_at, "%H:%M")}
                     </div>
                   </td>
-                  <td><%= session.trainer.email %></td>
+                  <td>{session.trainer.email}</td>
                   <td>
-                    <span class={"badge #{status_badge_class(session.status)}"}><%= session.status %></span>
+                    <span class={"badge #{status_badge_class(session.status)}"}>
+                      {session.status}
+                    </span>
                   </td>
                   <td>
                     <div class="flex gap-2">
-                      <.link navigate={~p"/client/sessions/#{session.id}"} class="btn btn-ghost btn-xs">
+                      <.link
+                        navigate={~p"/client/sessions/#{session.id}"}
+                        class="btn btn-ghost btn-xs"
+                      >
                         View
                       </.link>
                       <%= if session.status in ["pending", "confirmed"] do %>

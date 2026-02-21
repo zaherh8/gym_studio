@@ -32,7 +32,9 @@ defmodule GymStudioWeb.Client.NotificationsLive do
 
     case Notifications.mark_as_read(notification) do
       {:ok, _notification} ->
-        notifications = Notifications.list_notifications_for_user(socket.assigns.current_scope.user.id)
+        notifications =
+          Notifications.list_notifications_for_user(socket.assigns.current_scope.user.id)
+
         {:noreply, assign(socket, notifications: notifications)}
 
       {:error, _} ->
@@ -74,10 +76,10 @@ defmodule GymStudioWeb.Client.NotificationsLive do
               <div class="card-body py-4">
                 <div class="flex justify-between items-start">
                   <div class="flex-1">
-                    <h3 class="font-semibold"><%= notification.title %></h3>
-                    <p class="text-base-content/70"><%= notification.message %></p>
+                    <h3 class="font-semibold">{notification.title}</h3>
+                    <p class="text-base-content/70">{notification.message}</p>
                     <p class="text-xs text-base-content/50 mt-2">
-                      <%= format_time_ago(notification.inserted_at) %>
+                      {format_time_ago(notification.inserted_at)}
                     </p>
                   </div>
                   <%= if !notification.read do %>

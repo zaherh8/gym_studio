@@ -42,20 +42,20 @@ defmodule GymStudioWeb.Client.PackagesLive do
               <div class={"card bg-base-100 shadow-xl #{if package.active, do: "border-2 border-primary"}"}>
                 <div class="card-body">
                   <div class="flex justify-between items-start">
-                    <h2 class="card-title"><%= package.package_type %> Sessions</h2>
+                    <h2 class="card-title">{package.package_type} Sessions</h2>
                     <span class={"badge #{if package.active, do: "badge-success", else: "badge-ghost"}"}>
-                      <%= if package.active, do: "Active", else: "Inactive" %>
+                      {if package.active, do: "Active", else: "Inactive"}
                     </span>
                   </div>
 
                   <div class="stat p-0 my-4">
                     <div class="stat-value text-primary">
-                      <%= package.remaining_sessions %>
+                      {package.remaining_sessions}
                     </div>
-                    <div class="stat-desc">of <%= package.total_sessions %> sessions remaining</div>
+                    <div class="stat-desc">of {package.total_sessions} sessions remaining</div>
                   </div>
-
-                  <!-- Progress bar -->
+                  
+    <!-- Progress bar -->
                   <div class="w-full bg-base-300 rounded-full h-2.5">
                     <div
                       class="bg-primary h-2.5 rounded-full"
@@ -65,9 +65,9 @@ defmodule GymStudioWeb.Client.PackagesLive do
                   </div>
 
                   <div class="mt-4 text-sm text-base-content/70">
-                    <p>Purchased: <%= Calendar.strftime(package.inserted_at, "%B %d, %Y") %></p>
+                    <p>Purchased: {Calendar.strftime(package.inserted_at, "%B %d, %Y")}</p>
                     <%= if package.expires_at do %>
-                      <p>Expires: <%= Calendar.strftime(package.expires_at, "%B %d, %Y") %></p>
+                      <p>Expires: {Calendar.strftime(package.expires_at, "%B %d, %Y")}</p>
                     <% end %>
                   </div>
                 </div>
@@ -76,8 +76,8 @@ defmodule GymStudioWeb.Client.PackagesLive do
           </div>
         <% end %>
       <% end %>
-
-      <!-- Package Info -->
+      
+    <!-- Package Info -->
       <div class="card bg-base-100 shadow-xl mt-8">
         <div class="card-body">
           <h2 class="card-title">Available Packages</h2>

@@ -309,7 +309,7 @@ defmodule GymStudio.Scheduling do
       end
 
     query
-    |> order_by([ts], [asc: ts.day_of_week, asc: ts.start_time])
+    |> order_by([ts], asc: ts.day_of_week, asc: ts.start_time)
     |> Repo.all()
   end
 

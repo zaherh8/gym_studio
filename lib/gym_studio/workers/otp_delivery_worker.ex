@@ -10,7 +10,9 @@ defmodule GymStudio.Workers.OtpDeliveryWorker do
   require Logger
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: %{"phone_number" => phone_number, "code" => code, "purpose" => purpose}}) do
+  def perform(%Oban.Job{
+        args: %{"phone_number" => phone_number, "code" => code, "purpose" => purpose}
+      }) do
     # In development, log the code to console
     # In production, replace this with actual SMS delivery
     Logger.info("""

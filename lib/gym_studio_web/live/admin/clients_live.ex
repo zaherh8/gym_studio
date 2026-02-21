@@ -25,10 +25,12 @@ defmodule GymStudioWeb.Admin.ClientsLive do
           <tbody>
             <%= for client <- @clients do %>
               <tr>
-                <td><%= client.user.email %></td>
-                <td><%= client.user.phone_number %></td>
+                <td>{client.user.email}</td>
+                <td>{client.user.phone_number}</td>
                 <td>
-                  <.link navigate={~p"/admin/clients/#{client.id}"} class="btn btn-sm btn-ghost">View</.link>
+                  <.link navigate={~p"/admin/clients/#{client.id}"} class="btn btn-sm btn-ghost">
+                    View
+                  </.link>
                 </td>
               </tr>
             <% end %>

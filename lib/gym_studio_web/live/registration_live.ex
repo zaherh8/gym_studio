@@ -27,7 +27,10 @@ defmodule GymStudioWeb.RegistrationLive do
      |> assign(:resend_countdown, 0)
      |> assign(:otp_error, nil)
      |> assign(:phone_error, nil)
-     |> assign(:form, to_form(%{"password" => "", "password_confirmation" => "", "email" => ""}, as: "user"))
+     |> assign(
+       :form,
+       to_form(%{"password" => "", "password_confirmation" => "", "email" => ""}, as: "user")
+     )
      |> assign(:check_errors, false)}
   end
 
@@ -38,14 +41,17 @@ defmodule GymStudioWeb.RegistrationLive do
         Create your account
         <:subtitle>
           <%= case @step do %>
-            <% :phone -> %>Enter your phone number to get started
-            <% :verify -> %>Enter the verification code
-            <% :password -> %>Set up your password
+            <% :phone -> %>
+              Enter your phone number to get started
+            <% :verify -> %>
+              Enter the verification code
+            <% :password -> %>
+              Set up your password
           <% end %>
         </:subtitle>
       </.header>
-
-      <!-- Progress Steps -->
+      
+    <!-- Progress Steps -->
       <ul class="steps steps-horizontal w-full mb-8">
         <li class={["step", @step in [:phone, :verify, :password] && "step-primary"]}>Phone</li>
         <li class={["step", @step in [:verify, :password] && "step-primary"]}>Verify</li>
@@ -97,7 +103,7 @@ defmodule GymStudioWeb.RegistrationLive do
             phx-change="change_country"
           >
             <%= for {label, value} <- PhoneUtils.country_options() do %>
-              <option value={value} selected={value == @country_code}><%= label %></option>
+              <option value={value} selected={value == @country_code}>{label}</option>
             <% end %>
           </select>
           <input
@@ -113,7 +119,7 @@ defmodule GymStudioWeb.RegistrationLive do
         </div>
         <p :if={@phone_error} class="mt-1.5 flex gap-2 items-center text-sm text-error">
           <.icon name="hero-exclamation-circle" class="size-5" />
-          <%= @phone_error %>
+          {@phone_error}
         </p>
       </div>
 
@@ -134,7 +140,8 @@ defmodule GymStudioWeb.RegistrationLive do
     ~H"""
     <div class="space-y-4">
       <div class="text-center text-sm text-base-content/70 mb-4">
-        We sent a code to <span class="font-semibold"><%= PhoneUtils.format_for_display(@phone_number) %></span>
+        We sent a code to
+        <span class="font-semibold">{PhoneUtils.format_for_display(@phone_number)}</span>
       </div>
 
       <form phx-submit="verify_code" class="space-y-4">
@@ -145,7 +152,10 @@ defmodule GymStudioWeb.RegistrationLive do
             name="otp_code"
             value={@otp_code}
             placeholder="Enter 6-digit code"
-            class={["input w-full text-center text-2xl tracking-[0.5em] font-mono", @otp_error && "input-error"]}
+            class={[
+              "input w-full text-center text-2xl tracking-[0.5em] font-mono",
+              @otp_error && "input-error"
+            ]}
             maxlength="6"
             inputmode="numeric"
             pattern="[0-9]*"
@@ -155,7 +165,7 @@ defmodule GymStudioWeb.RegistrationLive do
           />
           <p :if={@otp_error} class="mt-1.5 flex gap-2 items-center text-sm text-error">
             <.icon name="hero-exclamation-circle" class="size-5" />
-            <%= @otp_error %>
+            {@otp_error}
           </p>
         </div>
 
@@ -171,7 +181,7 @@ defmodule GymStudioWeb.RegistrationLive do
 
         <%= if @resend_countdown > 0 do %>
           <span class="text-base-content/50">
-            Resend in <%= @resend_countdown %>s
+            Resend in {@resend_countdown}s
           </span>
         <% else %>
           <button type="button" phx-click="resend_code" class="text-primary hover:underline">
@@ -189,7 +199,12 @@ defmodule GymStudioWeb.RegistrationLive do
 
   defp password_step(assigns) do
     ~H"""
-    <.form for={@form} phx-submit="complete_registration" phx-change="validate_password" class="space-y-4">
+    <.form
+      for={@form}
+      phx-submit="complete_registration"
+      phx-change="validate_password"
+      class="space-y-4"
+    >
       <.input
         field={@form[:password]}
         type="password"
@@ -246,7 +261,8 @@ defmodule GymStudioWeb.RegistrationLive do
 
       Accounts.phone_number_exists?(phone_number) ->
         # Generic error to prevent user enumeration
-        {:noreply, assign(socket, :phone_error, "Unable to send verification code. Please try again.")}
+        {:noreply,
+         assign(socket, :phone_error, "Unable to send verification code. Please try again.")}
 
       true ->
         case Accounts.create_otp_token(phone_number, "registration") do
@@ -267,7 +283,8 @@ defmodule GymStudioWeb.RegistrationLive do
             {:noreply, assign(socket, :phone_error, "Please wait before requesting a new code")}
 
           {:error, _} ->
-            {:noreply, assign(socket, :phone_error, "Unable to send verification code. Please try again.")}
+            {:noreply,
+             assign(socket, :phone_error, "Unable to send verification code. Please try again.")}
         end
     end
   end
@@ -339,7 +356,10 @@ defmodule GymStudioWeb.RegistrationLive do
   def handle_event("validate_password", %{"user" => user_params}, socket) do
     changeset =
       %User{}
-      |> Accounts.change_user_registration(user_params, validate_unique: false, hash_password: false)
+      |> Accounts.change_user_registration(user_params,
+        validate_unique: false,
+        hash_password: false
+      )
       |> Map.put(:action, :validate)
 
     {:noreply, assign(socket, :form, to_form(changeset, as: "user"))}

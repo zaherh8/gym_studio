@@ -35,7 +35,6 @@ defmodule GymStudioWeb.Endpoint do
     plug Phoenix.LiveReloader
     plug Phoenix.CodeReloader
     plug Phoenix.Ecto.CheckRepoStatus, otp_app: :gym_studio
-
   end
 
   plug Phoenix.LiveDashboard.RequestLogger,

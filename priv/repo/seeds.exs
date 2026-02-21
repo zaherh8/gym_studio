@@ -297,6 +297,7 @@ for hour <- [8, 9, 10, 11] do
     active: true
   })
 end
+
 IO.puts("  Time slots created for Saturday (morning only)")
 
 # =============================================================================
@@ -333,6 +334,7 @@ IO.puts("  Session 1: Alice with John (completed)")
 
 # Confirmed session for Alice with John (tomorrow)
 tomorrow = DateTime.utc_now() |> DateTime.add(1, :day) |> DateTime.truncate(:second)
+
 _session2 =
   SessionHelpers.insert_session!(%{
     client_id: client1_user.id,
@@ -349,6 +351,7 @@ IO.puts("  Session 2: Alice with John (confirmed - tomorrow)")
 
 # Pending session for Bob with Sarah (in 3 days)
 in_3_days = DateTime.utc_now() |> DateTime.add(3, :day) |> DateTime.truncate(:second)
+
 _session3 =
   SessionHelpers.insert_session!(%{
     client_id: client2_user.id,
@@ -362,6 +365,7 @@ IO.puts("  Session 3: Bob (pending - in 3 days)")
 
 # Confirmed session for Bob with Sarah (next week)
 next_week = DateTime.utc_now() |> DateTime.add(7, :day) |> DateTime.truncate(:second)
+
 _session4 =
   SessionHelpers.insert_session!(%{
     client_id: client2_user.id,
@@ -378,6 +382,7 @@ IO.puts("  Session 4: Bob with Sarah (confirmed - next week)")
 
 # Pending session for Carol with John (in 2 days)
 in_2_days = DateTime.utc_now() |> DateTime.add(2, :day) |> DateTime.truncate(:second)
+
 _session5 =
   SessionHelpers.insert_session!(%{
     client_id: client3_user.id,

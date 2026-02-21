@@ -564,6 +564,7 @@ defmodule GymStudio.Accounts do
   end
 
   defp filter_trainers_by_status(query, nil), do: query
+
   defp filter_trainers_by_status(query, status) do
     from(t in query, where: t.status == ^status)
   end
@@ -662,11 +663,13 @@ defmodule GymStudio.Accounts do
   end
 
   defp filter_users_by_role(query, nil), do: query
+
   defp filter_users_by_role(query, role) do
     from(u in query, where: u.role == ^role)
   end
 
   defp filter_users_by_active(query, nil), do: query
+
   defp filter_users_by_active(query, active) do
     from(u in query, where: u.active == ^active)
   end

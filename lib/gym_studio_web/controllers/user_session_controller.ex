@@ -5,14 +5,18 @@ defmodule GymStudioWeb.UserSessionController do
   alias GymStudioWeb.UserAuth
 
   def new(conn, _params) do
-    phone_number = get_in(conn.assigns, [:current_scope, Access.key(:user), Access.key(:phone_number)])
+    phone_number =
+      get_in(conn.assigns, [:current_scope, Access.key(:user), Access.key(:phone_number)])
+
     form = Phoenix.Component.to_form(%{"phone_number" => phone_number}, as: "user")
 
     render(conn, :new, form: form)
   end
 
   # phone_number + password login
-  def create(conn, %{"user" => %{"phone_number" => phone_number, "password" => password} = user_params}) do
+  def create(conn, %{
+        "user" => %{"phone_number" => phone_number, "password" => password} = user_params
+      }) do
     if user = Accounts.get_user_by_phone_number_and_password(phone_number, password) do
       conn
       |> put_flash(:info, "Welcome back!")

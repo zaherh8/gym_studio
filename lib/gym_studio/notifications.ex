@@ -97,7 +97,8 @@ defmodule GymStudio.Notifications do
     create_notification(%{
       user_id: user_id,
       title: "Profile Approved",
-      message: "Congratulations! Your trainer profile has been approved. You can now receive session assignments.",
+      message:
+        "Congratulations! Your trainer profile has been approved. You can now receive session assignments.",
       type: "trainer_approved",
       action_url: "/trainer/dashboard"
     })
@@ -216,7 +217,12 @@ defmodule GymStudio.Notifications do
   defp topic(user_id), do: "notifications:#{user_id}"
 
   defp broadcast_notification({:ok, notification} = result) do
-    Phoenix.PubSub.broadcast(@pubsub, topic(notification.user_id), {:new_notification, notification})
+    Phoenix.PubSub.broadcast(
+      @pubsub,
+      topic(notification.user_id),
+      {:new_notification, notification}
+    )
+
     result
   end
 

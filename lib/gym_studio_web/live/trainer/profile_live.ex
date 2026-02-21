@@ -30,23 +30,23 @@ defmodule GymStudioWeb.Trainer.ProfileLive do
             <div class="space-y-4">
               <div>
                 <label class="text-sm text-base-content/70">Email</label>
-                <p class="font-medium"><%= @user.email %></p>
+                <p class="font-medium">{@user.email}</p>
               </div>
               <div>
                 <label class="text-sm text-base-content/70">Phone Number</label>
-                <p class="font-medium"><%= @user.phone_number || "Not set" %></p>
+                <p class="font-medium">{@user.phone_number || "Not set"}</p>
               </div>
               <div>
                 <label class="text-sm text-base-content/70">Account Status</label>
                 <p>
                   <span class={"badge #{if @user.active, do: "badge-success", else: "badge-error"}"}>
-                    <%= if @user.active, do: "Active", else: "Inactive" %>
+                    {if @user.active, do: "Active", else: "Inactive"}
                   </span>
                 </p>
               </div>
               <div>
                 <label class="text-sm text-base-content/70">Member Since</label>
-                <p class="font-medium"><%= Calendar.strftime(@user.inserted_at, "%B %d, %Y") %></p>
+                <p class="font-medium">{Calendar.strftime(@user.inserted_at, "%B %d, %Y")}</p>
               </div>
             </div>
             <div class="card-actions justify-end mt-4">
@@ -56,8 +56,8 @@ defmodule GymStudioWeb.Trainer.ProfileLive do
             </div>
           </div>
         </div>
-
-        <!-- Trainer Profile Card -->
+        
+    <!-- Trainer Profile Card -->
         <div class="card bg-base-100 shadow-xl">
           <div class="card-body">
             <h2 class="card-title">Trainer Profile</h2>
@@ -67,13 +67,13 @@ defmodule GymStudioWeb.Trainer.ProfileLive do
                   <label class="text-sm text-base-content/70">Status</label>
                   <p>
                     <span class={"badge #{trainer_status_badge(@trainer.status)}"}>
-                      <%= String.capitalize(@trainer.status) %>
+                      {String.capitalize(@trainer.status)}
                     </span>
                   </p>
                 </div>
                 <div>
                   <label class="text-sm text-base-content/70">Bio</label>
-                  <p class="font-medium"><%= @trainer.bio || "Not set" %></p>
+                  <p class="font-medium">{@trainer.bio || "Not set"}</p>
                 </div>
                 <div>
                   <label class="text-sm text-base-content/70">Specializations</label>
@@ -82,7 +82,7 @@ defmodule GymStudioWeb.Trainer.ProfileLive do
                   <% else %>
                     <div class="flex flex-wrap gap-2 mt-1">
                       <%= for spec <- @trainer.specializations do %>
-                        <span class="badge badge-outline"><%= spec %></span>
+                        <span class="badge badge-outline">{spec}</span>
                       <% end %>
                     </div>
                   <% end %>
@@ -90,7 +90,7 @@ defmodule GymStudioWeb.Trainer.ProfileLive do
                 <%= if @trainer.approved_at do %>
                   <div>
                     <label class="text-sm text-base-content/70">Approved On</label>
-                    <p class="font-medium"><%= Calendar.strftime(@trainer.approved_at, "%B %d, %Y") %></p>
+                    <p class="font-medium">{Calendar.strftime(@trainer.approved_at, "%B %d, %Y")}</p>
                   </div>
                 <% end %>
               </div>
@@ -102,8 +102,8 @@ defmodule GymStudioWeb.Trainer.ProfileLive do
           </div>
         </div>
       </div>
-
-      <!-- Quick Links -->
+      
+    <!-- Quick Links -->
       <div class="card bg-base-100 shadow-xl mt-6">
         <div class="card-body">
           <h2 class="card-title">Quick Links</h2>

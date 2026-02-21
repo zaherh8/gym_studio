@@ -29,12 +29,12 @@ defmodule GymStudioWeb.Admin.PackagesLive do
           <tbody>
             <%= for package <- @packages do %>
               <tr>
-                <td><%= package.client.email %></td>
-                <td><%= package.package_type %></td>
-                <td><%= package.remaining_sessions %>/<%= package.total_sessions %></td>
+                <td>{package.client.email}</td>
+                <td>{package.package_type}</td>
+                <td>{package.remaining_sessions}/{package.total_sessions}</td>
                 <td>
                   <span class={"badge #{if package.active, do: "badge-success", else: "badge-ghost"}"}>
-                    <%= if package.active, do: "Active", else: "Inactive" %>
+                    {if package.active, do: "Active", else: "Inactive"}
                   </span>
                 </td>
               </tr>

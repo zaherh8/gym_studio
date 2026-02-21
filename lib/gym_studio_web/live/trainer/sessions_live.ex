@@ -151,18 +151,22 @@ defmodule GymStudioWeb.Trainer.SessionsLive do
                   <tr>
                     <td>
                       <div class="font-medium">
-                        <%= Calendar.strftime(session.scheduled_at, "%B %d, %Y") %>
+                        {Calendar.strftime(session.scheduled_at, "%B %d, %Y")}
                       </div>
                       <div class="text-sm text-base-content/70">
-                        <%= Calendar.strftime(session.scheduled_at, "%H:%M") %>
+                        {Calendar.strftime(session.scheduled_at, "%H:%M")}
                       </div>
                     </td>
                     <td>
-                      <div><%= session.client.user.email %></div>
-                      <div class="text-sm text-base-content/70"><%= session.client.user.phone_number %></div>
+                      <div>{session.client.user.email}</div>
+                      <div class="text-sm text-base-content/70">
+                        {session.client.user.phone_number}
+                      </div>
                     </td>
                     <td>
-                      <span class={"badge #{status_badge_class(session.status)}"}><%= session.status %></span>
+                      <span class={"badge #{status_badge_class(session.status)}"}>
+                        {session.status}
+                      </span>
                     </td>
                     <td>
                       <div class="flex gap-2">

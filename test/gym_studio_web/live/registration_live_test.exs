@@ -42,7 +42,9 @@ defmodule GymStudioWeb.RegistrationLiveTest do
 
     test "shows error for existing phone number", %{conn: conn} do
       # Create a user with a Lebanon phone number
-      phone = "71#{System.unique_integer([:positive]) |> rem(10_000_000) |> Integer.to_string() |> String.pad_leading(7, "0")}"
+      phone =
+        "71#{System.unique_integer([:positive]) |> rem(10_000_000) |> Integer.to_string() |> String.pad_leading(7, "0")}"
+
       full_phone = "+961#{phone}"
       _user = user_fixture(%{phone_number: full_phone})
 
@@ -72,7 +74,9 @@ defmodule GymStudioWeb.RegistrationLiveTest do
 
   describe "Verify step" do
     setup %{conn: conn} do
-      phone = "71#{System.unique_integer([:positive]) |> rem(10_000_000) |> Integer.to_string() |> String.pad_leading(7, "0")}"
+      phone =
+        "71#{System.unique_integer([:positive]) |> rem(10_000_000) |> Integer.to_string() |> String.pad_leading(7, "0")}"
+
       full_phone = "+961#{phone}"
 
       {:ok, lv, _html} = live(conn, ~p"/users/register")
@@ -116,7 +120,9 @@ defmodule GymStudioWeb.RegistrationLiveTest do
 
   describe "Full registration flow" do
     test "completes registration with valid data", %{conn: conn} do
-      phone = "71#{System.unique_integer([:positive]) |> rem(10_000_000) |> Integer.to_string() |> String.pad_leading(7, "0")}"
+      phone =
+        "71#{System.unique_integer([:positive]) |> rem(10_000_000) |> Integer.to_string() |> String.pad_leading(7, "0")}"
+
       full_phone = "+961#{phone}"
 
       {:ok, lv, _html} = live(conn, ~p"/users/register")
@@ -170,7 +176,9 @@ defmodule GymStudioWeb.RegistrationLiveTest do
     end
 
     test "creates account with optional email", %{conn: conn} do
-      phone = "71#{System.unique_integer([:positive]) |> rem(10_000_000) |> Integer.to_string() |> String.pad_leading(7, "0")}"
+      phone =
+        "71#{System.unique_integer([:positive]) |> rem(10_000_000) |> Integer.to_string() |> String.pad_leading(7, "0")}"
+
       full_phone = "+961#{phone}"
 
       {:ok, lv, _html} = live(conn, ~p"/users/register")
