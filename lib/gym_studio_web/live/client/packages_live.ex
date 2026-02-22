@@ -42,7 +42,7 @@ defmodule GymStudioWeb.Client.PackagesLive do
               <div class={"card bg-base-100 shadow-xl #{if package.active, do: "border-2 border-primary"}"}>
                 <div class="card-body">
                   <div class="flex justify-between items-start">
-                    <h2 class="card-title">{package.package_type} Sessions</h2>
+                    <h2 class="card-title">{format_package_type(package.package_type)}</h2>
                     <span class={"badge #{if package.active, do: "badge-success", else: "badge-ghost"}"}>
                       {if package.active, do: "Active", else: "Inactive"}
                     </span>
@@ -106,4 +106,9 @@ defmodule GymStudioWeb.Client.PackagesLive do
     </div>
     """
   end
+
+  defp format_package_type("standard_8"), do: "Starter (8 Sessions)"
+  defp format_package_type("standard_12"), do: "Standard (12 Sessions)"
+  defp format_package_type("premium_20"), do: "Premium (20 Sessions)"
+  defp format_package_type(type), do: type
 end

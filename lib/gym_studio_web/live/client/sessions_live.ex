@@ -131,7 +131,11 @@ defmodule GymStudioWeb.Client.SessionsLive do
                       {Calendar.strftime(session.scheduled_at, "%H:%M")}
                     </div>
                   </td>
-                  <td>{if session.trainer, do: session.trainer.email, else: "TBD"}</td>
+                  <td>
+                    {if session.trainer,
+                      do: session.trainer.name || session.trainer.email,
+                      else: "TBD"}
+                  </td>
                   <td>
                     <span class={"badge #{status_badge_class(session.status)}"}>
                       {session.status}

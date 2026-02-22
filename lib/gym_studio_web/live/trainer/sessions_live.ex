@@ -195,7 +195,9 @@ defmodule GymStudioWeb.Trainer.SessionsLive do
                   <div class="flex justify-between items-start">
                     <div>
                       <p class="font-semibold text-lg">{display_name(session.client)}</p>
-                      <p class="text-sm text-base-content/70">{session.client.email}</p>
+                      <p class="text-sm text-base-content/70">
+                        {session.client.name || session.client.email}
+                      </p>
                     </div>
                     <span class={"badge #{status_badge_class(session.status)}"}>
                       {session.status}
@@ -250,7 +252,9 @@ defmodule GymStudioWeb.Trainer.SessionsLive do
                     </td>
                     <td>
                       <div class="font-medium">{display_name(session.client)}</div>
-                      <div class="text-sm text-base-content/70">{session.client.email}</div>
+                      <div class="text-sm text-base-content/70">
+                        {session.client.name || session.client.email}
+                      </div>
                     </td>
                     <td>{session.duration_minutes} min</td>
                     <td>

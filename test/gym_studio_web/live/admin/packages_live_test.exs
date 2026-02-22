@@ -24,7 +24,7 @@ defmodule GymStudioWeb.Admin.PackagesLiveTest do
 
       assert html =~ "Manage Packages"
       assert html =~ "Package Client"
-      assert html =~ "standard_8"
+      assert html =~ "Starter (8 Sessions)"
       assert html =~ "Active"
     end
 

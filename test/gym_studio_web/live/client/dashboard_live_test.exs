@@ -102,7 +102,7 @@ defmodule GymStudioWeb.Client.DashboardLiveTest do
 
       {:ok, _view, html} = live(conn, ~p"/client")
 
-      assert html =~ trainer_user.email
+      assert html =~ (trainer_user.name || trainer_user.email)
       assert html =~ "Confirmed"
     end
 

@@ -294,7 +294,7 @@ defmodule GymStudioWeb.Client.DashboardLive do
                         </p>
                         <%= if session.trainer do %>
                           <p class="text-sm text-gray-500 mt-1">
-                            with {session.trainer.email}
+                            with {session.trainer.name || session.trainer.email}
                           </p>
                         <% end %>
                       </div>

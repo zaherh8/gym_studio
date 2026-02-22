@@ -125,7 +125,7 @@ defmodule GymStudioWeb.Admin.PackagesLive do
               <tr :for={package <- @packages} class="hover">
                 <td>{package.client.name || package.client.email || package.client.phone_number}</td>
                 <td>
-                  <span class="badge badge-outline">{package.package_type}</span>
+                  <span class="badge badge-outline">{format_package_type(package.package_type)}</span>
                 </td>
                 <td>
                   <div class="flex items-center gap-2">
@@ -182,4 +182,9 @@ defmodule GymStudioWeb.Admin.PackagesLive do
       true -> "progress-success"
     end
   end
+
+  defp format_package_type("standard_8"), do: "Starter (8 Sessions)"
+  defp format_package_type("standard_12"), do: "Standard (12 Sessions)"
+  defp format_package_type("premium_20"), do: "Premium (20 Sessions)"
+  defp format_package_type(type), do: type
 end
