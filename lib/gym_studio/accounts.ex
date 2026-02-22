@@ -274,6 +274,33 @@ defmodule GymStudio.Accounts do
     |> Repo.delete_all()
   end
 
+  @doc """
+  Resets a user's password by phone number.
+
+  This should only be called after the phone number has been verified via OTP.
+  Deletes all existing session tokens for the user.
+
+  ## Examples
+
+      iex> reset_user_password_by_phone("+9611234567", %{password: "new_password123", password_confirmation: "new_password123"})
+      {:ok, %User{}}
+
+      iex> reset_user_password_by_phone("+0000000000", %{password: "new_password123"})
+      {:error, :user_not_found}
+  """
+  def reset_user_password_by_phone(phone_number, attrs) do
+    case get_user_by_phone_number(phone_number) do
+      nil ->
+        {:error, :user_not_found}
+
+      user ->
+        case update_user_password(user, attrs) do
+          {:ok, {user, _expired_tokens}} -> {:ok, user}
+          {:error, changeset} -> {:error, changeset}
+        end
+    end
+  end
+
   ## Settings
 
   @doc """

@@ -99,6 +99,7 @@ defmodule GymStudioWeb.Router do
     live_session :registration,
       on_mount: [{GymStudioWeb.UserAuth, :redirect_if_authenticated}] do
       live "/users/register", RegistrationLive, :index
+      live "/users/forgot-password", ForgotPasswordLive, :index
     end
   end
 

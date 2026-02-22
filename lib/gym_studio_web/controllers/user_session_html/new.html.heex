@@ -73,9 +73,12 @@
               />
               <span class="label-text">Remember me</span>
             </label>
-            <span class="text-sm text-base-content/40 cursor-not-allowed" title="Coming soon">
+            <.link
+              navigate={~p"/users/forgot-password"}
+              class="text-sm text-primary hover:underline"
+            >
               Forgot password?
-            </span>
+            </.link>
           </div>
 
           <.button type="submit" class="btn btn-primary w-full">
