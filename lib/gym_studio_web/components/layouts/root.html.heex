@@ -101,6 +101,19 @@
               <span class="text-sm sm:text-base text-gray-600 hidden sm:inline">
                 {@current_scope.user.name || @current_scope.user.email}
               </span>
+              <%!-- Dashboard Link --%>
+              <.link
+                href={
+                  cond do
+                    @current_scope.user.role == :admin -> ~p"/admin"
+                    @current_scope.user.role == :trainer -> ~p"/trainer"
+                    true -> ~p"/client"
+                  end
+                }
+                class="btn btn-ghost btn-sm sm:btn-md rounded-full text-gray-700 hover:text-white hover:bg-primary hidden sm:inline-flex"
+              >
+                Dashboard
+              </.link>
               <%!-- Notification Bell --%>
               <.link
                 href={
