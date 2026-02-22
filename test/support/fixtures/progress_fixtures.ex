@@ -28,4 +28,18 @@ defmodule GymStudio.ProgressFixtures do
 
     exercise
   end
+
+  def exercise_log_fixture(attrs \\ %{}) do
+    {:ok, log} =
+      attrs
+      |> Enum.into(%{
+        "sets" => 3,
+        "reps" => 10,
+        "weight_kg" => Decimal.new("50.0"),
+        "order" => 0
+      })
+      |> Progress.create_exercise_log()
+
+    log
+  end
 end

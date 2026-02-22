@@ -6,6 +6,8 @@ defmodule GymStudio.ProgressTest do
 
   import GymStudio.AccountsFixtures
   import GymStudio.ProgressFixtures
+  import GymStudio.PackagesFixtures
+  import GymStudio.SchedulingFixtures
 
   describe "exercises" do
     test "list_exercises/0 returns all exercises" do
@@ -118,6 +120,12 @@ defmodule GymStudio.ProgressTest do
       assert exercise in results
     end
 
+    test "search_exercises/1 escapes ILIKE wildcards" do
+      exercise = exercise_fixture(%{"name" => "100% Effort Exercise"})
+      results = Progress.search_exercises("100%")
+      assert exercise in results
+    end
+
     test "list_categories/0 returns categories" do
       assert "strength" in Progress.list_categories()
       assert "cardio" in Progress.list_categories()
@@ -129,6 +137,199 @@ defmodule GymStudio.ProgressTest do
 
     test "list_equipment/0 returns equipment" do
       assert "barbell" in Progress.list_equipment()
+    end
+  end
+
+  describe "exercise_logs" do
+    setup do
+      trainer_user = user_fixture(%{role: :trainer})
+      admin = user_fixture(%{role: :admin})
+      client_user = user_fixture(%{role: :client})
+      _client = client_fixture(%{user_id: client_user.id})
+
+      package =
+        package_fixture(%{
+          client_id: client_user.id,
+          assigned_by_id: admin.id,
+          package_type: "standard_12"
+        })
+
+      session =
+        training_session_fixture(%{
+          client_id: client_user.id,
+          trainer_id: trainer_user.id,
+          package_id: package.id,
+          status: "confirmed"
+        })
+
+      exercise = exercise_fixture(%{"name" => "Test Bench Press"})
+
+      %{
+        trainer_user: trainer_user,
+        client_user: client_user,
+        session: session,
+        exercise: exercise
+      }
+    end
+
+    test "create_exercise_log/1 creates a log", %{
+      session: session,
+      exercise: exercise,
+      trainer_user: trainer,
+      client_user: client
+    } do
+      attrs = %{
+        "training_session_id" => session.id,
+        "exercise_id" => exercise.id,
+        "client_id" => client.id,
+        "logged_by_id" => trainer.id,
+        "sets" => 3,
+        "reps" => 10,
+        "weight_kg" => "50.0",
+        "order" => 0
+      }
+
+      assert {:ok, log} = Progress.create_exercise_log(attrs)
+      assert log.sets == 3
+      assert log.reps == 10
+    end
+
+    test "create_exercise_log/1 requires at least one metric", %{
+      session: session,
+      exercise: exercise,
+      trainer_user: trainer,
+      client_user: client
+    } do
+      attrs = %{
+        "training_session_id" => session.id,
+        "exercise_id" => exercise.id,
+        "client_id" => client.id,
+        "logged_by_id" => trainer.id,
+        "order" => 0
+      }
+
+      assert {:error, changeset} = Progress.create_exercise_log(attrs)
+      assert errors_on(changeset)[:sets] != nil
+    end
+
+    test "list_exercise_logs/1 returns ordered logs", %{
+      session: session,
+      exercise: exercise,
+      trainer_user: trainer,
+      client_user: client
+    } do
+      base = %{
+        "training_session_id" => session.id,
+        "exercise_id" => exercise.id,
+        "client_id" => client.id,
+        "logged_by_id" => trainer.id,
+        "sets" => 3,
+        "reps" => 10
+      }
+
+      {:ok, _log1} = Progress.create_exercise_log(Map.put(base, "order", 1))
+      {:ok, _log0} = Progress.create_exercise_log(Map.put(base, "order", 0))
+
+      logs = Progress.list_exercise_logs(session.id)
+      assert length(logs) == 2
+      assert Enum.at(logs, 0).order == 0
+      assert Enum.at(logs, 1).order == 1
+    end
+
+    test "update_exercise_log/2 updates a log", %{
+      session: session,
+      exercise: exercise,
+      trainer_user: trainer,
+      client_user: client
+    } do
+      {:ok, log} =
+        Progress.create_exercise_log(%{
+          "training_session_id" => session.id,
+          "exercise_id" => exercise.id,
+          "client_id" => client.id,
+          "logged_by_id" => trainer.id,
+          "sets" => 3,
+          "reps" => 10,
+          "order" => 0
+        })
+
+      assert {:ok, updated} = Progress.update_exercise_log(log, %{"sets" => 5})
+      assert updated.sets == 5
+    end
+
+    test "delete_exercise_log/1 deletes a log", %{
+      session: session,
+      exercise: exercise,
+      trainer_user: trainer,
+      client_user: client
+    } do
+      {:ok, log} =
+        Progress.create_exercise_log(%{
+          "training_session_id" => session.id,
+          "exercise_id" => exercise.id,
+          "client_id" => client.id,
+          "logged_by_id" => trainer.id,
+          "sets" => 3,
+          "reps" => 10,
+          "order" => 0
+        })
+
+      assert {:ok, _} = Progress.delete_exercise_log(log)
+      assert_raise Ecto.NoResultsError, fn -> Progress.get_exercise_log!(log.id) end
+    end
+
+    test "get_personal_records/1 returns best weight per exercise", %{
+      session: session,
+      exercise: exercise,
+      trainer_user: trainer,
+      client_user: client
+    } do
+      base = %{
+        "training_session_id" => session.id,
+        "exercise_id" => exercise.id,
+        "client_id" => client.id,
+        "logged_by_id" => trainer.id,
+        "sets" => 3,
+        "reps" => 10,
+        "order" => 0
+      }
+
+      {:ok, _} = Progress.create_exercise_log(Map.put(base, "weight_kg", "50.0"))
+
+      {:ok, _} =
+        Progress.create_exercise_log(Map.merge(base, %{"weight_kg" => "80.0", "order" => 1}))
+
+      records = Progress.get_personal_records(client.id)
+      assert length(records) == 1
+      record = hd(records)
+      assert record.exercise_name == "Test Bench Press"
+      assert Decimal.equal?(record.max_weight_kg, Decimal.new("80.0"))
+    end
+
+    test "reorder_exercise_logs/2 updates order", %{
+      session: session,
+      exercise: exercise,
+      trainer_user: trainer,
+      client_user: client
+    } do
+      base = %{
+        "training_session_id" => session.id,
+        "exercise_id" => exercise.id,
+        "client_id" => client.id,
+        "logged_by_id" => trainer.id,
+        "sets" => 3,
+        "reps" => 10
+      }
+
+      {:ok, log0} = Progress.create_exercise_log(Map.put(base, "order", 0))
+      {:ok, log1} = Progress.create_exercise_log(Map.put(base, "order", 1))
+
+      # Reverse order
+      assert {:ok, _} = Progress.reorder_exercise_logs(session.id, [log1.id, log0.id])
+
+      logs = Progress.list_exercise_logs(session.id)
+      assert Enum.at(logs, 0).id == log1.id
+      assert Enum.at(logs, 1).id == log0.id
     end
   end
 end

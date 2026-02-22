@@ -353,6 +353,9 @@ defmodule GymStudioWeb.Trainer.SessionsLive do
       </button>
     <% end %>
     <%= if @session.status == "confirmed" do %>
+      <.link navigate={~p"/trainer/sessions/#{@session.id}/log"} class="btn btn-accent btn-xs">
+        Log Exercises
+      </.link>
       <button
         phx-click="open_complete_modal"
         phx-value-session_id={@session.id}
@@ -367,6 +370,11 @@ defmodule GymStudioWeb.Trainer.SessionsLive do
       >
         Cancel
       </button>
+    <% end %>
+    <%= if @session.status == "completed" do %>
+      <.link navigate={~p"/trainer/sessions/#{@session.id}/log"} class="btn btn-accent btn-xs">
+        Log Exercises
+      </.link>
     <% end %>
     """
   end
