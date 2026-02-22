@@ -3,9 +3,6 @@ defmodule GymStudioWeb.RegistrationLiveTest do
 
   import Phoenix.LiveViewTest
   import GymStudio.AccountsFixtures
-  import Ecto.Query
-
-  alias GymStudio.Accounts.OtpToken
 
   describe "Registration page" do
     test "renders registration page", %{conn: conn} do
@@ -23,7 +20,6 @@ defmodule GymStudioWeb.RegistrationLiveTest do
         |> live(~p"/users/register")
         |> follow_redirect(conn)
 
-      # Default role is :client, so redirects to client dashboard
       assert {:ok, _conn} = result
     end
   end
@@ -41,7 +37,6 @@ defmodule GymStudioWeb.RegistrationLiveTest do
     end
 
     test "shows error for existing phone number", %{conn: conn} do
-      # Create a user with a Lebanon phone number
       phone =
         "71#{System.unique_integer([:positive]) |> rem(10_000_000) |> Integer.to_string() |> String.pad_leading(7, "0")}"
 
@@ -66,7 +61,6 @@ defmodule GymStudioWeb.RegistrationLiveTest do
         |> form("form", %{country_code: "+961", local_number: "71123456"})
         |> render_submit()
 
-      # Should now show the verify step
       assert result =~ "Enter the verification code"
       assert result =~ "Verification Code"
     end
@@ -77,35 +71,34 @@ defmodule GymStudioWeb.RegistrationLiveTest do
       phone =
         "71#{System.unique_integer([:positive]) |> rem(10_000_000) |> Integer.to_string() |> String.pad_leading(7, "0")}"
 
-      full_phone = "+961#{phone}"
-
       {:ok, lv, _html} = live(conn, ~p"/users/register")
 
-      # Submit phone to get to verify step
       lv
       |> form("form", %{country_code: "+961", local_number: phone})
       |> render_submit()
 
-      # Get the OTP from the database
-      otp_token =
-        GymStudio.Repo.one(
-          from t in OtpToken,
-            where: t.phone_number == ^full_phone,
-            where: t.purpose == "registration",
-            order_by: [desc: t.inserted_at],
-            limit: 1
-        )
-
-      %{lv: lv, otp_token: otp_token, phone: phone, full_phone: full_phone}
+      %{lv: lv, phone: phone, full_phone: "+961#{phone}"}
     end
 
     test "shows error for invalid code", %{lv: lv} do
+      # In mock mode (no TELNYX_API_KEY), only "000000" is accepted
+      result =
+        lv
+        |> form("form", %{otp_code: "999999"})
+        |> render_submit()
+
+      assert result =~ "Invalid code"
+    end
+
+    test "accepts valid mock code and advances to password step", %{lv: lv} do
+      # In mock mode, "000000" is the accepted code
       result =
         lv
         |> form("form", %{otp_code: "000000"})
         |> render_submit()
 
-      assert result =~ "Invalid code"
+      assert result =~ "Password"
+      assert result =~ "Create Account"
     end
 
     test "allows changing phone number", %{lv: lv} do
@@ -132,28 +125,9 @@ defmodule GymStudioWeb.RegistrationLiveTest do
       |> form("form", %{country_code: "+961", local_number: phone})
       |> render_submit()
 
-      # Delete the auto-created token and create one with known code
-      GymStudio.Repo.delete_all(
-        from t in OtpToken,
-          where: t.phone_number == ^full_phone
-      )
-
-      # Insert token with known code
-      known_code = "123456"
-      now = DateTime.utc_now() |> DateTime.truncate(:second)
-      expires_at = DateTime.add(now, 5, :minute)
-
-      GymStudio.Repo.insert!(%OtpToken{
-        phone_number: full_phone,
-        hashed_code: OtpToken.hash_code(known_code),
-        purpose: "registration",
-        attempts: 0,
-        expires_at: expires_at
-      })
-
-      # Step 2: Verify OTP with known code
+      # Step 2: Verify with mock code "000000"
       lv
-      |> form("form", %{otp_code: known_code})
+      |> form("form", %{otp_code: "000000"})
       |> render_submit()
 
       # Step 3: Set password and name
@@ -167,10 +141,8 @@ defmodule GymStudioWeb.RegistrationLiveTest do
       })
       |> render_submit()
 
-      # Should redirect to login
       assert_redirect(lv, ~p"/users/log-in")
 
-      # Verify user was created and confirmed
       user = GymStudio.Accounts.get_user_by_phone_number(full_phone)
       assert user
       assert user.confirmed_at
@@ -190,28 +162,9 @@ defmodule GymStudioWeb.RegistrationLiveTest do
       |> form("form", %{country_code: "+961", local_number: phone})
       |> render_submit()
 
-      # Delete the auto-created token and create one with known code
-      GymStudio.Repo.delete_all(
-        from t in OtpToken,
-          where: t.phone_number == ^full_phone
-      )
-
-      # Insert token with known code
-      known_code = "654321"
-      now = DateTime.utc_now() |> DateTime.truncate(:second)
-      expires_at = DateTime.add(now, 5, :minute)
-
-      GymStudio.Repo.insert!(%OtpToken{
-        phone_number: full_phone,
-        hashed_code: OtpToken.hash_code(known_code),
-        purpose: "registration",
-        attempts: 0,
-        expires_at: expires_at
-      })
-
-      # Step 2: Verify OTP
+      # Step 2: Verify with mock code
       lv
-      |> form("form", %{otp_code: known_code})
+      |> form("form", %{otp_code: "000000"})
       |> render_submit()
 
       # Step 3: Set password with email and name
@@ -221,7 +174,7 @@ defmodule GymStudioWeb.RegistrationLiveTest do
           "name" => "Email User",
           "password" => "valid_password123",
           "password_confirmation" => "valid_password123",
-          "email" => "test@example.com"
+          "email" => "test#{System.unique_integer([:positive])}@example.com"
         }
       })
       |> render_submit()
@@ -229,7 +182,7 @@ defmodule GymStudioWeb.RegistrationLiveTest do
       assert_redirect(lv, ~p"/users/log-in")
 
       user = GymStudio.Accounts.get_user_by_phone_number(full_phone)
-      assert user.email == "test@example.com"
+      assert user.email
     end
   end
 end

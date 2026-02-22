@@ -275,11 +275,9 @@ defmodule GymStudioWeb.RegistrationLive do
          assign(socket, :phone_error, "Unable to send verification code. Please try again.")}
 
       true ->
-        case Accounts.create_otp_token(phone_number, "registration") do
-          {:ok, otp_token} ->
-            # Schedule OTP delivery
-            Accounts.deliver_otp(phone_number, otp_token.code, "registration")
-
+        # Send verification via Telnyx Verify API
+        case GymStudio.SMS.Telnyx.send_verification(phone_number) do
+          {:ok, _verification_id} ->
             {:noreply,
              socket
              |> assign(:phone_number, phone_number)
@@ -289,10 +287,7 @@ defmodule GymStudioWeb.RegistrationLive do
              |> assign(:phone_error, nil)
              |> start_resend_countdown()}
 
-          {:error, :cooldown_active} ->
-            {:noreply, assign(socket, :phone_error, "Please wait before requesting a new code")}
-
-          {:error, _} ->
+          {:error, _reason} ->
             {:noreply,
              assign(socket, :phone_error, "Unable to send verification code. Please try again.")}
         end
@@ -308,8 +303,9 @@ defmodule GymStudioWeb.RegistrationLive do
   def handle_event("verify_code", %{"otp_code" => otp_code}, socket) do
     cleaned_code = String.replace(otp_code, ~r/[^\d]/, "")
 
-    case Accounts.verify_otp(socket.assigns.phone_number, cleaned_code, "registration") do
-      {:ok, _otp_token} ->
+    # Use Telnyx Verify API for code verification
+    case GymStudio.SMS.Telnyx.verify_code(socket.assigns.phone_number, cleaned_code) do
+      :ok ->
         {:noreply,
          socket
          |> assign(:step, :password)
@@ -317,15 +313,6 @@ defmodule GymStudioWeb.RegistrationLive do
 
       {:error, :invalid_code} ->
         {:noreply, assign(socket, :otp_error, "Invalid code. Please try again.")}
-
-      {:error, :expired} ->
-        {:noreply, assign(socket, :otp_error, "Code expired. Please request a new one.")}
-
-      {:error, :max_attempts_exceeded} ->
-        {:noreply, assign(socket, :otp_error, "Too many attempts. Please request a new code.")}
-
-      {:error, :not_found} ->
-        {:noreply, assign(socket, :otp_error, "Code not found. Please request a new one.")}
 
       {:error, _} ->
         {:noreply, assign(socket, :otp_error, "Verification failed. Please try again.")}
@@ -344,18 +331,13 @@ defmodule GymStudioWeb.RegistrationLive do
     if socket.assigns.resend_countdown > 0 do
       {:noreply, socket}
     else
-      case Accounts.create_otp_token(socket.assigns.phone_number, "registration") do
-        {:ok, otp_token} ->
-          Accounts.deliver_otp(socket.assigns.phone_number, otp_token.code, "registration")
-
+      case GymStudio.SMS.Telnyx.send_verification(socket.assigns.phone_number) do
+        {:ok, _verification_id} ->
           {:noreply,
            socket
            |> assign(:otp_error, nil)
            |> start_resend_countdown()
            |> put_flash(:info, "A new code has been sent")}
-
-        {:error, :cooldown_active} ->
-          {:noreply, assign(socket, :otp_error, "Please wait before requesting a new code")}
 
         {:error, _} ->
           {:noreply, assign(socket, :otp_error, "Unable to send code. Please try again.")}

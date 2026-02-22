@@ -1,9 +1,6 @@
 defmodule GymStudio.Workers.OtpDeliveryWorker do
   @moduledoc """
-  Oban worker for delivering OTP codes via SMS.
-
-  Currently logs to console for development. In production,
-  this should be integrated with an SMS provider (e.g., Twilio, Nexmo).
+  Oban worker for delivering OTP codes via Telnyx SMS.
   """
   use Oban.Worker, queue: :notifications, max_attempts: 3
 
@@ -11,28 +8,17 @@ defmodule GymStudio.Workers.OtpDeliveryWorker do
 
   @impl Oban.Worker
   def perform(%Oban.Job{
-        args: %{"phone_number" => phone_number, "code" => code, "purpose" => purpose}
+        args: %{"phone_number" => phone_number, "code" => _code, "purpose" => purpose}
       }) do
-    # In development, log the code to console
-    # In production, replace this with actual SMS delivery
-    Logger.info("""
-    ==========================================
-    OTP Code Delivery
-    ==========================================
-    Phone: #{phone_number}
-    Code: #{code}
-    Purpose: #{purpose}
-    ==========================================
-    """)
+    Logger.info("[OTP] Sending verification to #{phone_number} for #{purpose}")
 
-    # TODO: Integrate with SMS provider
-    # Example with Twilio:
-    # ExTwilio.Message.create(%{
-    #   to: phone_number,
-    #   from: System.get_env("TWILIO_PHONE_NUMBER"),
-    #   body: "Your GymStudio verification code is: #{code}"
-    # })
+    case GymStudio.SMS.Telnyx.send_verification(phone_number) do
+      {:ok, _verification_id} ->
+        :ok
 
-    :ok
+      {:error, reason} ->
+        Logger.error("[OTP] Failed to send to #{phone_number}: #{inspect(reason)}")
+        {:error, reason}
+    end
   end
 end
