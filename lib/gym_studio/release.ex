@@ -34,6 +34,21 @@ defmodule GymStudio.Release do
     end
   end
 
+  def seed_exercises do
+    load_app()
+
+    for repo <- repos() do
+      {:ok, _, _} =
+        Ecto.Migrator.with_repo(repo, fn _repo ->
+          seed_file = Application.app_dir(@app, "priv/repo/exercise_seeds.exs")
+
+          if File.exists?(seed_file) do
+            Code.eval_file(seed_file)
+          end
+        end)
+    end
+  end
+
   defp repos do
     Application.fetch_env!(@app, :ecto_repos)
   end
