@@ -88,21 +88,25 @@ defmodule GymStudioWeb.Trainer.SessionLogLive do
   end
 
   def handle_event("update_log", %{"log_id" => log_id} = params, socket) do
-    with {:ok, log} <- authorize_log(log_id, socket) do
-      attrs =
-        params
-        |> Map.drop(["log_id"])
-        |> Enum.reject(fn {_k, v} -> v == "" end)
-        |> Map.new()
+    case authorize_log(log_id, socket) do
+      {:ok, log} ->
+        attrs =
+          params
+          |> Map.drop(["log_id"])
+          |> Enum.reject(fn {_k, v} -> v == "" end)
+          |> Map.new()
 
-      case Progress.update_exercise_log(log, attrs) do
-        {:ok, _log} ->
-          logs = Progress.list_exercise_logs(socket.assigns.session.id)
-          {:noreply, assign(socket, logs: logs)}
+        case Progress.update_exercise_log(log, attrs) do
+          {:ok, _log} ->
+            logs = Progress.list_exercise_logs(socket.assigns.session.id)
+            {:noreply, assign(socket, logs: logs)}
 
-        {:error, _changeset} ->
-          {:noreply, put_flash(socket, :error, "Could not update exercise log")}
-      end
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Could not update exercise log")}
+        end
+
+      {:error, :unauthorized} ->
+        {:noreply, put_flash(socket, :error, "Not authorized")}
     end
   end
 
@@ -116,28 +120,36 @@ defmodule GymStudioWeb.Trainer.SessionLogLive do
   end
 
   def handle_event("save_notes", %{"notes" => notes, "log_id" => log_id}, socket) do
-    with {:ok, log} <- authorize_log(log_id, socket) do
-      case Progress.update_exercise_log(log, %{"notes" => notes}) do
-        {:ok, _log} ->
-          logs = Progress.list_exercise_logs(socket.assigns.session.id)
-          {:noreply, assign(socket, logs: logs, editing_log_id: nil, edit_notes: "")}
+    case authorize_log(log_id, socket) do
+      {:ok, log} ->
+        case Progress.update_exercise_log(log, %{"notes" => notes}) do
+          {:ok, _log} ->
+            logs = Progress.list_exercise_logs(socket.assigns.session.id)
+            {:noreply, assign(socket, logs: logs, editing_log_id: nil, edit_notes: "")}
 
-        {:error, _changeset} ->
-          {:noreply, put_flash(socket, :error, "Could not update notes")}
-      end
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Could not update notes")}
+        end
+
+      {:error, :unauthorized} ->
+        {:noreply, put_flash(socket, :error, "Not authorized")}
     end
   end
 
   def handle_event("delete_log", %{"log_id" => log_id}, socket) do
-    with {:ok, log} <- authorize_log(log_id, socket) do
-      case Progress.delete_exercise_log(log) do
-        {:ok, _} ->
-          logs = Progress.list_exercise_logs(socket.assigns.session.id)
-          {:noreply, assign(socket, logs: logs)}
+    case authorize_log(log_id, socket) do
+      {:ok, log} ->
+        case Progress.delete_exercise_log(log) do
+          {:ok, _} ->
+            logs = Progress.list_exercise_logs(socket.assigns.session.id)
+            {:noreply, assign(socket, logs: logs)}
 
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, "Could not delete exercise log")}
-      end
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, "Could not delete exercise log")}
+        end
+
+      {:error, :unauthorized} ->
+        {:noreply, put_flash(socket, :error, "Not authorized")}
     end
   end
 
@@ -189,16 +201,17 @@ defmodule GymStudioWeb.Trainer.SessionLogLive do
       <%= if @show_search do %>
         <div class="card bg-base-100 shadow-md mb-6">
           <div class="card-body p-4">
-            <input
-              type="text"
-              placeholder="Search exercises..."
-              value={@search_query}
-              phx-keyup="search_exercises"
-              phx-value-query={@search_query}
-              class="input input-bordered w-full"
-              phx-debounce="300"
-              autofocus
-            />
+            <form phx-change="search_exercises">
+              <input
+                type="text"
+                name="query"
+                placeholder="Search exercises..."
+                value={@search_query}
+                class="input input-bordered w-full"
+                phx-debounce="300"
+                autofocus
+              />
+            </form>
             <%= if @search_results != [] do %>
               <ul class="menu bg-base-200 rounded-box mt-2 max-h-60 overflow-y-auto">
                 <%= for exercise <- @search_results do %>
@@ -315,7 +328,7 @@ defmodule GymStudioWeb.Trainer.SessionLogLive do
     if log.training_session_id == socket.assigns.session.id do
       {:ok, log}
     else
-      {:noreply, put_flash(socket, :error, "Not authorized")}
+      {:error, :unauthorized}
     end
   end
 

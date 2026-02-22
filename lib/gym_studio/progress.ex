@@ -131,15 +131,17 @@ defmodule GymStudio.Progress do
   Returns personal records for a specific exercise (compat with old API).
   """
   def get_personal_records(client_id, exercise_id) do
-    base =
+    result =
       ExerciseLog
       |> where([l], l.client_id == ^client_id and l.exercise_id == ^exercise_id)
+      |> select([l], %{
+        max_weight_kg: max(l.weight_kg),
+        max_reps: max(l.reps),
+        max_duration_seconds: max(l.duration_seconds)
+      })
+      |> Repo.one()
 
-    max_weight = base |> select([l], max(l.weight_kg)) |> Repo.one()
-    max_reps = base |> select([l], max(l.reps)) |> Repo.one()
-    max_duration = base |> select([l], max(l.duration_seconds)) |> Repo.one()
-
-    %{max_weight_kg: max_weight, max_reps: max_reps, max_duration_seconds: max_duration}
+    result || %{max_weight_kg: nil, max_reps: nil, max_duration_seconds: nil}
   end
 
   @doc """
