@@ -405,6 +405,11 @@ IO.puts("  Session 5: Carol (pending - in 2 days)")
 # SUMMARY
 # =============================================================================
 IO.puts("")
+# =============================================================================
+# EXERCISES
+# =============================================================================
+Code.eval_file("priv/repo/exercise_seeds.exs")
+
 IO.puts("=" |> String.duplicate(60))
 IO.puts("SEED DATA CREATED SUCCESSFULLY!")
 IO.puts("=" |> String.duplicate(60))
