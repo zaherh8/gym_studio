@@ -14,6 +14,8 @@ defmodule GymStudio.Application do
       {Phoenix.PubSub, name: GymStudio.PubSub},
       # Background job processing
       {Oban, Application.fetch_env!(:gym_studio, Oban)},
+      # Rate limiter for OTP requests
+      GymStudio.RateLimiter,
       # Start to serve requests, typically the last entry
       GymStudioWeb.Endpoint
     ]

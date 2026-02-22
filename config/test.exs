@@ -42,3 +42,6 @@ config :swoosh, :api_client, false
 
 # Configure Oban for testing (inline mode)
 config :gym_studio, Oban, testing: :inline
+
+# Disable rate limiter in tests to avoid cross-test interference
+config :gym_studio, :rate_limiter_enabled, false

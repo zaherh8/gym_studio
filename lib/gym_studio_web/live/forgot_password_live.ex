@@ -12,10 +12,13 @@ defmodule GymStudioWeb.ForgotPasswordLive do
   alias GymStudio.Accounts
   alias GymStudio.Accounts.User
   alias GymStudio.PhoneUtils
+  alias GymStudio.RateLimiter
 
   @resend_cooldown_seconds 60
 
   def mount(_params, _session, socket) do
+    client_ip = get_client_ip(socket)
+
     {:ok,
      socket
      |> assign(:page_title, "Forgot Password")
@@ -26,6 +29,7 @@ defmodule GymStudioWeb.ForgotPasswordLive do
      |> assign(:resend_countdown, 0)
      |> assign(:otp_error, nil)
      |> assign(:phone_error, nil)
+     |> assign(:client_ip, client_ip)
      |> assign(
        :form,
        to_form(%{"password" => "", "password_confirmation" => ""}, as: "user")
@@ -230,6 +234,17 @@ defmodule GymStudioWeb.ForgotPasswordLive do
       !PhoneUtils.valid?(phone_number) ->
         {:noreply, assign(socket, :phone_error, "Please enter a valid phone number")}
 
+      RateLimiter.check_ip_rate(socket.assigns.client_ip) == {:error, :rate_limited} ->
+        {:noreply, assign(socket, :phone_error, "Too many requests. Please try again later.")}
+
+      RateLimiter.check_phone_daily_rate(phone_number) == {:error, :rate_limited} ->
+        {:noreply,
+         assign(
+           socket,
+           :phone_error,
+           "Too many verification attempts today. Please try again tomorrow."
+         )}
+
       true ->
         # Always attempt to send verification, even for non-existing phones.
         # This prevents timing side-channel attacks that could reveal
@@ -282,20 +297,33 @@ defmodule GymStudioWeb.ForgotPasswordLive do
   end
 
   def handle_event("resend_code", _params, socket) do
-    if socket.assigns.resend_countdown > 0 do
-      {:noreply, socket}
-    else
-      case GymStudio.SMS.Telnyx.send_verification(socket.assigns.phone_number) do
-        {:ok, _verification_id} ->
-          {:noreply,
-           socket
-           |> assign(:otp_error, nil)
-           |> start_resend_countdown()
-           |> put_flash(:info, "A new code has been sent")}
+    cond do
+      socket.assigns.resend_countdown > 0 ->
+        {:noreply, socket}
 
-        {:error, _} ->
-          {:noreply, assign(socket, :otp_error, "Unable to send code. Please try again.")}
-      end
+      RateLimiter.check_ip_rate(socket.assigns.client_ip) == {:error, :rate_limited} ->
+        {:noreply, assign(socket, :otp_error, "Too many requests. Please try again later.")}
+
+      RateLimiter.check_phone_daily_rate(socket.assigns.phone_number) == {:error, :rate_limited} ->
+        {:noreply,
+         assign(
+           socket,
+           :otp_error,
+           "Too many verification attempts today. Please try again tomorrow."
+         )}
+
+      true ->
+        case GymStudio.SMS.Telnyx.send_verification(socket.assigns.phone_number) do
+          {:ok, _verification_id} ->
+            {:noreply,
+             socket
+             |> assign(:otp_error, nil)
+             |> start_resend_countdown()
+             |> put_flash(:info, "A new code has been sent")}
+
+          {:error, _} ->
+            {:noreply, assign(socket, :otp_error, "Unable to send code. Please try again.")}
+        end
     end
   end
 
@@ -343,5 +371,12 @@ defmodule GymStudioWeb.ForgotPasswordLive do
   defp start_resend_countdown(socket) do
     Process.send_after(self(), :tick_countdown, 1000)
     assign(socket, :resend_countdown, @resend_cooldown_seconds)
+  end
+
+  defp get_client_ip(socket) do
+    case get_connect_info(socket, :peer_data) do
+      %{address: address} -> :inet.ntoa(address) |> to_string()
+      _ -> "unknown"
+    end
   end
 end
