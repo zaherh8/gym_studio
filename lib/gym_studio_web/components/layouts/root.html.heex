@@ -96,38 +96,37 @@
           </a>
 
           <%!-- Navigation Links --%>
-          <div class="flex items-center gap-2 sm:gap-4">
-            <%= if @current_scope do %>
-              <span class="text-sm sm:text-base text-gray-600 hidden sm:inline">
+          <%= if @current_scope do %>
+            <% dashboard_path =
+              cond do
+                @current_scope.user.role == :admin -> ~p"/admin"
+                @current_scope.user.role == :trainer -> ~p"/trainer"
+                true -> ~p"/client"
+              end %>
+            <% notifications_path =
+              cond do
+                @current_scope.user.role == :admin -> ~p"/admin"
+                @current_scope.user.role == :trainer -> ~p"/trainer"
+                true -> ~p"/client/notifications"
+              end %>
+            <% unread =
+              GymStudio.Notifications.count_unread_notifications(@current_scope.user.id) %>
+            <%!-- Desktop Nav --%>
+            <div class="hidden md:flex items-center gap-4">
+              <span class="text-sm text-gray-600">
                 {@current_scope.user.name || @current_scope.user.email}
               </span>
-              <%!-- Dashboard Link --%>
               <.link
-                href={
-                  cond do
-                    @current_scope.user.role == :admin -> ~p"/admin"
-                    @current_scope.user.role == :trainer -> ~p"/trainer"
-                    true -> ~p"/client"
-                  end
-                }
-                class="btn btn-ghost btn-sm sm:btn-md rounded-full text-gray-700 hover:text-white hover:bg-primary hidden sm:inline-flex"
+                href={dashboard_path}
+                class="btn btn-ghost btn-sm rounded-full text-gray-700 hover:text-white hover:bg-primary"
               >
                 Dashboard
               </.link>
-              <%!-- Notification Bell --%>
               <.link
-                href={
-                  cond do
-                    @current_scope.user.role == :admin -> ~p"/admin"
-                    @current_scope.user.role == :trainer -> ~p"/trainer"
-                    true -> ~p"/client/notifications"
-                  end
-                }
+                href={notifications_path}
                 class="btn btn-ghost btn-sm btn-circle relative text-gray-700 hover:text-primary"
               >
                 <.icon name="hero-bell" class="size-5" />
-                <% unread =
-                  GymStudio.Notifications.count_unread_notifications(@current_scope.user.id) %>
                 <%= if unread > 0 do %>
                   <span class="badge badge-error badge-xs absolute -top-1 -right-1 text-white text-[10px] min-w-[18px] h-[18px]">
                     {unread}
@@ -136,32 +135,91 @@
               </.link>
               <.link
                 href={~p"/users/settings"}
-                class="btn btn-ghost btn-sm sm:btn-md rounded-full text-gray-700 hover:text-white hover:bg-gray-700"
+                class="btn btn-ghost btn-sm rounded-full text-gray-700 hover:text-white hover:bg-gray-700"
               >
                 Settings
               </.link>
               <.link
                 href={~p"/users/log-out"}
                 method="delete"
-                class="btn btn-outline btn-sm sm:btn-md rounded-full text-gray-700 border-gray-300 hover:text-white hover:bg-primary hover:border-primary"
+                class="btn btn-outline btn-sm rounded-full text-gray-700 border-gray-300 hover:text-white hover:bg-primary hover:border-primary"
               >
                 Log out
               </.link>
-            <% else %>
+            </div>
+            <%!-- Mobile Nav --%>
+            <div class="flex md:hidden items-center gap-1">
+              <%!-- Dashboard (primary action on mobile) --%>
+              <.link
+                href={dashboard_path}
+                class="btn btn-primary btn-sm rounded-full"
+              >
+                Dashboard
+              </.link>
+              <%!-- Notification Bell --%>
+              <.link
+                href={notifications_path}
+                class="btn btn-ghost btn-sm btn-circle relative text-gray-700"
+              >
+                <.icon name="hero-bell" class="size-5" />
+                <%= if unread > 0 do %>
+                  <span class="badge badge-error badge-xs absolute -top-1 -right-1 text-white text-[10px] min-w-[18px] h-[18px]">
+                    {unread}
+                  </span>
+                <% end %>
+              </.link>
+              <%!-- Hamburger Menu --%>
+              <div class="dropdown dropdown-end">
+                <label tabindex="0" class="btn btn-ghost btn-sm btn-circle text-gray-700">
+                  <.icon name="hero-bars-3" class="size-5" />
+                </label>
+                <ul
+                  tabindex="0"
+                  class="dropdown-content menu bg-base-100 rounded-box z-[100] w-56 p-2 shadow-lg border border-base-300 mt-2"
+                >
+                  <li class="menu-title text-xs text-gray-400 px-2 py-1">
+                    {@current_scope.user.name || @current_scope.user.email}
+                  </li>
+                  <li>
+                    <.link href={dashboard_path} class="flex items-center gap-2">
+                      <.icon name="hero-home" class="size-4" /> Dashboard
+                    </.link>
+                  </li>
+                  <li>
+                    <.link href={~p"/users/settings"} class="flex items-center gap-2">
+                      <.icon name="hero-cog-6-tooth" class="size-4" /> Settings
+                    </.link>
+                  </li>
+                  <div class="divider my-1"></div>
+                  <li>
+                    <.link
+                      href={~p"/users/log-out"}
+                      method="delete"
+                      class="flex items-center gap-2 text-error"
+                    >
+                      <.icon name="hero-arrow-right-on-rectangle" class="size-4" /> Log out
+                    </.link>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          <% else %>
+            <%!-- Logged Out Nav --%>
+            <div class="flex items-center gap-2">
               <.link
                 href={~p"/users/log-in"}
-                class="btn btn-ghost btn-sm sm:btn-md rounded-full text-gray-700 hover:text-white hover:bg-gray-700"
+                class="btn btn-ghost btn-sm rounded-full text-gray-700 hover:text-white hover:bg-gray-700"
               >
                 Log in
               </.link>
               <.link
                 href={~p"/users/register"}
-                class="btn btn-primary btn-sm sm:btn-md rounded-full shadow-md hover:shadow-lg transition-all"
+                class="btn btn-primary btn-sm rounded-full shadow-md hover:shadow-lg transition-all"
               >
                 Get Started
               </.link>
-            <% end %>
-          </div>
+            </div>
+          <% end %>
         </div>
       </nav>
     </header>
