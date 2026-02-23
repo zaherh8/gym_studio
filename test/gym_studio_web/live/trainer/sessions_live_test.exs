@@ -165,8 +165,9 @@ defmodule GymStudioWeb.Trainer.SessionsLiveTest do
       html = render_click(view, "open_cancel_modal", %{"session_id" => session.id})
       assert html =~ "Cancel Session"
 
-      render_click(view, "update_cancel_reason", %{"reason" => "Schedule conflict"})
-      html = render_click(view, "cancel_session")
+      html =
+        render_submit(view, "cancel_session", %{"cancellation_reason" => "Schedule conflict"})
+
       assert html =~ "badge-error"
     end
 
@@ -204,8 +205,7 @@ defmodule GymStudioWeb.Trainer.SessionsLiveTest do
       html = render_click(view, "open_complete_modal", %{"session_id" => session.id})
       assert html =~ "Complete Session"
 
-      render_click(view, "update_trainer_notes", %{"notes" => "Client did great"})
-      html = render_click(view, "complete_session")
+      html = render_submit(view, "complete_session", %{"trainer_notes" => "Client did great"})
       assert html =~ "badge-info"
     end
 

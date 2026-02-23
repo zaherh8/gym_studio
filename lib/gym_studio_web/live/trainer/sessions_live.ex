@@ -61,18 +61,15 @@ defmodule GymStudioWeb.Trainer.SessionsLive do
      assign(socket, show_cancel_modal: false, cancel_session_id: nil, cancel_reason: "")}
   end
 
-  def handle_event("update_cancel_reason", %{"reason" => reason}, socket) do
-    {:noreply, assign(socket, cancel_reason: reason)}
-  end
-
-  def handle_event("cancel_session", _params, socket) do
+  def handle_event("cancel_session", params, socket) do
     user = socket.assigns.current_scope.user
     session_id = socket.assigns.cancel_session_id
 
     reason =
-      if socket.assigns.cancel_reason == "",
-        do: "Cancelled by trainer",
-        else: socket.assigns.cancel_reason
+      case Map.get(params, "cancellation_reason", "") do
+        "" -> "Cancelled by trainer"
+        r -> r
+      end
 
     case Scheduling.cancel_session_by_id(session_id, user.id, reason) do
       {:ok, _session} ->
@@ -99,13 +96,9 @@ defmodule GymStudioWeb.Trainer.SessionsLive do
      assign(socket, show_complete_modal: false, complete_session_id: nil, trainer_notes: "")}
   end
 
-  def handle_event("update_trainer_notes", %{"notes" => notes}, socket) do
-    {:noreply, assign(socket, trainer_notes: notes)}
-  end
-
-  def handle_event("complete_session", _params, socket) do
+  def handle_event("complete_session", params, socket) do
     session_id = socket.assigns.complete_session_id
-    notes = socket.assigns.trainer_notes
+    notes = Map.get(params, "trainer_notes", "")
     attrs = if notes != "", do: %{trainer_notes: notes}, else: %{}
 
     case Scheduling.complete_session_by_id(session_id, attrs) do
@@ -290,16 +283,17 @@ defmodule GymStudioWeb.Trainer.SessionsLive do
             <div class="modal-box">
               <h3 class="font-bold text-lg">Cancel Session</h3>
               <p class="py-2 text-base-content/70">Please provide a reason for cancellation:</p>
-              <textarea
-                class="textarea textarea-bordered w-full"
-                placeholder="Reason for cancellation..."
-                phx-keyup="update_cancel_reason"
-                phx-value-reason={@cancel_reason}
-              >{@cancel_reason}</textarea>
-              <div class="modal-action">
-                <button phx-click="close_cancel_modal" class="btn">Nevermind</button>
-                <button phx-click="cancel_session" class="btn btn-error">Cancel Session</button>
-              </div>
+              <form phx-submit="cancel_session">
+                <textarea
+                  class="textarea textarea-bordered w-full"
+                  placeholder="Reason for cancellation..."
+                  name="cancellation_reason"
+                >{@cancel_reason}</textarea>
+                <div class="modal-action">
+                  <button type="button" phx-click="close_cancel_modal" class="btn">Nevermind</button>
+                  <button type="submit" class="btn btn-error">Cancel Session</button>
+                </div>
+              </form>
             </div>
             <div class="modal-backdrop" phx-click="close_cancel_modal"></div>
           </div>
@@ -311,18 +305,19 @@ defmodule GymStudioWeb.Trainer.SessionsLive do
             <div class="modal-box">
               <h3 class="font-bold text-lg">Complete Session</h3>
               <p class="py-2 text-base-content/70">Add optional notes about the session:</p>
-              <textarea
-                class="textarea textarea-bordered w-full"
-                placeholder="Session notes (optional)..."
-                phx-keyup="update_trainer_notes"
-                phx-value-notes={@trainer_notes}
-              >{@trainer_notes}</textarea>
-              <div class="modal-action">
-                <button phx-click="close_complete_modal" class="btn">Cancel</button>
-                <button phx-click="complete_session" class="btn btn-info">
-                  Mark as Completed
-                </button>
-              </div>
+              <form phx-submit="complete_session">
+                <textarea
+                  class="textarea textarea-bordered w-full"
+                  placeholder="Session notes (optional)..."
+                  name="trainer_notes"
+                >{@trainer_notes}</textarea>
+                <div class="modal-action">
+                  <button type="button" phx-click="close_complete_modal" class="btn">Cancel</button>
+                  <button type="submit" class="btn btn-info">
+                    Mark as Completed
+                  </button>
+                </div>
+              </form>
             </div>
             <div class="modal-backdrop" phx-click="close_complete_modal"></div>
           </div>
