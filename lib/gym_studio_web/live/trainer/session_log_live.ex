@@ -33,9 +33,7 @@ defmodule GymStudioWeb.Trainer.SessionLogLive do
             logs: logs,
             search_query: "",
             search_results: [],
-            show_search: false,
-            editing_log_id: nil,
-            edit_notes: ""
+            show_search: false
           )
 
         {:ok, socket}
@@ -93,42 +91,26 @@ defmodule GymStudioWeb.Trainer.SessionLogLive do
         attrs =
           params
           |> Map.drop(["log_id"])
-          |> Enum.reject(fn {_k, v} -> v == "" end)
           |> Map.new()
+          |> then(fn attrs ->
+            # Keep notes as-is (can be empty to clear), but drop empty metric fields
+            metric_fields = ["sets", "reps", "weight_kg", "duration_seconds"]
+
+            Enum.reduce(metric_fields, attrs, fn field, acc ->
+              case Map.get(acc, field) do
+                "" -> Map.delete(acc, field)
+                _ -> acc
+              end
+            end)
+          end)
 
         case Progress.update_exercise_log(log, attrs) do
           {:ok, _log} ->
             logs = Progress.list_exercise_logs(socket.assigns.session.id)
-            {:noreply, assign(socket, logs: logs)}
+            {:noreply, socket |> assign(logs: logs) |> put_flash(:info, "Exercise updated ✓")}
 
           {:error, _changeset} ->
             {:noreply, put_flash(socket, :error, "Could not update exercise log")}
-        end
-
-      {:error, :unauthorized} ->
-        {:noreply, put_flash(socket, :error, "Not authorized")}
-    end
-  end
-
-  def handle_event("edit_notes", %{"log-id" => log_id}, socket) do
-    log = Enum.find(socket.assigns.logs, &(&1.id == log_id))
-    {:noreply, assign(socket, editing_log_id: log_id, edit_notes: log.notes || "")}
-  end
-
-  def handle_event("cancel_edit_notes", _params, socket) do
-    {:noreply, assign(socket, editing_log_id: nil, edit_notes: "")}
-  end
-
-  def handle_event("save_notes", %{"notes" => notes, "log_id" => log_id}, socket) do
-    case authorize_log(log_id, socket) do
-      {:ok, log} ->
-        case Progress.update_exercise_log(log, %{"notes" => notes}) do
-          {:ok, _log} ->
-            logs = Progress.list_exercise_logs(socket.assigns.session.id)
-            {:noreply, assign(socket, logs: logs, editing_log_id: nil, edit_notes: "")}
-
-          {:error, _changeset} ->
-            {:noreply, put_flash(socket, :error, "Could not update notes")}
         end
 
       {:error, :unauthorized} ->
@@ -279,38 +261,25 @@ defmodule GymStudioWeb.Trainer.SessionLogLive do
                   </div>
                 </div>
 
-                <div class="flex flex-wrap gap-3 mt-3">
-                  {render_metric_inputs(assigns, log)}
-                </div>
-
-                <%!-- Notes (form-based) --%>
-                <div class="mt-2">
-                  <%= if @editing_log_id == log.id do %>
-                    <form phx-submit="save_notes" class="flex gap-2">
-                      <input type="hidden" name="log_id" value={log.id} />
-                      <input
-                        type="text"
-                        name="notes"
-                        value={@edit_notes}
-                        placeholder="Notes..."
-                        class="input input-bordered input-sm flex-1"
-                        autofocus
-                      />
+                <form phx-submit="update_log" class="mt-3">
+                  <input type="hidden" name="log_id" value={log.id} />
+                  <div class="flex flex-wrap gap-3 items-end">
+                    {render_metric_inputs(assigns, log)}
+                    <div class="form-control">
+                      <label class="label py-0"><span class="label-text text-xs">&nbsp;</span></label>
                       <button type="submit" class="btn btn-sm btn-primary">Save</button>
-                      <button type="button" phx-click="cancel_edit_notes" class="btn btn-sm btn-ghost">
-                        Cancel
-                      </button>
-                    </form>
-                  <% else %>
-                    <div
-                      phx-click="edit_notes"
-                      phx-value-log-id={log.id}
-                      class="cursor-pointer text-sm text-base-content/60 hover:text-base-content min-h-[2rem] flex items-center"
-                    >
-                      {log.notes || "Click to add notes..."}
                     </div>
-                  <% end %>
-                </div>
+                  </div>
+                  <div class="mt-2">
+                    <input
+                      type="text"
+                      name="notes"
+                      value={log.notes || ""}
+                      placeholder="Add notes..."
+                      class="input input-bordered input-sm w-full"
+                    />
+                  </div>
+                </form>
               </div>
             </div>
           <% end %>
@@ -399,8 +368,6 @@ defmodule GymStudioWeb.Trainer.SessionLogLive do
       <input
         type="number"
         value={Map.get(@log, String.to_existing_atom(@field))}
-        phx-blur="update_log"
-        phx-value-log_id={@log.id}
         name={@field}
         class={"input input-bordered input-sm #{@width}"}
         min="0"
