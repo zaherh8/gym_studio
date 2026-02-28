@@ -95,6 +95,32 @@ Clients can set fitness goals and track progress toward them:
 - `target_date` — optional deadline
 - `achieved_at` — timestamp when achieved
 
+## Trainer Client Views
+
+Trainers can view their clients' progress in read-only mode.
+
+### Routes (under `/trainer`)
+- `/trainer/clients` — List of all unique clients the trainer has sessions with, searchable by name
+- `/trainer/clients/:client_id/progress` — Client's exercise history with PR badges and category filter
+- `/trainer/clients/:client_id/progress/metrics` — Client's body metrics and weight chart (read-only)
+- `/trainer/clients/:client_id/progress/goals` — Client's fitness goals with progress bars (read-only)
+
+### Authorization
+- Trainer must have at least one `training_session` with the client
+- Checked via `Scheduling.trainer_has_client?(trainer_id, client_id)` in each LiveView's `mount/3`
+- Unauthorized access redirects to `/trainer/clients` with flash error
+
+### Context Functions (`GymStudio.Scheduling`)
+- `list_trainer_clients(trainer_id, opts)` — Distinct clients with total sessions and last session date; supports `:search` option
+- `trainer_has_client?(trainer_id, client_id)` — Boolean check for authorization
+
+### Key Design Decisions
+- **Read-only**: Trainer views have no create/edit/delete forms (that's issue #48)
+- **Reuse**: All data fetching reuses existing context functions from `Progress`, `Metrics`, and `Goals`
+- **Search**: ILIKE with sanitized wildcards (`%`, `_`, `\` escaped)
+
 ## Authorization
 
-All progress views are behind the `:require_client` pipeline. Queries are scoped to `current_scope.user.id`, so clients can only see their own data. Body metrics mutations verify ownership before edit/delete.
+All client progress views are behind the `:require_client` pipeline. Queries are scoped to `current_scope.user.id`, so clients can only see their own data. Body metrics mutations verify ownership before edit/delete.
+
+Trainer progress views are behind the `:require_trainer` pipeline. Authorization is enforced per-client via `Scheduling.trainer_has_client?/2`.

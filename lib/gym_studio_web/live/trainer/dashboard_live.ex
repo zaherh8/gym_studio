@@ -189,6 +189,12 @@ defmodule GymStudioWeb.Trainer.DashboardLive do
           </div>
         </div>
 
+        <div class="flex gap-3 mb-8">
+          <.link navigate={~p"/trainer/clients"} class="btn btn-primary btn-sm">
+            👥 My Clients
+          </.link>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <!-- Today's Sessions -->
           <div class="card bg-base-100 shadow-xl">
