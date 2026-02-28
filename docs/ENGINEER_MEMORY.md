@@ -40,6 +40,11 @@ Lessons learned from code reviews. Read this before every task.
 - Test authorization on mutations, not just mount.
 - Use `render_submit` for form tests, not `render_click` on individual events.
 
+## Form UX
+
+- Always show field names in form error messages (e.g., `"Weight: must be greater than 0"` not just `"must be greater than 0"`). Use `Phoenix.Naming.humanize(field)` to format.
+- Hide data visualization sections (charts) when there's no relevant data — show them only when meaningful data exists.
+
 ## Code Style
 
 - Group all `handle_event/3` clauses together. Private helpers after.
