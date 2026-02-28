@@ -24,10 +24,58 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 
+/**
+ * ProgressChart hook — renders a Chart.js line chart from data passed
+ * via the `data-chart` attribute. Expects JSON with `labels`, `values`,
+ * and `y_label` keys. Updates automatically when the attribute changes.
+ */
+const ProgressChart = {
+  mounted() {
+    this.renderChart()
+  },
+  updated() {
+    if (this.chart) this.chart.destroy()
+    this.renderChart()
+  },
+  renderChart() {
+    const data = JSON.parse(this.el.dataset.chart)
+    const canvas = this.el.querySelector("canvas")
+    if (!canvas || !window.Chart) return
+
+    this.chart = new Chart(canvas, {
+      type: "line",
+      data: {
+        labels: data.labels,
+        datasets: [{
+          label: data.y_label,
+          data: data.values,
+          borderColor: "rgb(220, 38, 38)",
+          backgroundColor: "rgba(220, 38, 38, 0.1)",
+          tension: 0.3,
+          fill: true,
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { title: { display: true, text: data.y_label } },
+          x: { title: { display: true, text: "Date" } }
+        }
+      }
+    })
+  },
+  destroyed() {
+    if (this.chart) this.chart.destroy()
+  }
+}
+
+const Hooks = { ProgressChart }
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
+  hooks: Hooks,
 })
 
 // Show progress bar on live navigation and form submits

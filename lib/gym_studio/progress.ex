@@ -159,6 +159,142 @@ defmodule GymStudio.Progress do
     end)
   end
 
+  # ── Client Progress ────────────────────────────────────────────────
+
+  @doc """
+  Returns distinct exercises the client has logged, with latest stats and PR info.
+  Each result includes: exercise, latest log stats, total session count, and PR flag.
+  """
+  def list_client_exercises(client_id, opts \\ []) do
+    # Get PRs for this client
+    prs = get_personal_records(client_id)
+    pr_map = Map.new(prs, &{&1.exercise_id, &1.max_weight_kg})
+
+    # Use a window function to get latest log per exercise in a single query
+    # Subquery: rank logs per exercise by date desc
+    ranked_logs =
+      ExerciseLog
+      |> where([l], l.client_id == ^client_id)
+      |> select([l], %{
+        id: l.id,
+        exercise_id: l.exercise_id,
+        sets: l.sets,
+        reps: l.reps,
+        weight_kg: l.weight_kg,
+        inserted_at: l.inserted_at,
+        row_num:
+          fragment(
+            "ROW_NUMBER() OVER (PARTITION BY ? ORDER BY ? DESC)",
+            l.exercise_id,
+            l.inserted_at
+          )
+      })
+
+    # Main query: aggregate stats + join latest log via window function
+    base_query =
+      ExerciseLog
+      |> where([l], l.client_id == ^client_id)
+      |> join(:inner, [l], e in Exercise, on: l.exercise_id == e.id)
+
+    # Apply category filter in SQL
+    base_query =
+      case Keyword.get(opts, :category) do
+        nil -> base_query
+        "" -> base_query
+        cat -> where(base_query, [l, e], e.category == ^cat)
+      end
+
+    exercises_with_stats =
+      base_query
+      |> group_by([l, e], [e.id, e.name, e.category, e.muscle_group, e.equipment, e.tracking_type])
+      |> select([l, e], %{
+        exercise_id: e.id,
+        exercise_name: e.name,
+        category: e.category,
+        muscle_group: e.muscle_group,
+        equipment: e.equipment,
+        tracking_type: e.tracking_type,
+        total_sessions: count(l.id),
+        latest_date: max(l.inserted_at)
+      })
+      |> order_by([l, e], asc: e.name)
+      |> Repo.all()
+
+    # Get latest logs in a single query using window function
+    latest_logs =
+      from(r in subquery(ranked_logs),
+        where: r.row_num == 1,
+        select: %{
+          exercise_id: r.exercise_id,
+          sets: r.sets,
+          reps: r.reps,
+          weight_kg: r.weight_kg
+        }
+      )
+      |> Repo.all()
+      |> Map.new(&{&1.exercise_id, &1})
+
+    # Enrich with latest log stats and PR info (no extra queries)
+    Enum.map(exercises_with_stats, fn ex ->
+      latest = Map.get(latest_logs, ex.exercise_id, %{})
+
+      Map.merge(ex, %{
+        latest_sets: Map.get(latest, :sets),
+        latest_reps: Map.get(latest, :reps),
+        latest_weight_kg: Map.get(latest, :weight_kg),
+        has_pr: Map.has_key?(pr_map, ex.exercise_id)
+      })
+    end)
+  end
+
+  @doc """
+  Returns all exercise logs for a specific exercise and client, ordered by date desc.
+  Preloads exercise and training_session associations.
+  """
+  def get_exercise_history(client_id, exercise_id) do
+    ExerciseLog
+    |> where([l], l.client_id == ^client_id and l.exercise_id == ^exercise_id)
+    |> order_by([l], desc: l.inserted_at)
+    |> preload([:exercise, :training_session])
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns aggregate stats for a specific exercise and client:
+  max weight, max reps, total volume, total sessions.
+  """
+  def get_exercise_stats(client_id, exercise_id) do
+    result =
+      ExerciseLog
+      |> where([l], l.client_id == ^client_id and l.exercise_id == ^exercise_id)
+      |> select([l], %{
+        max_weight_kg: max(l.weight_kg),
+        max_reps: max(l.reps),
+        max_duration_seconds: max(l.duration_seconds),
+        total_sessions: count(l.id),
+        total_volume:
+          fragment(
+            "COALESCE(SUM(CASE WHEN ? IS NOT NULL AND ? IS NOT NULL AND ? IS NOT NULL THEN ? * ? * ? ELSE NULL END), 0)",
+            l.sets,
+            l.reps,
+            l.weight_kg,
+            l.sets,
+            l.reps,
+            l.weight_kg
+          )
+      })
+      |> Repo.one()
+
+    result ||
+      %{
+        max_weight_kg: nil,
+        max_reps: nil,
+        max_duration_seconds: nil,
+        total_sessions: 0,
+        total_volume: Decimal.new(0)
+      }
+  end
+
   # ── Private helpers ────────────────────────────────────────────────
 
   defp apply_filters(query, []), do: query

@@ -27,6 +27,12 @@ Lessons learned from code reviews. Read this before every task.
 - Escape ILIKE wildcards (`%`, `_`, `\`) in search queries.
 - Prefer single queries with multiple aggregates over multiple separate queries.
 - Always preload associations needed in templates.
+- **N+1 pattern to avoid:** Never `Enum.map` over results to fire individual queries. Use window functions (`ROW_NUMBER() OVER (PARTITION BY ...)`) or lateral joins to batch.
+- **Always filter in SQL, not Elixir.** Push WHERE clauses into the query — don't fetch all rows then `Enum.filter` in memory. This is especially bad when combined with N+1 (queries run for rows that get discarded).
+
+## Security
+
+- **SRI hashes for CDN scripts:** Always add `integrity` and `crossorigin="anonymous"` attributes when loading scripts from CDNs. Pin to specific versions (e.g., `chart.js@4.4.8` not `chart.js@4`).
 
 ## Testing
 
