@@ -166,16 +166,44 @@ defmodule GymStudio.Progress do
   Each result includes: exercise, latest log stats, total session count, and PR flag.
   """
   def list_client_exercises(client_id, opts \\ []) do
+    # Get PRs for this client
+    prs = get_personal_records(client_id)
+    pr_map = Map.new(prs, &{&1.exercise_id, &1.max_weight_kg})
+
+    # Use a window function to get latest log per exercise in a single query
+    # Subquery: rank logs per exercise by date desc
+    ranked_logs =
+      ExerciseLog
+      |> where([l], l.client_id == ^client_id)
+      |> select([l], %{
+        id: l.id,
+        exercise_id: l.exercise_id,
+        sets: l.sets,
+        reps: l.reps,
+        weight_kg: l.weight_kg,
+        inserted_at: l.inserted_at,
+        row_num:
+          fragment(
+            "ROW_NUMBER() OVER (PARTITION BY ? ORDER BY ? DESC)",
+            l.exercise_id,
+            l.inserted_at
+          )
+      })
+
+    # Main query: aggregate stats + join latest log via window function
     base_query =
       ExerciseLog
       |> where([l], l.client_id == ^client_id)
       |> join(:inner, [l], e in Exercise, on: l.exercise_id == e.id)
 
-    # Get PRs for this client
-    prs = get_personal_records(client_id)
-    pr_map = Map.new(prs, &{&1.exercise_id, &1.max_weight_kg})
+    # Apply category filter in SQL
+    base_query =
+      case Keyword.get(opts, :category) do
+        nil -> base_query
+        "" -> base_query
+        cat -> where(base_query, [l, e], e.category == ^cat)
+      end
 
-    # Get distinct exercises with aggregate stats
     exercises_with_stats =
       base_query
       |> group_by([l, e], [e.id, e.name, e.category, e.muscle_group, e.equipment, e.tracking_type])
@@ -192,27 +220,28 @@ defmodule GymStudio.Progress do
       |> order_by([l, e], asc: e.name)
       |> Repo.all()
 
-    # Apply category filter
-    exercises_with_stats =
-      case Keyword.get(opts, :category) do
-        nil -> exercises_with_stats
-        "" -> exercises_with_stats
-        cat -> Enum.filter(exercises_with_stats, &(&1.category == cat))
-      end
+    # Get latest logs in a single query using window function
+    latest_logs =
+      from(r in subquery(ranked_logs),
+        where: r.row_num == 1,
+        select: %{
+          exercise_id: r.exercise_id,
+          sets: r.sets,
+          reps: r.reps,
+          weight_kg: r.weight_kg
+        }
+      )
+      |> Repo.all()
+      |> Map.new(&{&1.exercise_id, &1})
 
-    # Enrich with latest log stats and PR info
+    # Enrich with latest log stats and PR info (no extra queries)
     Enum.map(exercises_with_stats, fn ex ->
-      latest_log =
-        ExerciseLog
-        |> where([l], l.client_id == ^client_id and l.exercise_id == ^ex.exercise_id)
-        |> order_by([l], desc: l.inserted_at)
-        |> limit(1)
-        |> Repo.one()
+      latest = Map.get(latest_logs, ex.exercise_id, %{})
 
       Map.merge(ex, %{
-        latest_sets: latest_log && latest_log.sets,
-        latest_reps: latest_log && latest_log.reps,
-        latest_weight_kg: latest_log && latest_log.weight_kg,
+        latest_sets: Map.get(latest, :sets),
+        latest_reps: Map.get(latest, :reps),
+        latest_weight_kg: Map.get(latest, :weight_kg),
         has_pr: Map.has_key?(pr_map, ex.exercise_id)
       })
     end)
@@ -241,34 +270,29 @@ defmodule GymStudio.Progress do
       |> select([l], %{
         max_weight_kg: max(l.weight_kg),
         max_reps: max(l.reps),
-        total_sessions: count(l.id)
+        max_duration_seconds: max(l.duration_seconds),
+        total_sessions: count(l.id),
+        total_volume:
+          fragment(
+            "COALESCE(SUM(CASE WHEN ? IS NOT NULL AND ? IS NOT NULL AND ? IS NOT NULL THEN ? * ? * ? ELSE NULL END), 0)",
+            l.sets,
+            l.reps,
+            l.weight_kg,
+            l.sets,
+            l.reps,
+            l.weight_kg
+          )
       })
       |> Repo.one()
 
-    # Calculate total volume separately (sets × reps × weight) since we need per-row calculation
-    total_volume =
-      ExerciseLog
-      |> where(
-        [l],
-        l.client_id == ^client_id and l.exercise_id == ^exercise_id and
-          not is_nil(l.sets) and not is_nil(l.reps) and not is_nil(l.weight_kg)
-      )
-      |> select(
-        [l],
-        fragment(
-          "COALESCE(SUM(? * ? * ?), 0)",
-          l.sets,
-          l.reps,
-          l.weight_kg
-        )
-      )
-      |> Repo.one()
-
-    Map.put(
-      result || %{max_weight_kg: nil, max_reps: nil, total_sessions: 0},
-      :total_volume,
-      total_volume || Decimal.new(0)
-    )
+    result ||
+      %{
+        max_weight_kg: nil,
+        max_reps: nil,
+        max_duration_seconds: nil,
+        total_sessions: 0,
+        total_volume: Decimal.new(0)
+      }
   end
 
   # ── Private helpers ────────────────────────────────────────────────

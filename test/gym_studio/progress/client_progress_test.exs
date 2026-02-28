@@ -199,6 +199,70 @@ defmodule GymStudio.Progress.ClientProgressTest do
       assert stats.max_weight_kg == nil
       assert stats.max_reps == nil
       assert stats.total_sessions == 0
+      assert Decimal.equal?(stats.total_volume, Decimal.new(0))
+    end
+
+    test "handles logs with nil sets in volume calculation", %{
+      client_user: client_user,
+      trainer_user: trainer_user,
+      session: session,
+      exercise: exercise
+    } do
+      # Log with nil sets — should not contribute to volume
+      exercise_log_fixture(%{
+        "training_session_id" => session.id,
+        "exercise_id" => exercise.id,
+        "client_id" => client_user.id,
+        "logged_by_id" => trainer_user.id,
+        "sets" => nil,
+        "reps" => 10,
+        "weight_kg" => Decimal.new("50.0")
+      })
+
+      stats = Progress.get_exercise_stats(client_user.id, exercise.id)
+      assert stats.max_reps == 10
+      assert Decimal.equal?(stats.total_volume, Decimal.new(0))
+    end
+  end
+
+  describe "is_pr?/3 highlighting" do
+    alias GymStudioWeb.Client.ExerciseDetailLive
+
+    test "weight_reps: highlights max weight only" do
+      log = %{weight_kg: Decimal.new("100.0"), reps: 5, duration_seconds: nil}
+      prs = %{max_weight_kg: Decimal.new("100.0"), max_reps: 10, max_duration_seconds: nil}
+
+      assert ExerciseDetailLive.is_pr?(log, prs, "weight_reps")
+    end
+
+    test "weight_reps: does not highlight max reps" do
+      log = %{weight_kg: Decimal.new("50.0"), reps: 10, duration_seconds: nil}
+      prs = %{max_weight_kg: Decimal.new("100.0"), max_reps: 10, max_duration_seconds: nil}
+
+      refute ExerciseDetailLive.is_pr?(log, prs, "weight_reps")
+    end
+
+    test "reps_only: highlights max reps" do
+      log = %{weight_kg: nil, reps: 25, duration_seconds: nil}
+      prs = %{max_weight_kg: nil, max_reps: 25, max_duration_seconds: nil}
+
+      assert ExerciseDetailLive.is_pr?(log, prs, "reps_only")
+    end
+
+    test "duration: highlights max duration" do
+      log = %{weight_kg: nil, reps: nil, duration_seconds: 3600}
+      prs = %{max_weight_kg: nil, max_reps: nil, max_duration_seconds: 3600}
+
+      assert ExerciseDetailLive.is_pr?(log, prs, "duration")
+    end
+
+    test "returns falsy for nil PRs" do
+      log = %{weight_kg: nil, reps: nil, duration_seconds: nil}
+      prs = %{max_weight_kg: nil, max_reps: nil, max_duration_seconds: nil}
+
+      refute ExerciseDetailLive.is_pr?(log, prs, "weight_reps")
+      refute ExerciseDetailLive.is_pr?(log, prs, "reps_only")
+      refute ExerciseDetailLive.is_pr?(log, prs, "duration")
     end
   end
 end

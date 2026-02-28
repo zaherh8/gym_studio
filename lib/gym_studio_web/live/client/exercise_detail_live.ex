@@ -6,6 +6,7 @@ defmodule GymStudioWeb.Client.ExerciseDetailLive do
   use GymStudioWeb, :live_view
 
   alias GymStudio.Progress
+  alias GymStudioWeb.ChartHelpers
 
   @impl true
   def mount(%{"exercise_id" => exercise_id}, _session, socket) do
@@ -15,7 +16,7 @@ defmodule GymStudioWeb.Client.ExerciseDetailLive do
     stats = Progress.get_exercise_stats(user.id, exercise_id)
     prs = Progress.get_personal_records(user.id, exercise_id)
 
-    chart_data = build_chart_data(history, exercise)
+    chart_data = ChartHelpers.build_chart_data(history, exercise)
 
     socket =
       socket
@@ -29,48 +30,24 @@ defmodule GymStudioWeb.Client.ExerciseDetailLive do
     {:ok, socket}
   end
 
-  defp build_chart_data(history, exercise) do
-    # Reverse so oldest first for chart
-    sorted = Enum.reverse(history)
+  @doc false
+  def is_pr?(log, prs, tracking_type \\ nil) do
+    case tracking_type do
+      "weight_reps" ->
+        log.weight_kg && prs.max_weight_kg && Decimal.equal?(log.weight_kg, prs.max_weight_kg)
 
-    labels =
-      Enum.map(sorted, fn log ->
-        Calendar.strftime(log.inserted_at, "%Y-%m-%d")
-      end)
+      "reps_only" ->
+        log.reps && prs.max_reps && log.reps == prs.max_reps
 
-    values =
-      case exercise.tracking_type do
-        "weight_reps" ->
-          Enum.map(sorted, fn log ->
-            if log.weight_kg, do: Decimal.to_float(log.weight_kg), else: 0
-          end)
+      "duration" ->
+        log.duration_seconds && prs[:max_duration_seconds] &&
+          log.duration_seconds == prs[:max_duration_seconds]
 
-        "reps_only" ->
-          Enum.map(sorted, fn log -> log.reps || 0 end)
-
-        "duration" ->
-          Enum.map(sorted, fn log -> log.duration_seconds || 0 end)
-
-        _ ->
-          Enum.map(sorted, fn log ->
-            if log.weight_kg, do: Decimal.to_float(log.weight_kg), else: log.reps || 0
-          end)
-      end
-
-    y_label =
-      case exercise.tracking_type do
-        "weight_reps" -> "Weight (kg)"
-        "reps_only" -> "Reps"
-        "duration" -> "Duration (s)"
-        _ -> "Value"
-      end
-
-    Jason.encode!(%{labels: labels, values: values, y_label: y_label})
-  end
-
-  defp is_pr?(log, prs) do
-    (log.weight_kg && prs.max_weight_kg && Decimal.equal?(log.weight_kg, prs.max_weight_kg)) ||
-      (log.reps && prs.max_reps && log.reps == prs.max_reps)
+      _ ->
+        # Fallback: check weight first, then reps
+        (log.weight_kg && prs.max_weight_kg && Decimal.equal?(log.weight_kg, prs.max_weight_kg)) ||
+          (log.reps && prs.max_reps && log.reps == prs.max_reps)
+    end
   end
 
   @impl true
@@ -162,7 +139,7 @@ defmodule GymStudioWeb.Client.ExerciseDetailLive do
                 </thead>
                 <tbody>
                   <%= for log <- @history do %>
-                    <tr class={if is_pr?(log, @prs), do: "bg-yellow-50"}>
+                    <tr class={if is_pr?(log, @prs, @exercise.tracking_type), do: "bg-yellow-50"}>
                       <td>{Calendar.strftime(log.inserted_at, "%b %d, %Y")}</td>
                       <td>{log.sets || "—"}</td>
                       <td>{log.reps || "—"}</td>
@@ -172,7 +149,7 @@ defmodule GymStudioWeb.Client.ExerciseDetailLive do
                       </td>
                       <td class="max-w-xs truncate">{log.notes || "—"}</td>
                       <td>
-                        <%= if is_pr?(log, @prs) do %>
+                        <%= if is_pr?(log, @prs, @exercise.tracking_type) do %>
                           <span title="Personal Record">🏆</span>
                         <% end %>
                       </td>
