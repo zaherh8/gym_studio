@@ -35,6 +35,33 @@ Chart.js is loaded via CDN in the root layout. The `ProgressChart` LiveView hook
 - `get_exercise_stats(client_id, exercise_id)` — Aggregated stats (max weight, max reps, total volume, total sessions)
 - `get_personal_records(client_id)` — Best weight per exercise (pre-existing)
 
+## Body Metrics (`/client/progress/metrics`)
+
+Clients can log and track body measurements over time:
+
+### Features
+- **Log new entry**: Date (default today), weight (kg), body fat %, chest/waist/hips/bicep/thigh (cm), notes
+- **Weight chart**: Chart.js line chart showing weight over time (reuses `ProgressChart` hook)
+- **History table**: All entries ordered by most recent, with edit/delete actions
+- **Upsert**: One entry per day per user — logging on the same date replaces the previous entry
+- **Validation**: At least one measurement (weight or any body measurement) must be provided
+
+### Context Functions (`GymStudio.Metrics`)
+- `list_metrics(user_id, opts)` — All entries ordered by date desc, with optional `:limit`
+- `get_metric!(id)` — Single entry by ID
+- `create_metric(attrs)` — Create with upsert on `(user_id, date)`
+- `update_metric(metric, attrs)` — Update existing entry
+- `delete_metric(metric)` — Delete entry
+- `get_latest_metric(user_id)` — Most recent entry
+- `get_metric_history(user_id, field)` — `[{date, value}]` pairs for charting a specific field
+
+### Schema: `body_metrics`
+- `user_id` — the client
+- `logged_by_id` — who logged it (currently always the client themselves)
+- `date` — one entry per day (unique constraint with `user_id`)
+- `weight_kg`, `body_fat_pct`, `chest_cm`, `waist_cm`, `hips_cm`, `bicep_cm`, `thigh_cm` — all optional decimals
+- `notes` — optional text
+
 ## Authorization
 
-All progress views are behind the `:require_client` pipeline. Queries are scoped to `current_scope.user.id`, so clients can only see their own data.
+All progress views are behind the `:require_client` pipeline. Queries are scoped to `current_scope.user.id`, so clients can only see their own data. Body metrics mutations verify ownership before edit/delete.

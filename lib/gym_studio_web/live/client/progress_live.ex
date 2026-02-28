@@ -46,6 +46,9 @@ defmodule GymStudioWeb.Client.ProgressLive do
         <div class="mb-6">
           <h1 class="text-2xl md:text-3xl font-bold text-gray-800">My Progress</h1>
           <p class="text-gray-600 mt-1">Track your exercise history and personal records</p>
+          <.link navigate={~p"/client/progress/metrics"} class="btn btn-primary btn-sm mt-2">
+            📏 Body Metrics
+          </.link>
         </div>
         
     <!-- Category Filter -->

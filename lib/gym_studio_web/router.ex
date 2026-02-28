@@ -44,6 +44,7 @@ defmodule GymStudioWeb.Router do
       live "/notifications", NotificationsLive, :index
       live "/progress", ProgressLive, :index
       live "/progress/exercises/:exercise_id", ExerciseDetailLive, :show
+      live "/progress/metrics", BodyMetricsLive, :index
     end
   end
 
