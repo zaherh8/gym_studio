@@ -68,7 +68,8 @@ trainer1 =
     user_id: trainer1_user.id,
     bio: "Certified personal trainer with 10+ years of experience in strength training and HIIT.",
     specializations: ["Strength Training", "HIIT", "Weight Loss"],
-    photo_url: "/images/trainer1.jpg"
+    photo_url:
+      "https://us-central-1.telnyxcloudstorage.com/react-gym-studio-cdn/images/trainer1.jpg"
   })
   |> Trainer.approval_changeset(admin)
   |> Repo.insert!()
@@ -91,7 +92,8 @@ trainer2 =
     user_id: trainer2_user.id,
     bio: "Yoga instructor and wellness coach specializing in flexibility and mindfulness.",
     specializations: ["Yoga", "Pilates", "Flexibility"],
-    photo_url: "/images/trainer2.jpg"
+    photo_url:
+      "https://us-central-1.telnyxcloudstorage.com/react-gym-studio-cdn/images/trainer2.jpg"
   })
   |> Trainer.approval_changeset(admin)
   |> Repo.insert!()

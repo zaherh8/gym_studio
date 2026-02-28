@@ -5,7 +5,11 @@
   <%!-- Background: Dark gradient that works standalone or with an image overlay --%>
   <%!-- To add a hero image: uncomment the img tag below and adjust the overlay opacity --%>
   <div class="absolute inset-0 bg-gradient-to-br from-neutral via-base-300 to-neutral"></div>
-  <img src="/images/hero-gym.png" alt="" class="absolute inset-0 w-full h-full object-cover" />
+  <img
+    src={GymStudioWeb.CDN.url("/images/hero-gym.jpg")}
+    alt=""
+    class="absolute inset-0 w-full h-full object-cover"
+  />
   <div class="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-primary/30"></div>
 
   <%!-- Subtle pattern overlay for texture --%>
@@ -349,7 +353,7 @@
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-6xl mx-auto">
       <div class="relative group overflow-hidden rounded-xl aspect-square col-span-2 row-span-2">
         <img
-          src="/images/training-area.jpg"
+          src={GymStudioWeb.CDN.url("/images/training-area.jpg")}
           alt="Main Training Area"
           class="absolute inset-0 w-full h-full object-cover"
         />
@@ -360,7 +364,7 @@
 
       <div class="relative group overflow-hidden rounded-xl aspect-square">
         <img
-          src="/images/equipment.jpg"
+          src={GymStudioWeb.CDN.url("/images/equipment.jpg")}
           alt="Equipment"
           class="absolute inset-0 w-full h-full object-cover"
         />
@@ -371,7 +375,7 @@
 
       <div class="relative group overflow-hidden rounded-xl aspect-square">
         <img
-          src="/images/cardio.jpg"
+          src={GymStudioWeb.CDN.url("/images/cardio.jpg")}
           alt="Cardio"
           class="absolute inset-0 w-full h-full object-cover"
         />
@@ -382,7 +386,7 @@
 
       <div class="relative group overflow-hidden rounded-xl aspect-square">
         <img
-          src="/images/stretching.jpg"
+          src={GymStudioWeb.CDN.url("/images/stretching.jpg")}
           alt="Stretching Zone"
           class="absolute inset-0 w-full h-full object-cover"
         />
@@ -393,7 +397,7 @@
 
       <div class="relative group overflow-hidden rounded-xl aspect-square">
         <img
-          src="/images/weights.jpg"
+          src={GymStudioWeb.CDN.url("/images/weights.jpg")}
           alt="Free Weights"
           class="absolute inset-0 w-full h-full object-cover"
         />
