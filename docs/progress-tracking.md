@@ -62,6 +62,39 @@ Clients can log and track body measurements over time:
 - `weight_kg`, `body_fat_pct`, `chest_cm`, `waist_cm`, `hips_cm`, `bicep_cm`, `thigh_cm` — all optional decimals
 - `notes` — optional text
 
+## Fitness Goals (`/client/progress/goals`)
+
+Clients can set fitness goals and track progress toward them:
+
+### Features
+- **Goal cards** with progress bars showing current_value / target_value as percentage
+- **Status badges**: active (blue), achieved (green 🏆), abandoned (gray)
+- **Create goal form**: title, description, target_value, target_unit, target_date
+- **Update progress**: click to update current_value — auto-achieves when current >= target
+- **Actions**: achieve, abandon, delete (only active goals can be deleted)
+- **Filter** by status (all/active/achieved/abandoned)
+
+### Context Functions (`GymStudio.Goals`)
+- `list_goals(client_id, opts)` — filter by status, ordered by inserted_at desc
+- `get_goal!(id)` — single goal by ID
+- `create_goal(attrs)` — create a new goal
+- `update_goal(goal, attrs)` — update goal fields
+- `delete_goal(goal)` — delete (active only)
+- `achieve_goal(goal)` — set status to "achieved" with timestamp
+- `abandon_goal(goal)` — set status to "abandoned"
+- `update_progress(goal, new_value)` — update current_value, auto-achieve if >= target
+
+### Schema: `fitness_goals`
+- `client_id` — the client who owns the goal
+- `created_by_id` — who created it (client or trainer)
+- `title` — goal name (max 255 chars)
+- `description` — optional notes
+- `target_value` / `target_unit` — the target (e.g. 100 kg)
+- `current_value` — progress toward target (default 0)
+- `status` — "active", "achieved", or "abandoned"
+- `target_date` — optional deadline
+- `achieved_at` — timestamp when achieved
+
 ## Authorization
 
 All progress views are behind the `:require_client` pipeline. Queries are scoped to `current_scope.user.id`, so clients can only see their own data. Body metrics mutations verify ownership before edit/delete.
