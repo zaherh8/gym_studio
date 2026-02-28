@@ -6,11 +6,14 @@ defmodule GymStudioWeb.GalleryLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    # Placeholder images - will be replaced with Telnyx storage images
+    # Placeholder images - will be replaced with real gym photos
     images = [
-      %{id: 1, title: "Training Area", category: "interior", url: nil},
-      %{id: 2, title: "Equipment Zone", category: "equipment", url: nil},
-      %{id: 3, title: "Reception", category: "interior", url: nil}
+      %{id: 1, title: "Training Area", category: "interior", url: "/images/training-area.jpg"},
+      %{id: 2, title: "Equipment Zone", category: "equipment", url: "/images/equipment.jpg"},
+      %{id: 3, title: "Cardio Space", category: "equipment", url: "/images/cardio.jpg"},
+      %{id: 4, title: "Free Weights", category: "equipment", url: "/images/weights.jpg"},
+      %{id: 5, title: "Stretching Zone", category: "interior", url: "/images/stretching.jpg"},
+      %{id: 6, title: "Reception", category: "interior", url: "/images/reception.jpg"}
     ]
 
     {:ok, assign(socket, images: images, page_title: "Gallery")}
