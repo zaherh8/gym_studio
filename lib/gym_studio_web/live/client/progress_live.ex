@@ -49,6 +49,9 @@ defmodule GymStudioWeb.Client.ProgressLive do
           <.link navigate={~p"/client/progress/metrics"} class="btn btn-primary btn-sm mt-2">
             📏 Body Metrics
           </.link>
+          <.link navigate={~p"/client/progress/goals"} class="btn btn-primary btn-sm mt-2 ml-2">
+            🎯 Goals
+          </.link>
         </div>
         
     <!-- Category Filter -->
