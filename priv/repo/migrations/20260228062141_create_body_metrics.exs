@@ -4,7 +4,7 @@ defmodule GymStudio.Repo.Migrations.CreateBodyMetrics do
   def change do
     create table(:body_metrics, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :user_id, references(:users, type: :binary_id, on_delete: :nothing), null: false
+      add :user_id, references(:users, type: :binary_id, on_delete: :restrict), null: false
       add :logged_by_id, references(:users, type: :binary_id, on_delete: :restrict), null: false
       add :date, :date, null: false
       add :weight_kg, :decimal
@@ -20,6 +20,7 @@ defmodule GymStudio.Repo.Migrations.CreateBodyMetrics do
     end
 
     create index(:body_metrics, [:user_id])
+    create index(:body_metrics, [:logged_by_id])
     create unique_index(:body_metrics, [:user_id, :date])
   end
 end

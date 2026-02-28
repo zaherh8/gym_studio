@@ -239,8 +239,8 @@ defmodule GymStudioWeb.Client.BodyMetricsLive do
               >{Phoenix.HTML.Form.input_value(@form, :notes)}</textarea>
             </div>
 
-            <%= for {_field, {msg, _opts}} <- @form.errors do %>
-              <p class="text-error text-sm">{msg}</p>
+            <%= for {field, {msg, _opts}} <- @form.errors do %>
+              <p class="text-error text-sm">{Phoenix.Naming.humanize(field)}: {msg}</p>
             <% end %>
 
             <div class="flex gap-2">
@@ -255,12 +255,14 @@ defmodule GymStudioWeb.Client.BodyMetricsLive do
         </div>
 
         <%!-- Weight Chart --%>
-        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <h2 class="text-lg font-semibold mb-4">Weight Over Time</h2>
-          <div id="weight-chart" phx-hook="ProgressChart" data-chart={@chart_data}>
-            <canvas></canvas>
+        <%= if @metrics != [] and Enum.any?(@metrics, & &1.weight_kg) do %>
+          <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+            <h2 class="text-lg font-semibold mb-4">Weight Over Time</h2>
+            <div id="weight-chart" phx-hook="ProgressChart" data-chart={@chart_data}>
+              <canvas></canvas>
+            </div>
           </div>
-        </div>
+        <% end %>
 
         <%!-- History Table --%>
         <div class="bg-white rounded-2xl shadow-lg p-6">
