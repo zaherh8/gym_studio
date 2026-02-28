@@ -452,6 +452,73 @@ defmodule GymStudio.Scheduling do
   end
 
   @doc """
+  Lists all unique clients for a trainer with session stats.
+
+  Returns a list of maps with `:user`, `:total_sessions`, and `:last_session_date`.
+
+  ## Options
+
+    * `:search` - Filter by client name (case-insensitive, ILIKE-safe)
+
+  ## Examples
+
+      iex> list_trainer_clients(trainer_id)
+      [%{user: %User{}, total_sessions: 5, last_session_date: ~U[...]}]
+
+  """
+  def list_trainer_clients(trainer_id, opts \\ []) do
+    search = opts[:search]
+
+    query =
+      TrainingSession
+      |> where([s], s.trainer_id == ^trainer_id)
+      |> join(:inner, [s], c in GymStudio.Accounts.User, on: s.client_id == c.id)
+      |> group_by([s, c], [c.id, c.name, c.email])
+      |> select([s, c], %{
+        user_id: c.id,
+        name: c.name,
+        email: c.email,
+        total_sessions: count(s.id),
+        last_session_date: max(s.scheduled_at)
+      })
+
+    query =
+      if search && search != "" do
+        sanitized = sanitize_ilike(search)
+        where(query, [_s, c], ilike(c.name, ^"%#{sanitized}%"))
+      else
+        query
+      end
+
+    query
+    |> order_by([_s, c], asc: c.name)
+    |> Repo.all()
+  end
+
+  @doc """
+  Checks if a trainer has at least one training session with the given client.
+
+  ## Examples
+
+      iex> trainer_has_client?(trainer_id, client_id)
+      true
+
+  """
+  def trainer_has_client?(trainer_id, client_id) do
+    TrainingSession
+    |> where([s], s.trainer_id == ^trainer_id and s.client_id == ^client_id)
+    |> limit(1)
+    |> Repo.exists?()
+  end
+
+  defp sanitize_ilike(term) do
+    term
+    |> String.replace("\\", "\\\\")
+    |> String.replace("%", "\\%")
+    |> String.replace("_", "\\_")
+  end
+
+  @doc """
   Counts unique clients for a trainer.
   """
   def count_unique_clients_for_trainer(trainer_id) do
