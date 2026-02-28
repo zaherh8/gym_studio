@@ -118,7 +118,7 @@ defmodule GymStudioWeb.Client.DashboardLive do
         </div>
         
     <!-- Quick Actions -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <.link
             navigate={~p"/client/book"}
             class="bg-white rounded-2xl shadow-lg p-5 hover:shadow-xl transition-shadow group"
@@ -213,6 +213,30 @@ defmodule GymStudioWeb.Client.DashboardLive do
             </div>
             <h3 class="font-semibold text-gray-800">Profile</h3>
             <p class="text-sm text-gray-500">Manage your account</p>
+          </.link>
+
+          <.link
+            navigate={~p"/client/progress"}
+            class="bg-white rounded-2xl shadow-lg p-5 hover:shadow-xl transition-shadow group"
+          >
+            <div class="bg-orange-100 rounded-xl p-3 w-fit mb-3 group-hover:bg-orange-200 transition-colors">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6 text-orange-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                />
+              </svg>
+            </div>
+            <h3 class="font-semibold text-gray-800">Progress</h3>
+            <p class="text-sm text-gray-500">Track your gains</p>
           </.link>
         </div>
         
