@@ -63,7 +63,7 @@ defmodule GymStudio.Goals do
   @doc """
   Updates the current value of a goal. Auto-achieves if current_value >= target_value.
   """
-  def update_progress(%FitnessGoal{} = goal, new_value) do
+  def update_progress(%FitnessGoal{status: "active"} = goal, new_value) do
     new_value = to_decimal(new_value)
 
     attrs =
@@ -78,13 +78,23 @@ defmodule GymStudio.Goals do
     |> Repo.update()
   end
 
+  def update_progress(%FitnessGoal{}, _new_value), do: {:error, :not_active}
+
   @doc "Returns an `%Ecto.Changeset{}` for tracking goal changes."
   def change_goal(%FitnessGoal{} = goal, attrs \\ %{}) do
     FitnessGoal.changeset(goal, attrs)
   end
 
   defp to_decimal(%Decimal{} = d), do: d
-  defp to_decimal(v) when is_binary(v), do: Decimal.new(v)
+
+  defp to_decimal(v) when is_binary(v) do
+    case Decimal.parse(v) do
+      {d, ""} -> d
+      {d, _rest} -> d
+      :error -> Decimal.new(0)
+    end
+  end
+
   defp to_decimal(v) when is_integer(v), do: Decimal.new(v)
   defp to_decimal(v) when is_float(v), do: Decimal.from_float(v)
 end
