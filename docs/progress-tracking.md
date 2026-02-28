@@ -114,9 +114,26 @@ Trainers can view their clients' progress in read-only mode.
 - `list_trainer_clients(trainer_id, opts)` — Distinct clients with total sessions and last session date; supports `:search` option
 - `trainer_has_client?(trainer_id, client_id)` — Boolean check for authorization
 
+### Trainer Write Capabilities
+Trainers can create, edit, and delete metrics and goals for their clients:
+
+#### Metrics
+- **Log New Entry**: Same form as client — trainer fills in date, weight, body fat, measurements, notes
+- `logged_by_id` = trainer's user ID (tracks who logged the entry)
+- Trainer can **edit/delete** entries they logged, but NOT entries the client logged
+- UI shows "Client entry" label for client-logged metrics (no edit/delete buttons)
+
+#### Goals
+- **New Goal**: Same form as client — trainer creates goals for the client
+- `created_by_id` = trainer's user ID, `client_id` = client's user ID
+- Trainer can **update progress** on any of the client's goals
+- Trainer can **achieve/abandon** any of the client's goals
+- Trainer can **delete** goals they created, but NOT goals the client created
+- Client-created goals show no delete button for the trainer
+
 ### Key Design Decisions
-- **Read-only**: Trainer views have no create/edit/delete forms (that's issue #48)
-- **Reuse**: All data fetching reuses existing context functions from `Progress`, `Metrics`, and `Goals`
+- **Reuse**: All data fetching and mutations reuse existing context functions from `Progress`, `Metrics`, and `Goals`
+- **Ownership tracking**: `logged_by_id` (metrics) and `created_by_id` (goals) enforce edit/delete permissions
 - **Search**: ILIKE with sanitized wildcards (`%`, `_`, `\` escaped)
 
 ## Authorization
