@@ -431,7 +431,7 @@ defmodule GymStudioWeb.Trainer.DashboardLive do
 
   defp display_name(%{name: name}) when is_binary(name) and name != "", do: name
   defp display_name(%{email: email}) when is_binary(email), do: email
-  defp display_name(_), do: "Unknown"
+  defp display_name(_), do: "Unassigned"
 
   defp status_badge_class("pending"), do: "badge-warning"
   defp status_badge_class("confirmed"), do: "badge-success"

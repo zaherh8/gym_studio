@@ -151,7 +151,7 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
 
   defp display_name(%{name: name}) when is_binary(name) and name != "", do: name
   defp display_name(%{email: email}) when is_binary(email), do: email
-  defp display_name(_), do: "Unknown"
+  defp display_name(_), do: "Unassigned"
 
   defp format_hour(0), do: "12 AM"
   defp format_hour(h) when h < 12, do: "#{h} AM"

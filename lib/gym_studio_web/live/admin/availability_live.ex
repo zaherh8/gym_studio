@@ -130,7 +130,7 @@ defmodule GymStudioWeb.Admin.AvailabilityLive do
               <tbody>
                 <%= for trainer <- @trainers do %>
                   <tr>
-                    <td class="font-medium">{trainer.trainer_name || "Unknown"}</td>
+                    <td class="font-medium">{trainer.trainer_name || "Unassigned"}</td>
                     <%= for day <- 1..7 do %>
                       <td class="text-center text-sm">
                         <%= if @editing == {trainer.trainer_id, day} do %>

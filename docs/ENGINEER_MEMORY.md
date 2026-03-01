@@ -85,6 +85,12 @@ Lessons learned from code reviews. Read this before every task.
 - **Modal click-through:** Never put `phx-click="close_modal"` on the outer `.modal` div — click events bubble up from content. Use only `phx-click-away` on `.modal-box`.
 - **Type consistency in filters:** Form params arrive as strings. Compare with `to_string(uuid)` when matching against Ecto UUID fields in templates.
 
+## Label / Display Conventions
+
+- Trainer fallback label is **"Unassigned"** (not "Unknown") — consistent across all views.
+- `display_name/1` catch-all returns "Unassigned" for trainer contexts.
+- Admin calendar modal conditionally shows "Assign a Trainer" panel when `trainer_id` is nil.
+
 ## Project Conventions
 
 - Package types: `standard_8`, `standard_12`, `premium_20`

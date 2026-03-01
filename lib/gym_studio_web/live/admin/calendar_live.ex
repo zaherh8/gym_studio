@@ -37,6 +37,7 @@ defmodule GymStudioWeb.Admin.CalendarLive do
       |> assign(filter_trainer_id: nil)
       |> assign(current_week_start: Date.beginning_of_week(today, :monday))
       |> assign(selected_session: nil)
+      |> assign(available_trainers: [])
       |> load_week_data()
 
     {:ok, socket}
@@ -122,11 +123,43 @@ defmodule GymStudioWeb.Admin.CalendarLive do
 
   def handle_event("show_session", %{"session-id" => session_id}, socket) do
     session = find_session(socket.assigns.week_sessions, session_id)
-    {:noreply, assign(socket, selected_session: session)}
+
+    available_trainers =
+      if is_nil(session.trainer_id) do
+        Accounts.list_approved_trainers()
+      else
+        []
+      end
+
+    {:noreply, assign(socket, selected_session: session, available_trainers: available_trainers)}
   end
 
   def handle_event("close_modal", _params, socket) do
-    {:noreply, assign(socket, selected_session: nil)}
+    {:noreply, assign(socket, selected_session: nil, available_trainers: [])}
+  end
+
+  def handle_event("assign_trainer", %{"trainer_id" => trainer_id}, socket) do
+    session = socket.assigns.selected_session
+    attrs = %{trainer_id: trainer_id}
+
+    attrs =
+      if session.status == "pending",
+        do: Map.put(attrs, :status, "confirmed"),
+        else: attrs
+
+    case Scheduling.admin_update_session(session, attrs) do
+      {:ok, _} ->
+        socket =
+          socket
+          |> assign(selected_session: nil, available_trainers: [])
+          |> put_flash(:info, "Trainer assigned successfully")
+          |> load_week_data()
+
+        {:noreply, socket}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to assign trainer")}
+    end
   end
 
   defp find_session(week_sessions, session_id) do
@@ -153,7 +186,7 @@ defmodule GymStudioWeb.Admin.CalendarLive do
 
   defp display_name(%{name: name}) when is_binary(name) and name != "", do: name
   defp display_name(%{email: email}) when is_binary(email), do: email
-  defp display_name(_), do: "Unknown"
+  defp display_name(_), do: "Unassigned"
 
   defp format_hour(0), do: "12 AM"
   defp format_hour(h) when h < 12, do: "#{h} AM"
@@ -261,7 +294,11 @@ defmodule GymStudioWeb.Admin.CalendarLive do
                     >
                       <div class="font-semibold truncate">{display_name(session.client)}</div>
                       <div class="truncate opacity-60">
-                        {display_name(session.trainer)} · {session.status}
+                        <%= if session.trainer_id do %>
+                          {display_name(session.trainer)} · {session.status}
+                        <% else %>
+                          <span class="italic">Unassigned</span> · {session.status}
+                        <% end %>
                       </div>
                     </button>
                   <% end %>
@@ -289,10 +326,31 @@ defmodule GymStudioWeb.Admin.CalendarLive do
                 <span class="text-base-content/60">Client</span>
                 <span class="font-semibold">{display_name(@selected_session.client)}</span>
               </div>
-              <div class="flex justify-between">
+              <div class="flex justify-between items-center">
                 <span class="text-base-content/60">Trainer</span>
-                <span class="font-semibold">{display_name(@selected_session.trainer)}</span>
+                <%= if @selected_session.trainer_id do %>
+                  <span class="font-semibold">{display_name(@selected_session.trainer)}</span>
+                <% else %>
+                  <span class="text-base-content/40 italic">Unassigned</span>
+                <% end %>
               </div>
+              <%= if is_nil(@selected_session.trainer_id) and @available_trainers != [] do %>
+                <div class="bg-base-200 rounded-lg p-3">
+                  <p class="text-sm font-medium mb-2">Assign a Trainer</p>
+                  <div class="flex flex-col gap-1">
+                    <%= for trainer <- @available_trainers do %>
+                      <button
+                        type="button"
+                        phx-click="assign_trainer"
+                        phx-value-trainer_id={trainer.user_id}
+                        class="btn btn-sm btn-ghost justify-start"
+                      >
+                        {trainer.user.name || trainer.user.email}
+                      </button>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
               <div class="flex justify-between">
                 <span class="text-base-content/60">Date</span>
                 <span>
