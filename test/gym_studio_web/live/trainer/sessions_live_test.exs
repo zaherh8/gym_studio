@@ -147,6 +147,9 @@ defmodule GymStudioWeb.Trainer.SessionsLiveTest do
           package_type: "standard_12"
         })
 
+      # Simulate what book_session does: consume a session from the package
+      {:ok, _} = GymStudio.Packages.use_session(package)
+
       tomorrow = DateTime.utc_now() |> DateTime.add(1, :day) |> DateTime.truncate(:second)
 
       session =
