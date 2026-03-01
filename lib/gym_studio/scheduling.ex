@@ -33,13 +33,12 @@ defmodule GymStudio.Scheduling do
       {:error, %Ecto.Changeset{}}
   """
   def book_session(attrs \\ %{}) do
-    result =
-      %TrainingSession{}
-      |> TrainingSession.changeset(attrs)
-      |> Repo.insert()
-
-    case result do
-      {:ok, session} ->
+    Repo.transaction(fn ->
+      with {:ok, session} <-
+             %TrainingSession{}
+             |> TrainingSession.changeset(attrs)
+             |> Repo.insert(),
+           :ok <- maybe_decrement_package(session) do
         # Notify the client that their session is booked (pending)
         GymStudio.Notifications.create_notification(%{
           user_id: session.client_id,
@@ -51,10 +50,21 @@ defmodule GymStudio.Scheduling do
           metadata: %{session_id: session.id}
         })
 
-        result
+        session
+      else
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
+  end
 
-      _ ->
-        result
+  defp maybe_decrement_package(%TrainingSession{package_id: nil}), do: :ok
+
+  defp maybe_decrement_package(%TrainingSession{package_id: package_id}) do
+    package = GymStudio.Packages.get_package!(package_id)
+
+    case GymStudio.Packages.use_session(package) do
+      {:ok, _} -> :ok
+      {:error, changeset} -> {:error, changeset}
     end
   end
 
@@ -111,26 +121,36 @@ defmodule GymStudio.Scheduling do
       {:ok, %TrainingSession{}}
   """
   def cancel_session(%TrainingSession{} = session, cancelled_by_id, reason) do
-    result =
-      session
-      |> TrainingSession.cancellation_changeset(%{
-        cancelled_by_id: cancelled_by_id,
-        cancellation_reason: reason
-      })
-      |> Repo.update()
-
-    case result do
-      {:ok, updated_session} ->
+    Repo.transaction(fn ->
+      with {:ok, updated_session} <-
+             session
+             |> TrainingSession.cancellation_changeset(%{
+               cancelled_by_id: cancelled_by_id,
+               cancellation_reason: reason
+             })
+             |> Repo.update(),
+           :ok <- maybe_increment_package(updated_session) do
         GymStudio.Notifications.notify_booking_cancelled(
           updated_session.client_id,
           updated_session,
           reason
         )
 
-        result
+        updated_session
+      else
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
+  end
 
-      _ ->
-        result
+  defp maybe_increment_package(%TrainingSession{package_id: nil}), do: :ok
+
+  defp maybe_increment_package(%TrainingSession{package_id: package_id}) do
+    package = GymStudio.Packages.get_package!(package_id)
+
+    case GymStudio.Packages.return_session(package) do
+      {:ok, _} -> :ok
+      {:error, changeset} -> {:error, changeset}
     end
   end
 
@@ -536,16 +556,16 @@ defmodule GymStudio.Scheduling do
   def count_sessions_this_week(trainer_id) do
     today = Date.utc_today()
     start_of_week = Date.beginning_of_week(today, :monday)
-    end_of_week = Date.add(start_of_week, 6)
+    end_of_next_week = Date.add(start_of_week, 7)
 
     start_datetime = DateTime.new!(start_of_week, ~T[00:00:00], "Etc/UTC")
-    end_datetime = DateTime.new!(end_of_week, ~T[23:59:59], "Etc/UTC")
+    end_datetime = DateTime.new!(end_of_next_week, ~T[00:00:00], "Etc/UTC")
 
     TrainingSession
     |> where([s], s.trainer_id == ^trainer_id)
-    |> where([s], s.scheduled_at >= ^start_datetime and s.scheduled_at <= ^end_datetime)
+    |> where([s], s.scheduled_at >= ^start_datetime and s.scheduled_at < ^end_datetime)
     |> where([s], s.status in ["pending", "confirmed", "completed"])
-    |> Repo.aggregate(:count) || 0
+    |> Repo.aggregate(:count)
   end
 
   @doc """
@@ -768,14 +788,14 @@ defmodule GymStudio.Scheduling do
   def count_all_sessions_this_week do
     today = Date.utc_today()
     start_of_week = Date.beginning_of_week(today, :monday)
-    end_of_week = Date.add(start_of_week, 6)
+    end_of_next_week = Date.add(start_of_week, 7)
     from_dt = DateTime.new!(start_of_week, ~T[00:00:00], "Etc/UTC")
-    to_dt = DateTime.new!(end_of_week, ~T[23:59:59], "Etc/UTC")
+    to_dt = DateTime.new!(end_of_next_week, ~T[00:00:00], "Etc/UTC")
 
     TrainingSession
-    |> where([s], s.scheduled_at >= ^from_dt and s.scheduled_at <= ^to_dt)
+    |> where([s], s.scheduled_at >= ^from_dt and s.scheduled_at < ^to_dt)
     |> where([s], s.status in ["pending", "confirmed", "completed"])
-    |> Repo.aggregate(:count) || 0
+    |> Repo.aggregate(:count)
   end
 
   @doc """

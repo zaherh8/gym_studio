@@ -173,12 +173,54 @@ defmodule GymStudio.Packages do
       {:error, %Ecto.Changeset{}}
   """
   def use_session(%SessionPackage{} = package) do
-    package
-    |> SessionPackage.use_session_changeset()
-    |> Repo.update()
-    |> case do
-      {:ok, updated_package} -> {:ok, put_remaining_sessions(updated_package)}
-      error -> error
+    {count, results} =
+      from(p in SessionPackage,
+        where: p.id == ^package.id,
+        where: p.used_sessions < p.total_sessions,
+        update: [set: [used_sessions: p.used_sessions + 1]],
+        select: p
+      )
+      |> Repo.update_all([])
+
+    case {count, results} do
+      {1, [updated_package]} ->
+        {:ok, put_remaining_sessions(updated_package)}
+
+      {0, _} ->
+        changeset =
+          package
+          |> Ecto.Changeset.change()
+          |> Ecto.Changeset.add_error(:used_sessions, "no remaining sessions available")
+
+        {:error, changeset}
+    end
+  end
+
+  @doc """
+  Returns a session to the package (decrements used_sessions by 1).
+  Used when a booked session is cancelled.
+  """
+  def return_session(%SessionPackage{} = package) do
+    {count, results} =
+      from(p in SessionPackage,
+        where: p.id == ^package.id,
+        where: p.used_sessions > 0,
+        update: [set: [used_sessions: p.used_sessions - 1]],
+        select: p
+      )
+      |> Repo.update_all([])
+
+    case {count, results} do
+      {1, [updated_package]} ->
+        {:ok, put_remaining_sessions(updated_package)}
+
+      {0, _} ->
+        changeset =
+          package
+          |> Ecto.Changeset.change()
+          |> Ecto.Changeset.add_error(:used_sessions, "cannot be negative")
+
+        {:error, changeset}
     end
   end
 
