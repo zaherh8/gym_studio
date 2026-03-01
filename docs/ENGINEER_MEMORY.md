@@ -27,7 +27,8 @@ Lessons learned from code reviews. Read this before every task.
 - Escape ILIKE wildcards (`%`, `_`, `\`) in search queries.
 - Prefer single queries with multiple aggregates over multiple separate queries.
 - Always preload associations needed in templates.
-- **N+1 pattern to avoid:** Never `Enum.map` over results to fire individual queries. Use window functions (`ROW_NUMBER() OVER (PARTITION BY ...)`) or lateral joins to batch.
+- **N+1 pattern to avoid:** Never `Enum.map` over results to fire individual queries. Use window functions (`ROW_NUMBER() OVER (PARTITION BY ...)`) or lateral joins to batch. When multiple entities need the same data, use `where(field in ^ids)` + `Enum.group_by` in Elixir.
+- **Batch query pattern:** Fetch all records with `where([x], x.foreign_key in ^ids)`, then `Enum.group_by(&1.foreign_key)` to build a lookup map. Avoids N+1 while keeping logic simple.
 - **Always filter in SQL, not Elixir.** Push WHERE clauses into the query — don't fetch all rows then `Enum.filter` in memory. This is especially bad when combined with N+1 (queries run for rows that get discarded).
 
 ## Security
@@ -57,6 +58,7 @@ Lessons learned from code reviews. Read this before every task.
 - `get_all_available_slots/1` returns slots with `trainer_id` + `trainer_name` — client booking selects both slot AND trainer.
 - When updating BookSessionLive, existing tests that click `button[phx-value-slot]` need updating to also include `phx-value-trainer`.
 - Time inputs from HTML forms come as "HH:MM" strings — append ":00" before `Time.from_iso8601/1`.
+- `format_hour/1`: Always handle hour 0 explicitly — `format_hour(0)` must return "12:00 AM", not "0:00 AM".
 
 ## Project Conventions
 
