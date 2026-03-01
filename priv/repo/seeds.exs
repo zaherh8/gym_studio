@@ -406,6 +406,39 @@ _session5 =
 IO.puts("  Session 5: Carol (pending - in 2 days)")
 
 # =============================================================================
+# TRAINER AVAILABILITY
+# =============================================================================
+IO.puts("")
+IO.puts("Creating trainer availability...")
+
+alias GymStudio.Scheduling.TrainerAvailability
+
+for trainer_user <- [trainer1_user, trainer2_user] do
+  # Mon-Fri: 7 AM - 10 PM
+  for day <- 1..5 do
+    Repo.insert!(%TrainerAvailability{
+      trainer_id: trainer_user.id,
+      day_of_week: day,
+      start_time: ~T[07:00:00],
+      end_time: ~T[22:00:00],
+      active: true
+    })
+  end
+
+  # Saturday: 8 AM - 1 PM
+  Repo.insert!(%TrainerAvailability{
+    trainer_id: trainer_user.id,
+    day_of_week: 6,
+    start_time: ~T[08:00:00],
+    end_time: ~T[13:00:00],
+    active: true
+  })
+
+  # Sunday: no entry (day off)
+  IO.puts("  Availability set for #{trainer_user.name}")
+end
+
+# =============================================================================
 # SUMMARY
 # =============================================================================
 IO.puts("")

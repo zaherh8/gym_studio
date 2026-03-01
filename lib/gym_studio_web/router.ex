@@ -67,6 +67,7 @@ defmodule GymStudioWeb.Router do
       live "/clients/:client_id/progress", ClientProgressLive, :index
       live "/clients/:client_id/progress/metrics", ClientMetricsLive, :index
       live "/clients/:client_id/progress/goals", ClientGoalsLive, :index
+      live "/availability", AvailabilityLive, :index
     end
   end
 
@@ -89,6 +90,7 @@ defmodule GymStudioWeb.Router do
       live "/gallery", GalleryLive, :index
       live "/analytics", AnalyticsLive, :index
       live "/exercises", ExercisesLive, :index
+      live "/availability", AvailabilityLive, :index
     end
   end
 

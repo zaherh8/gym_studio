@@ -2,24 +2,6 @@ defmodule GymStudioWeb.Client.BookSessionLive do
   use GymStudioWeb, :live_view
   alias GymStudio.{Accounts, Packages, Scheduling}
 
-  # Operating hours by day of week (1 = Monday, 7 = Sunday)
-  @operating_hours %{
-    # Monday: 7 AM - 10 PM
-    1 => {7, 22},
-    # Tuesday
-    2 => {7, 22},
-    # Wednesday
-    3 => {7, 22},
-    # Thursday
-    4 => {7, 22},
-    # Friday
-    5 => {7, 22},
-    # Saturday: 8 AM - 1 PM
-    6 => {8, 13},
-    # Sunday: Closed
-    7 => nil
-  }
-
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.user
@@ -45,8 +27,9 @@ defmodule GymStudioWeb.Client.BookSessionLive do
       |> assign(active_package: active_package)
       |> assign(available_dates: available_dates)
       |> assign(selected_date: selected_date)
-      |> assign(available_slots: generate_time_slots(selected_date))
+      |> assign(available_slots: load_slots(selected_date))
       |> assign(selected_slot: nil)
+      |> assign(selected_trainer_id: nil)
       |> assign(notes: "")
       |> assign(step: 1)
 
@@ -60,8 +43,9 @@ defmodule GymStudioWeb.Client.BookSessionLive do
         socket =
           socket
           |> assign(selected_date: date)
-          |> assign(available_slots: generate_time_slots(date))
+          |> assign(available_slots: load_slots(date))
           |> assign(selected_slot: nil)
+          |> assign(selected_trainer_id: nil)
           |> assign(step: 2)
 
         {:noreply, socket}
@@ -72,10 +56,11 @@ defmodule GymStudioWeb.Client.BookSessionLive do
   end
 
   @impl true
-  def handle_event("select_slot", %{"slot" => slot}, socket) do
+  def handle_event("select_slot", %{"slot" => slot, "trainer" => trainer_id}, socket) do
     socket =
       socket
       |> assign(selected_slot: slot)
+      |> assign(selected_trainer_id: trainer_id)
       |> assign(step: 3)
 
     {:noreply, socket}
@@ -91,6 +76,7 @@ defmodule GymStudioWeb.Client.BookSessionLive do
     user = socket.assigns.current_scope.user
     selected_date = socket.assigns.selected_date
     selected_slot = socket.assigns.selected_slot
+    selected_trainer_id = socket.assigns.selected_trainer_id
     active_package = socket.assigns.active_package
 
     cond do
@@ -119,6 +105,7 @@ defmodule GymStudioWeb.Client.BookSessionLive do
 
         booking_attrs = %{
           client_id: user.id,
+          trainer_id: selected_trainer_id,
           scheduled_at: scheduled_at,
           duration_minutes: 60,
           notes: if(socket.assigns.notes != "", do: socket.assigns.notes, else: nil)
@@ -130,7 +117,7 @@ defmodule GymStudioWeb.Client.BookSessionLive do
               socket
               |> put_flash(
                 :info,
-                "Session booked successfully! You'll be notified once a trainer confirms your booking."
+                "Session booked successfully! You'll be notified once confirmed."
               )
               |> push_navigate(to: ~p"/client/sessions")
 
@@ -144,7 +131,7 @@ defmodule GymStudioWeb.Client.BookSessionLive do
 
   @impl true
   def handle_event("back_to_date", _params, socket) do
-    {:noreply, assign(socket, step: 1, selected_slot: nil)}
+    {:noreply, assign(socket, step: 1, selected_slot: nil, selected_trainer_id: nil)}
   end
 
   @impl true
@@ -152,42 +139,21 @@ defmodule GymStudioWeb.Client.BookSessionLive do
     {:noreply, assign(socket, step: 2)}
   end
 
-  # Generate available dates for the next 2 weeks (excluding Sundays)
+  # Load available slots from all trainers for a date
+  defp load_slots(nil), do: []
+
+  defp load_slots(date) do
+    Scheduling.get_all_available_slots(date)
+  end
+
+  # Generate available dates for the next 2 weeks
   defp generate_available_dates do
     today = Date.utc_today()
 
     Enum.reduce(0..13, [], fn days_ahead, acc ->
       date = Date.add(today, days_ahead)
-      day_of_week = Date.day_of_week(date)
-
-      # Skip Sundays (day 7)
-      if day_of_week == 7 do
-        acc
-      else
-        acc ++ [date]
-      end
+      acc ++ [date]
     end)
-  end
-
-  # Generate time slots based on operating hours for a given date
-  defp generate_time_slots(nil), do: []
-
-  defp generate_time_slots(date) do
-    day_of_week = Date.day_of_week(date)
-
-    case Map.get(@operating_hours, day_of_week) do
-      nil ->
-        []
-
-      {start_hour, end_hour} ->
-        Enum.map(start_hour..(end_hour - 1), fn hour ->
-          %{
-            hour: hour,
-            label: format_time(hour),
-            value: Integer.to_string(hour)
-          }
-        end)
-    end
   end
 
   defp format_time(hour) when hour < 12, do: "#{hour}:00 AM"
@@ -196,6 +162,15 @@ defmodule GymStudioWeb.Client.BookSessionLive do
 
   defp format_date_full(date) do
     Calendar.strftime(date, "%A, %B %d, %Y")
+  end
+
+  defp selected_trainer_name(assigns) do
+    case Enum.find(assigns.available_slots, fn s ->
+           s.value == assigns.selected_slot && s.trainer_id == assigns.selected_trainer_id
+         end) do
+      nil -> "Unknown"
+      slot -> slot.trainer_name
+    end
   end
 
   @impl true
@@ -282,7 +257,8 @@ defmodule GymStudioWeb.Client.BookSessionLive do
                 </div>
               </div>
             <% end %>
-            <!-- Progress Steps -->
+            
+    <!-- Progress Steps -->
             <div class="flex justify-center mb-8">
               <div class="flex items-center space-x-4">
                 <div class={"flex items-center justify-center w-10 h-10 rounded-full font-semibold #{if @step >= 1, do: "bg-primary text-white", else: "bg-gray-300 text-gray-600"}"}>
@@ -339,12 +315,8 @@ defmodule GymStudioWeb.Client.BookSessionLive do
                         <span class="text-xs font-medium uppercase text-gray-500">
                           {Calendar.strftime(date, "%a")}
                         </span>
-                        <span class="text-2xl font-bold">
-                          {Calendar.strftime(date, "%d")}
-                        </span>
-                        <span class="text-xs text-gray-500">
-                          {Calendar.strftime(date, "%b")}
-                        </span>
+                        <span class="text-2xl font-bold">{Calendar.strftime(date, "%d")}</span>
+                        <span class="text-xs text-gray-500">{Calendar.strftime(date, "%b")}</span>
                       </button>
                     <% end %>
                   </div>
@@ -354,7 +326,7 @@ defmodule GymStudioWeb.Client.BookSessionLive do
               <% end %>
             </div>
             
-    <!-- Step 2: Select Time -->
+    <!-- Step 2: Select Time & Trainer -->
             <div class={"bg-white rounded-2xl shadow-lg p-6 mb-6 #{if @step < 2, do: "opacity-40 pointer-events-none"}"}>
               <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
@@ -372,7 +344,7 @@ defmodule GymStudioWeb.Client.BookSessionLive do
                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  Select Time
+                  Select Time & Trainer
                 </h2>
                 <%= if @step > 2 do %>
                   <button phx-click="back_to_time" class="text-primary hover:underline text-sm">
@@ -383,17 +355,22 @@ defmodule GymStudioWeb.Client.BookSessionLive do
 
               <%= if @step == 2 do %>
                 <%= if Enum.empty?(@available_slots) do %>
-                  <p class="text-gray-500 text-center py-4">No available time slots for this date.</p>
+                  <div class="text-center py-6">
+                    <p class="text-gray-500 mb-2">No trainers available on this date.</p>
+                    <p class="text-sm text-gray-400">Try selecting a different date.</p>
+                  </div>
                 <% else %>
-                  <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                     <%= for slot <- @available_slots do %>
                       <button
                         type="button"
                         phx-click="select_slot"
                         phx-value-slot={slot.value}
-                        class={"py-3 px-4 rounded-xl border-2 text-center font-medium transition-all #{if @selected_slot == slot.value, do: "border-primary bg-primary text-white", else: "border-gray-200 hover:border-primary/50"}"}
+                        phx-value-trainer={slot.trainer_id}
+                        class={"py-3 px-4 rounded-xl border-2 text-center transition-all #{if @selected_slot == slot.value && @selected_trainer_id == slot.trainer_id, do: "border-primary bg-primary text-white", else: "border-gray-200 hover:border-primary/50"}"}
                       >
-                        {slot.label}
+                        <div class="font-medium">{slot.label}</div>
+                        <div class="text-xs opacity-75">{slot.trainer_name}</div>
                       </button>
                     <% end %>
                   </div>
@@ -404,6 +381,7 @@ defmodule GymStudioWeb.Client.BookSessionLive do
                     {format_time(String.to_integer(@selected_slot))} - {format_time(
                       String.to_integer(@selected_slot) + 1
                     )}
+                    <span class="text-gray-500 ml-1">with {selected_trainer_name(assigns)}</span>
                   </p>
                 <% end %>
               <% end %>
@@ -430,8 +408,8 @@ defmodule GymStudioWeb.Client.BookSessionLive do
               </h2>
 
               <%= if @step == 3 do %>
-                <div class="bg-gray-50 rounded-xl p-4 mb-4">
-                  <div class="flex items-center gap-4 mb-3">
+                <div class="bg-gray-50 rounded-xl p-4 mb-4 space-y-3">
+                  <div class="flex items-center gap-4">
                     <div class="bg-primary/10 p-3 rounded-lg">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -479,6 +457,28 @@ defmodule GymStudioWeb.Client.BookSessionLive do
                       </p>
                     </div>
                   </div>
+                  <div class="flex items-center gap-4">
+                    <div class="bg-primary/10 p-3 rounded-lg">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-6 w-6 text-primary"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <p class="text-sm text-gray-500">Trainer</p>
+                      <p class="font-semibold text-gray-800">{selected_trainer_name(assigns)}</p>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="form-control mb-4">
@@ -491,28 +491,6 @@ defmodule GymStudioWeb.Client.BookSessionLive do
                     class="textarea textarea-bordered h-20"
                     placeholder="Any goals or notes for this session..."
                   >{@notes}</textarea>
-                </div>
-
-                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
-                  <div class="flex items-start gap-3">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      class="h-5 w-5 text-blue-500 mt-0.5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    <p class="text-sm text-blue-700">
-                      A trainer will be assigned to your session and you'll receive a notification once confirmed.
-                    </p>
-                  </div>
                 </div>
 
                 <button
