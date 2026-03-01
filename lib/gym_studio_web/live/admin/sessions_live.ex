@@ -13,7 +13,9 @@ defmodule GymStudioWeb.Admin.SessionsLive do
        trainers: trainers,
        status_filter: "",
        trainer_filter: "",
-       editing_session_id: nil
+       editing_session_id: nil,
+       assigning_session_id: nil,
+       available_trainers_for_assign: []
      )}
   end
 
@@ -38,6 +40,27 @@ defmodule GymStudioWeb.Admin.SessionsLive do
     {:noreply, reload_sessions(socket)}
   end
 
+  def handle_event("show_assign", %{"id" => session_id}, socket) do
+    session = Scheduling.get_session!(session_id)
+    date = DateTime.to_date(session.scheduled_at)
+    hour = DateTime.to_time(session.scheduled_at).hour
+
+    available =
+      Scheduling.get_all_available_slots(date)
+      |> Enum.filter(fn slot -> slot.hour == hour end)
+      |> Enum.uniq_by(& &1.trainer_id)
+
+    {:noreply,
+     assign(socket,
+       assigning_session_id: session_id,
+       available_trainers_for_assign: available
+     )}
+  end
+
+  def handle_event("cancel_assign", _params, socket) do
+    {:noreply, assign(socket, assigning_session_id: nil, available_trainers_for_assign: [])}
+  end
+
   def handle_event("assign_trainer", %{"id" => id, "trainer_id" => trainer_id}, socket) do
     session = Scheduling.get_session!(id)
     attrs = %{trainer_id: trainer_id}
@@ -48,7 +71,12 @@ defmodule GymStudioWeb.Admin.SessionsLive do
         else: attrs
 
     {:ok, _} = Scheduling.admin_update_session(session, attrs)
-    {:noreply, reload_sessions(socket)}
+
+    {:noreply,
+     socket
+     |> assign(assigning_session_id: nil, available_trainers_for_assign: [])
+     |> reload_sessions()
+     |> put_flash(:info, "Trainer assigned successfully")}
   end
 
   defp reload_sessions(socket) do
@@ -142,23 +170,35 @@ defmodule GymStudioWeb.Admin.SessionsLive do
                     </ul>
                   </div>
                   <%!-- Trainer Assignment --%>
-                  <div class="dropdown dropdown-end">
-                    <div tabindex="0" role="button" class="btn btn-xs btn-ghost">Trainer ▾</div>
-                    <ul
-                      tabindex="0"
-                      class="dropdown-content z-[1] menu p-2 shadow bg-base-200 rounded-box w-48"
+                  <%= if is_nil(session.trainer_id) do %>
+                    <button
+                      phx-click="show_assign"
+                      phx-value-id={session.id}
+                      class="btn btn-xs btn-primary"
                     >
-                      <li :for={trainer <- @trainers}>
-                        <button
-                          phx-click="assign_trainer"
-                          phx-value-id={session.id}
-                          phx-value-trainer_id={trainer.user.id}
-                        >
-                          {trainer.user.name || trainer.user.email}
-                        </button>
-                      </li>
-                    </ul>
-                  </div>
+                      Assign Trainer
+                    </button>
+                  <% else %>
+                    <div class="dropdown dropdown-end">
+                      <div tabindex="0" role="button" class="btn btn-xs btn-ghost">
+                        Reassign ▾
+                      </div>
+                      <ul
+                        tabindex="0"
+                        class="dropdown-content z-[1] menu p-2 shadow bg-base-200 rounded-box w-48"
+                      >
+                        <li :for={trainer <- @trainers}>
+                          <button
+                            phx-click="assign_trainer"
+                            phx-value-id={session.id}
+                            phx-value-trainer_id={trainer.user.id}
+                          >
+                            {trainer.user.name || trainer.user.email}
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+                  <% end %>
                 </div>
               </td>
             </tr>
@@ -167,6 +207,40 @@ defmodule GymStudioWeb.Admin.SessionsLive do
       </div>
 
       <p :if={@sessions == []} class="text-base-content/60 text-center py-8">No sessions found.</p>
+
+      <%!-- Assign Trainer Modal --%>
+      <%= if @assigning_session_id do %>
+        <div class="modal modal-open">
+          <div class="modal-box" phx-click-away="cancel_assign">
+            <button
+              phx-click="cancel_assign"
+              class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+            >
+              ✕
+            </button>
+            <h3 class="font-bold text-lg mb-4">Assign Trainer</h3>
+            <%= if @available_trainers_for_assign == [] do %>
+              <p class="text-warning">No trainers available for this time slot.</p>
+            <% else %>
+              <div class="flex flex-col gap-2">
+                <%= for trainer <- @available_trainers_for_assign do %>
+                  <button
+                    phx-click="assign_trainer"
+                    phx-value-id={@assigning_session_id}
+                    phx-value-trainer_id={trainer.trainer_id}
+                    class="btn btn-outline btn-primary justify-start"
+                  >
+                    {trainer.trainer_name}
+                  </button>
+                <% end %>
+              </div>
+            <% end %>
+            <div class="modal-action">
+              <button phx-click="cancel_assign" class="btn btn-sm">Cancel</button>
+            </div>
+          </div>
+        </div>
+      <% end %>
     </div>
     """
   end

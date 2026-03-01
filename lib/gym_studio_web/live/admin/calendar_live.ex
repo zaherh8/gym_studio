@@ -37,6 +37,7 @@ defmodule GymStudioWeb.Admin.CalendarLive do
       |> assign(filter_trainer_id: nil)
       |> assign(current_week_start: Date.beginning_of_week(today, :monday))
       |> assign(selected_session: nil)
+      |> assign(available_trainers: [])
       |> load_week_data()
 
     {:ok, socket}
@@ -122,11 +123,40 @@ defmodule GymStudioWeb.Admin.CalendarLive do
 
   def handle_event("show_session", %{"session-id" => session_id}, socket) do
     session = find_session(socket.assigns.week_sessions, session_id)
-    {:noreply, assign(socket, selected_session: session)}
+
+    available_trainers =
+      if is_nil(session.trainer_id) do
+        date = DateTime.to_date(session.scheduled_at)
+        hour = DateTime.to_time(session.scheduled_at).hour
+
+        Scheduling.get_all_available_slots(date)
+        |> Enum.filter(fn slot -> slot.hour == hour end)
+        |> Enum.uniq_by(& &1.trainer_id)
+      else
+        []
+      end
+
+    {:noreply, assign(socket, selected_session: session, available_trainers: available_trainers)}
   end
 
   def handle_event("close_modal", _params, socket) do
-    {:noreply, assign(socket, selected_session: nil)}
+    {:noreply, assign(socket, selected_session: nil, available_trainers: [])}
+  end
+
+  def handle_event(
+        "assign_trainer",
+        %{"session-id" => session_id, "trainer-id" => trainer_id},
+        socket
+      ) do
+    session = Scheduling.get_session!(session_id)
+    {:ok, _} = Scheduling.admin_update_session(session, %{trainer_id: trainer_id})
+
+    socket =
+      socket
+      |> assign(selected_session: nil, available_trainers: [])
+      |> load_week_data()
+
+    {:noreply, put_flash(socket, :info, "Trainer assigned successfully")}
   end
 
   defp find_session(week_sessions, session_id) do
@@ -153,7 +183,7 @@ defmodule GymStudioWeb.Admin.CalendarLive do
 
   defp display_name(%{name: name}) when is_binary(name) and name != "", do: name
   defp display_name(%{email: email}) when is_binary(email), do: email
-  defp display_name(_), do: "Unknown"
+  defp display_name(_), do: "Unassigned"
 
   defp format_hour(0), do: "12 AM"
   defp format_hour(h) when h < 12, do: "#{h} AM"
@@ -289,10 +319,36 @@ defmodule GymStudioWeb.Admin.CalendarLive do
                 <span class="text-base-content/60">Client</span>
                 <span class="font-semibold">{display_name(@selected_session.client)}</span>
               </div>
-              <div class="flex justify-between">
+              <div class="flex justify-between items-center">
                 <span class="text-base-content/60">Trainer</span>
-                <span class="font-semibold">{display_name(@selected_session.trainer)}</span>
+                <%= if @selected_session.trainer_id do %>
+                  <span class="font-semibold">{display_name(@selected_session.trainer)}</span>
+                <% else %>
+                  <span class="badge badge-warning badge-sm">Unassigned</span>
+                <% end %>
               </div>
+              <%= if is_nil(@selected_session.trainer_id) and @available_trainers != [] do %>
+                <div class="bg-base-200 rounded-lg p-3">
+                  <p class="text-sm font-medium mb-2">Assign Trainer</p>
+                  <div class="flex flex-col gap-1">
+                    <%= for trainer <- @available_trainers do %>
+                      <button
+                        phx-click="assign_trainer"
+                        phx-value-session-id={@selected_session.id}
+                        phx-value-trainer-id={trainer.trainer_id}
+                        class="btn btn-sm btn-outline btn-primary justify-start"
+                      >
+                        {trainer.trainer_name}
+                      </button>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+              <%= if is_nil(@selected_session.trainer_id) and @available_trainers == [] do %>
+                <div class="bg-warning/10 rounded-lg p-3">
+                  <p class="text-sm text-warning">No trainers available for this time slot.</p>
+                </div>
+              <% end %>
               <div class="flex justify-between">
                 <span class="text-base-content/60">Date</span>
                 <span>
