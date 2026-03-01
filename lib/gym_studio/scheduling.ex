@@ -855,6 +855,21 @@ defmodule GymStudio.Scheduling do
   end
 
   @doc """
+  Lists all availability records for the given trainer IDs in a single query.
+  Returns `%{trainer_id => %{day_of_week => availability}}`.
+  """
+  def list_all_trainer_availabilities(trainer_ids) do
+    TrainerAvailability
+    |> where([a], a.trainer_id in ^trainer_ids)
+    |> order_by([a], asc: a.day_of_week)
+    |> Repo.all()
+    |> Enum.group_by(& &1.trainer_id)
+    |> Map.new(fn {tid, avails} ->
+      {tid, Enum.into(avails, %{}, fn a -> {a.day_of_week, a} end)}
+    end)
+  end
+
+  @doc """
   Upserts trainer availability for a specific day of week.
   """
   def set_trainer_availability(trainer_id, day_of_week, attrs) do
@@ -1042,6 +1057,28 @@ defmodule GymStudio.Scheduling do
       })
       |> Repo.all()
 
+    trainer_ids = Enum.map(availabilities, & &1.trainer_id) |> Enum.uniq()
+
+    # Batch-fetch all booked hours for all trainers on this date (2 queries total)
+    start_of_day = DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
+    end_of_day = DateTime.new!(date, ~T[23:59:59], "Etc/UTC")
+
+    booked_by_trainer =
+      TrainingSession
+      |> where([s], s.trainer_id in ^trainer_ids)
+      |> where([s], s.scheduled_at >= ^start_of_day and s.scheduled_at <= ^end_of_day)
+      |> where([s], s.status in ["pending", "confirmed"])
+      |> select([s], {s.trainer_id, s.scheduled_at})
+      |> Repo.all()
+      |> Enum.group_by(&elem(&1, 0), fn {_, dt} -> dt.hour end)
+      |> Map.new(fn {tid, hours} -> {tid, MapSet.new(hours)} end)
+
+    time_offs_by_trainer =
+      TrainerTimeOff
+      |> where([t], t.trainer_id in ^trainer_ids and t.date == ^date)
+      |> Repo.all()
+      |> Enum.group_by(& &1.trainer_id)
+
     # For each trainer, compute available slots
     Enum.flat_map(availabilities, fn %{
                                        trainer_id: tid,
@@ -1053,28 +1090,12 @@ defmodule GymStudio.Scheduling do
       end_hour = et.hour
       all_hours = Enum.to_list(start_hour..(end_hour - 1))
 
-      # Booked hours
-      start_of_day = DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
-      end_of_day = DateTime.new!(date, ~T[23:59:59], "Etc/UTC")
-
-      booked_hours =
-        TrainingSession
-        |> where([s], s.trainer_id == ^tid)
-        |> where([s], s.scheduled_at >= ^start_of_day and s.scheduled_at <= ^end_of_day)
-        |> where([s], s.status in ["pending", "confirmed"])
-        |> select([s], s.scheduled_at)
-        |> Repo.all()
-        |> Enum.map(fn dt -> dt.hour end)
-        |> MapSet.new()
-
-      # Time-off hours
-      time_offs =
-        TrainerTimeOff
-        |> where([t], t.trainer_id == ^tid and t.date == ^date)
-        |> Repo.all()
+      booked_hours = Map.get(booked_by_trainer, tid, MapSet.new())
 
       time_off_hours =
-        Enum.flat_map(time_offs, fn to ->
+        time_offs_by_trainer
+        |> Map.get(tid, [])
+        |> Enum.flat_map(fn to ->
           if is_nil(to.start_time) || is_nil(to.end_time) do
             all_hours
           else
@@ -1111,6 +1132,7 @@ defmodule GymStudio.Scheduling do
     |> Repo.all()
   end
 
+  defp format_hour(0), do: "12:00 AM"
   defp format_hour(hour) when hour < 12, do: "#{hour}:00 AM"
   defp format_hour(12), do: "12:00 PM"
   defp format_hour(hour), do: "#{hour - 12}:00 PM"

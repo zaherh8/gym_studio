@@ -18,14 +18,8 @@ defmodule GymStudioWeb.Admin.AvailabilityLive do
     trainers = Scheduling.list_trainers_with_availability()
 
     # Build availability map: %{trainer_id => %{day => availability}}
-    availability_map =
-      Enum.into(trainers, %{}, fn %{trainer_id: tid} ->
-        avails =
-          Scheduling.list_trainer_availabilities(tid)
-          |> Enum.into(%{}, fn a -> {a.day_of_week, a} end)
-
-        {tid, avails}
-      end)
+    trainer_ids = Enum.map(trainers, & &1.trainer_id)
+    availability_map = Scheduling.list_all_trainer_availabilities(trainer_ids)
 
     socket =
       socket
@@ -89,15 +83,8 @@ defmodule GymStudioWeb.Admin.AvailabilityLive do
 
   defp reload_data(socket) do
     trainers = Scheduling.list_trainers_with_availability()
-
-    availability_map =
-      Enum.into(trainers, %{}, fn %{trainer_id: tid} ->
-        avails =
-          Scheduling.list_trainer_availabilities(tid)
-          |> Enum.into(%{}, fn a -> {a.day_of_week, a} end)
-
-        {tid, avails}
-      end)
+    trainer_ids = Enum.map(trainers, & &1.trainer_id)
+    availability_map = Scheduling.list_all_trainer_availabilities(trainer_ids)
 
     assign(socket, trainers: trainers, availability_map: availability_map)
   end
