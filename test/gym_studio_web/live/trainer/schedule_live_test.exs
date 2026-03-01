@@ -20,13 +20,11 @@ defmodule GymStudioWeb.Trainer.ScheduleLiveTest do
       %{trainer_user: trainer_user, trainer: trainer, admin: admin}
     end
 
-    test "renders schedule page with read-only notice", %{conn: conn, trainer_user: trainer_user} do
+    test "renders schedule page", %{conn: conn, trainer_user: trainer_user} do
       conn = log_in_user(conn, trainer_user)
       {:ok, _view, html} = live(conn, ~p"/trainer/schedule")
 
       assert html =~ "My Schedule"
-      assert html =~ "Read-only"
-      assert html =~ "Contact admin to manage time slots"
     end
 
     test "navigates between weeks", %{conn: conn, trainer_user: trainer_user} do

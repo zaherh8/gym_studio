@@ -2,6 +2,8 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
   use GymStudioWeb, :live_view
   alias GymStudio.{Accounts, Scheduling}
 
+  @hours_range 6..21
+
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.user
@@ -13,13 +15,22 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
       |> assign(page_title: "My Schedule")
       |> assign(trainer: trainer)
       |> assign(current_week_start: Date.beginning_of_week(today, :monday))
+      |> assign(selected_session: nil)
+      |> assign(
+        mobile_day_offset: day_offset_for_today(today, Date.beginning_of_week(today, :monday))
+      )
       |> load_week_data()
 
     {:ok, socket}
   end
 
+  defp day_offset_for_today(today, week_start) do
+    diff = Date.diff(today, week_start)
+    if diff >= 0 and diff <= 6, do: diff, else: 0
+  end
+
   defp load_week_data(%{assigns: %{trainer: nil}} = socket) do
-    assign(socket, week_sessions: %{}, time_slots: %{})
+    assign(socket, week_sessions: %{}, availability_map: %{})
   end
 
   defp load_week_data(%{assigns: %{trainer: trainer, current_week_start: week_start}} = socket) do
@@ -32,15 +43,26 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
       )
 
     week_sessions =
-      Enum.group_by(sessions, fn session ->
-        DateTime.to_date(session.scheduled_at)
+      sessions
+      |> Enum.group_by(fn session -> DateTime.to_date(session.scheduled_at) end)
+      |> Map.new(fn {date, day_sessions} ->
+        by_hour =
+          Enum.into(day_sessions, %{}, fn s ->
+            {DateTime.to_time(s.scheduled_at).hour, s}
+          end)
+
+        {date, by_hour}
       end)
 
-    # Load time slots grouped by day of week
-    all_slots = Scheduling.list_time_slots(active_only: true)
-    time_slots = Enum.group_by(all_slots, & &1.day_of_week)
+    # Load trainer availability for each day of week
+    availabilities = Scheduling.list_trainer_availabilities(trainer.user_id)
 
-    assign(socket, week_sessions: week_sessions, time_slots: time_slots)
+    availability_map =
+      Enum.into(availabilities, %{}, fn a ->
+        {a.day_of_week, {a.start_time.hour, a.end_time.hour}}
+      end)
+
+    assign(socket, week_sessions: week_sessions, availability_map: availability_map)
   end
 
   @impl true
@@ -73,20 +95,77 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
     socket =
       socket
       |> assign(current_week_start: new_week_start)
+      |> assign(mobile_day_offset: day_offset_for_today(today, new_week_start))
       |> load_week_data()
 
     {:noreply, socket}
   end
 
+  def handle_event("show_session", %{"session-id" => session_id}, socket) do
+    session = find_session_by_id(socket.assigns.week_sessions, session_id)
+    {:noreply, assign(socket, selected_session: session)}
+  end
+
+  def handle_event("close_modal", _params, socket) do
+    {:noreply, assign(socket, selected_session: nil)}
+  end
+
+  def handle_event("mobile_prev_day", _params, socket) do
+    offset = max(socket.assigns.mobile_day_offset - 1, 0)
+    {:noreply, assign(socket, mobile_day_offset: offset)}
+  end
+
+  def handle_event("mobile_next_day", _params, socket) do
+    offset = min(socket.assigns.mobile_day_offset + 1, 6)
+    {:noreply, assign(socket, mobile_day_offset: offset)}
+  end
+
+  defp find_session_by_id(week_sessions, session_id) do
+    Enum.find_value(week_sessions, fn {_date, hour_map} ->
+      Enum.find_value(hour_map, fn {_hour, session} ->
+        if session.id == session_id, do: session
+      end)
+    end)
+  end
+
+  defp is_available?(availability_map, day_of_week, hour) do
+    case Map.get(availability_map, day_of_week) do
+      nil -> false
+      {start_h, end_h} -> hour >= start_h and hour < end_h
+    end
+  end
+
+  defp session_color("pending"), do: "bg-warning text-warning-content"
+  defp session_color("confirmed"), do: "bg-success text-success-content"
+  defp session_color("completed"), do: "bg-base-300 text-base-content"
+  defp session_color("cancelled"), do: "bg-error text-error-content"
+  defp session_color("no_show"), do: "bg-error/50 text-error-content"
+  defp session_color(_), do: "bg-base-200"
+
+  defp status_badge("pending"), do: "badge-warning"
+  defp status_badge("confirmed"), do: "badge-success"
+  defp status_badge("completed"), do: "badge-ghost"
+  defp status_badge("cancelled"), do: "badge-error"
+  defp status_badge("no_show"), do: "badge-error"
+  defp status_badge(_), do: "badge-ghost"
+
+  defp display_name(%{name: name}) when is_binary(name) and name != "", do: name
+  defp display_name(%{email: email}) when is_binary(email), do: email
+  defp display_name(_), do: "Unknown"
+
+  defp format_hour(0), do: "12 AM"
+  defp format_hour(h) when h < 12, do: "#{h} AM"
+  defp format_hour(12), do: "12 PM"
+  defp format_hour(h), do: "#{h - 12} PM"
+
   @impl true
   def render(assigns) do
+    assigns = assign(assigns, :hours_range, @hours_range)
+
     ~H"""
-    <div class="container mx-auto px-4 py-8">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <h1 class="text-3xl font-bold">My Schedule</h1>
-        <div class="badge badge-outline badge-lg">
-          📋 Read-only — Contact admin to manage time slots
-        </div>
+    <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 class="text-2xl sm:text-3xl font-bold">My Schedule</h1>
       </div>
 
       <%= if @trainer == nil do %>
@@ -95,12 +174,10 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
         </div>
       <% else %>
         <!-- Week Navigation -->
-        <div class="flex justify-between items-center mb-6">
-          <button phx-click="previous_week" class="btn btn-ghost btn-sm">
-            ← Prev
-          </button>
+        <div class="flex justify-between items-center mb-4">
+          <button phx-click="previous_week" class="btn btn-ghost btn-sm">← Prev</button>
           <div class="text-center">
-            <h2 class="text-lg sm:text-xl font-semibold">
+            <h2 class="text-base sm:text-xl font-semibold">
               {Calendar.strftime(@current_week_start, "%b %d")} – {Calendar.strftime(
                 Date.add(@current_week_start, 6),
                 "%b %d, %Y"
@@ -108,170 +185,216 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
             </h2>
             <button phx-click="today" class="btn btn-ghost btn-xs mt-1">Today</button>
           </div>
-          <button phx-click="next_week" class="btn btn-ghost btn-sm">
-            Next →
-          </button>
+          <button phx-click="next_week" class="btn btn-ghost btn-sm">Next →</button>
         </div>
         
-    <!-- Desktop: Week Grid -->
-        <div class="hidden lg:grid grid-cols-7 gap-2">
-          <!-- Day Headers -->
-          <%= for day_offset <- 0..6 do %>
-            <% day = Date.add(@current_week_start, day_offset) %>
-            <div class={"text-center p-2 rounded-t-lg #{if day == Date.utc_today(), do: "bg-primary text-primary-content", else: "bg-base-200"}"}>
-              <div class="text-sm font-medium">{Calendar.strftime(day, "%a")}</div>
-              <div class="text-lg font-bold">{Calendar.strftime(day, "%d")}</div>
-            </div>
-          <% end %>
-          
-    <!-- Day Contents -->
-          <%= for day_offset <- 0..6 do %>
-            <% day = Date.add(@current_week_start, day_offset) %>
-            <% day_sessions = Map.get(@week_sessions, day, []) %>
-            <% day_of_week = Date.day_of_week(day) %>
-            <% day_slots = Map.get(@time_slots, day_of_week, []) %>
-            <div class={"min-h-40 p-2 border rounded-b-lg #{if day == Date.utc_today(), do: "border-primary"}"}>
-              <%= if Enum.empty?(day_slots) and Enum.empty?(day_sessions) do %>
-                <p class="text-xs text-base-content/30 text-center mt-4">No slots</p>
-              <% else %>
-                <div class="space-y-1">
-                  <%= for slot <- Enum.sort_by(day_slots, & &1.start_time) do %>
-                    <% session = find_session_for_slot(day_sessions, slot) %>
-                    <%= if session do %>
-                      <div class={"p-2 rounded text-xs #{session_bg_class(session.status)}"}>
-                        <div class="font-medium">
-                          {Calendar.strftime(slot.start_time, "%H:%M")}
-                        </div>
-                        <div class="truncate font-semibold">{display_name(session.client)}</div>
-                        <div class="truncate opacity-75">{session.status}</div>
-                      </div>
-                    <% else %>
-                      <div class="p-2 rounded text-xs bg-base-200 text-base-content/40 border border-dashed border-base-300">
-                        <div class="font-medium">
-                          {Calendar.strftime(slot.start_time, "%H:%M")}
-                        </div>
-                        <div class="italic">Available</div>
-                      </div>
-                    <% end %>
-                  <% end %>
+    <!-- Desktop: Weekly Calendar Grid -->
+        <div class="hidden lg:block overflow-x-auto">
+          <div class="min-w-[700px]">
+            <!-- Header Row -->
+            <div class="grid grid-cols-[60px_repeat(7,1fr)] border-b border-base-300">
+              <div class="p-2"></div>
+              <%= for day_offset <- 0..6 do %>
+                <% day = Date.add(@current_week_start, day_offset) %>
+                <div class={"text-center p-2 #{if day == Date.utc_today(), do: "bg-primary/10 rounded-t-lg"}"}>
+                  <div class="text-xs font-medium text-base-content/60">
+                    {Calendar.strftime(day, "%a")}
+                  </div>
+                  <div class={"text-lg font-bold #{if day == Date.utc_today(), do: "text-primary"}"}>
+                    {Calendar.strftime(day, "%d")}
+                  </div>
                 </div>
               <% end %>
             </div>
-          <% end %>
-        </div>
-        
-    <!-- Mobile: Stacked Days -->
-        <div class="lg:hidden space-y-4">
-          <%= for day_offset <- 0..6 do %>
-            <% day = Date.add(@current_week_start, day_offset) %>
-            <% day_sessions = Map.get(@week_sessions, day, []) %>
-            <% day_of_week = Date.day_of_week(day) %>
-            <% day_slots = Map.get(@time_slots, day_of_week, []) %>
-            <div class={"card bg-base-100 shadow-md #{if day == Date.utc_today(), do: "ring-2 ring-primary"}"}>
-              <div class="card-body p-4">
-                <h3 class={"card-title text-base #{if day == Date.utc_today(), do: "text-primary"}"}>
-                  {Calendar.strftime(day, "%A")}
-                  <span class="text-sm font-normal text-base-content/70">
-                    {Calendar.strftime(day, "%b %d")}
-                  </span>
-                  <%= if day == Date.utc_today() do %>
-                    <span class="badge badge-primary badge-sm">Today</span>
-                  <% end %>
-                </h3>
-                <%= if Enum.empty?(day_slots) and Enum.empty?(day_sessions) do %>
-                  <p class="text-sm text-base-content/40">No time slots</p>
-                <% else %>
-                  <div class="space-y-2">
-                    <%= for slot <- Enum.sort_by(day_slots, & &1.start_time) do %>
-                      <% session = find_session_for_slot(day_sessions, slot) %>
-                      <%= if session do %>
-                        <div class={"flex justify-between items-center p-3 rounded-lg #{session_bg_class(session.status)}"}>
-                          <div>
-                            <span class="font-medium">
-                              {Calendar.strftime(slot.start_time, "%H:%M")} – {Calendar.strftime(
-                                slot.end_time,
-                                "%H:%M"
-                              )}
-                            </span>
-                            <p class="text-sm font-semibold">{display_name(session.client)}</p>
-                          </div>
-                          <span class={"badge badge-sm #{status_badge_class(session.status)}"}>
-                            {session.status}
-                          </span>
-                        </div>
-                      <% else %>
-                        <div class="flex justify-between items-center p-3 rounded-lg bg-base-200 border border-dashed border-base-300">
-                          <div>
-                            <span class="font-medium text-base-content/60">
-                              {Calendar.strftime(slot.start_time, "%H:%M")} – {Calendar.strftime(
-                                slot.end_time,
-                                "%H:%M"
-                              )}
-                            </span>
-                            <p class="text-sm text-base-content/40 italic">Available</p>
-                          </div>
-                          <span class="badge badge-ghost badge-sm">Open</span>
-                        </div>
+            
+    <!-- Hour Rows -->
+            <%= for hour <- @hours_range do %>
+              <div class="grid grid-cols-[60px_repeat(7,1fr)] border-b border-base-200 min-h-[48px]">
+                <div class="text-xs text-base-content/40 p-1 text-right pr-2 pt-2">
+                  {format_hour(hour)}
+                </div>
+                <%= for day_offset <- 0..6 do %>
+                  <% day = Date.add(@current_week_start, day_offset) %>
+                  <% dow = Date.day_of_week(day) %>
+                  <% available = is_available?(@availability_map, dow, hour) %>
+                  <% session = get_in(@week_sessions, [day, hour]) %>
+                  <div class={"border-l border-base-200 p-0.5 #{if available, do: "bg-base-100", else: "bg-base-200/50"}"}>
+                    <%= if session do %>
+                      <button
+                        type="button"
+                        phx-click="show_session"
+                        phx-value-session-id={session.id}
+                        class={"w-full text-left p-1.5 rounded text-xs cursor-pointer hover:opacity-80 #{session_color(session.status)}"}
+                      >
+                        <div class="font-semibold truncate">{display_name(session.client)}</div>
+                        <div class="truncate opacity-75">{session.status}</div>
+                      </button>
+                    <% else %>
+                      <%= if available do %>
+                        <div class="w-full h-full min-h-[40px]"></div>
                       <% end %>
                     <% end %>
                   </div>
                 <% end %>
               </div>
+            <% end %>
+          </div>
+        </div>
+        
+    <!-- Mobile: Single Day View with swipe -->
+        <div class="lg:hidden">
+          <% mobile_day = Date.add(@current_week_start, @mobile_day_offset) %>
+          <% mobile_dow = Date.day_of_week(mobile_day) %>
+          
+    <!-- Day Selector -->
+          <div class="flex items-center justify-between mb-4">
+            <button
+              phx-click="mobile_prev_day"
+              class={"btn btn-ghost btn-sm #{if @mobile_day_offset == 0, do: "btn-disabled"}"}
+            >
+              ←
+            </button>
+            <div class="text-center">
+              <div class={"text-lg font-bold #{if mobile_day == Date.utc_today(), do: "text-primary"}"}>
+                {Calendar.strftime(mobile_day, "%A")}
+              </div>
+              <div class="text-sm text-base-content/60">{Calendar.strftime(mobile_day, "%b %d")}</div>
             </div>
-          <% end %>
+            <button
+              phx-click="mobile_next_day"
+              class={"btn btn-ghost btn-sm #{if @mobile_day_offset == 6, do: "btn-disabled"}"}
+            >
+              →
+            </button>
+          </div>
+          
+    <!-- Day dots -->
+          <div class="flex justify-center gap-1.5 mb-4">
+            <%= for i <- 0..6 do %>
+              <div class={"w-2 h-2 rounded-full #{if i == @mobile_day_offset, do: "bg-primary", else: "bg-base-300"}"}>
+              </div>
+            <% end %>
+          </div>
+          
+    <!-- Hour Slots -->
+          <div class="space-y-1">
+            <%= for hour <- @hours_range do %>
+              <% available = is_available?(@availability_map, mobile_dow, hour) %>
+              <% session = get_in(@week_sessions, [mobile_day, hour]) %>
+              <div class={"flex items-stretch rounded-lg overflow-hidden #{if available, do: "bg-base-100", else: "bg-base-200/30"}"}>
+                <div class="w-16 shrink-0 text-xs text-base-content/40 p-2 flex items-center justify-end pr-3">
+                  {format_hour(hour)}
+                </div>
+                <div class="flex-1 min-h-[44px] border-l border-base-200">
+                  <%= if session do %>
+                    <button
+                      type="button"
+                      phx-click="show_session"
+                      phx-value-session-id={session.id}
+                      class={"w-full text-left p-2 #{session_color(session.status)}"}
+                    >
+                      <div class="font-semibold text-sm">{display_name(session.client)}</div>
+                      <div class="text-xs opacity-75">{session.status}</div>
+                    </button>
+                  <% else %>
+                    <%= if available do %>
+                      <div class="p-2 text-xs text-base-content/20 italic">Available</div>
+                    <% end %>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
         </div>
         
     <!-- Legend -->
-        <div class="flex flex-wrap gap-4 mt-6 text-sm">
-          <div class="flex items-center gap-2">
-            <div class="w-4 h-4 bg-base-200 border border-dashed border-base-300 rounded"></div>
+        <div class="flex flex-wrap gap-3 mt-6 text-xs sm:text-sm">
+          <div class="flex items-center gap-1.5">
+            <div class="w-3 h-3 bg-base-100 border border-base-300 rounded"></div>
             <span>Available</span>
           </div>
-          <div class="flex items-center gap-2">
-            <div class="w-4 h-4 bg-warning rounded"></div>
+          <div class="flex items-center gap-1.5">
+            <div class="w-3 h-3 bg-base-200/50 rounded"></div>
+            <span>Unavailable</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <div class="w-3 h-3 bg-warning rounded"></div>
             <span>Pending</span>
           </div>
-          <div class="flex items-center gap-2">
-            <div class="w-4 h-4 bg-success rounded"></div>
+          <div class="flex items-center gap-1.5">
+            <div class="w-3 h-3 bg-success rounded"></div>
             <span>Confirmed</span>
           </div>
-          <div class="flex items-center gap-2">
-            <div class="w-4 h-4 bg-info rounded"></div>
+          <div class="flex items-center gap-1.5">
+            <div class="w-3 h-3 bg-base-300 rounded"></div>
             <span>Completed</span>
           </div>
-          <div class="flex items-center gap-2">
-            <div class="w-4 h-4 bg-error rounded"></div>
+          <div class="flex items-center gap-1.5">
+            <div class="w-3 h-3 bg-error rounded"></div>
             <span>Cancelled</span>
           </div>
         </div>
+        
+    <!-- Session Detail Modal -->
+        <%= if @selected_session do %>
+          <div class="modal modal-open" phx-click="close_modal">
+            <div class="modal-box" phx-click-away="close_modal">
+              <button
+                phx-click="close_modal"
+                class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+              >
+                ✕
+              </button>
+              <h3 class="font-bold text-lg mb-4">Session Details</h3>
+
+              <div class="space-y-3">
+                <div class="flex justify-between">
+                  <span class="text-base-content/60">Client</span>
+                  <span class="font-semibold">{display_name(@selected_session.client)}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-base-content/60">Date</span>
+                  <span class="font-semibold">
+                    {Calendar.strftime(
+                      DateTime.to_date(@selected_session.scheduled_at),
+                      "%A, %b %d %Y"
+                    )}
+                  </span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-base-content/60">Time</span>
+                  <span class="font-semibold">
+                    {format_hour(DateTime.to_time(@selected_session.scheduled_at).hour)}
+                  </span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-base-content/60">Status</span>
+                  <span class={"badge #{status_badge(@selected_session.status)}"}>
+                    {@selected_session.status}
+                  </span>
+                </div>
+                <%= if @selected_session.notes do %>
+                  <div>
+                    <span class="text-base-content/60 block mb-1">Notes</span>
+                    <p class="text-sm bg-base-200 p-2 rounded">{@selected_session.notes}</p>
+                  </div>
+                <% end %>
+                <%= if @selected_session.duration_minutes do %>
+                  <div class="flex justify-between">
+                    <span class="text-base-content/60">Duration</span>
+                    <span>{@selected_session.duration_minutes} min</span>
+                  </div>
+                <% end %>
+              </div>
+
+              <div class="modal-action">
+                <button phx-click="close_modal" class="btn">Close</button>
+              </div>
+            </div>
+          </div>
+        <% end %>
       <% end %>
     </div>
     """
   end
-
-  defp find_session_for_slot(day_sessions, slot) do
-    Enum.find(day_sessions, fn session ->
-      session_time = DateTime.to_time(session.scheduled_at)
-
-      # Match if session starts within the slot's time range
-      Time.compare(session_time, slot.start_time) in [:eq, :gt] and
-        Time.compare(session_time, slot.end_time) == :lt
-    end)
-  end
-
-  defp display_name(%{name: name}) when is_binary(name) and name != "", do: name
-  defp display_name(%{email: email}) when is_binary(email), do: email
-  defp display_name(_), do: "Unknown"
-
-  defp session_bg_class("pending"), do: "bg-warning/20 text-warning-content"
-  defp session_bg_class("confirmed"), do: "bg-success/20 text-success-content"
-  defp session_bg_class("completed"), do: "bg-info/20 text-info-content"
-  defp session_bg_class("cancelled"), do: "bg-error/20 text-error-content"
-  defp session_bg_class(_), do: "bg-base-200"
-
-  defp status_badge_class("pending"), do: "badge-warning"
-  defp status_badge_class("confirmed"), do: "badge-success"
-  defp status_badge_class("completed"), do: "badge-info"
-  defp status_badge_class("cancelled"), do: "badge-error"
-  defp status_badge_class(_), do: "badge-ghost"
 end

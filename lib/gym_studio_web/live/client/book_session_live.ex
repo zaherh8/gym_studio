@@ -17,6 +17,20 @@ defmodule GymStudioWeb.Client.BookSessionLive do
         nil
       end
 
+    # Load past bookings to find preferred times
+    past_sessions =
+      if client do
+        Scheduling.list_sessions_for_client(user.id,
+          status: "completed",
+          preload: [:trainer]
+        )
+      else
+        []
+      end
+
+    preferred_hours = compute_preferred_hours(past_sessions)
+    preferred_trainer_id = compute_preferred_trainer(past_sessions)
+
     available_dates = generate_available_dates()
     selected_date = List.first(available_dates)
 
@@ -32,8 +46,28 @@ defmodule GymStudioWeb.Client.BookSessionLive do
       |> assign(selected_trainer_id: nil)
       |> assign(notes: "")
       |> assign(step: 1)
+      |> assign(preferred_hours: preferred_hours)
+      |> assign(preferred_trainer_id: preferred_trainer_id)
 
     {:ok, socket}
+  end
+
+  defp compute_preferred_hours(sessions) do
+    sessions
+    |> Enum.map(fn s -> DateTime.to_time(s.scheduled_at).hour end)
+    |> Enum.frequencies()
+    |> Enum.sort_by(fn {_h, count} -> -count end)
+    |> Enum.take(3)
+    |> Enum.map(fn {h, _} -> h end)
+    |> MapSet.new()
+  end
+
+  defp compute_preferred_trainer(sessions) do
+    sessions
+    |> Enum.map(& &1.trainer_id)
+    |> Enum.frequencies()
+    |> Enum.max_by(fn {_, count} -> count end, fn -> {nil, 0} end)
+    |> elem(0)
   end
 
   @impl true
@@ -139,23 +173,18 @@ defmodule GymStudioWeb.Client.BookSessionLive do
     {:noreply, assign(socket, step: 2)}
   end
 
-  # Load available slots from all trainers for a date
   defp load_slots(nil), do: []
 
   defp load_slots(date) do
     Scheduling.get_all_available_slots(date)
   end
 
-  # Generate available dates for the next 2 weeks
   defp generate_available_dates do
     today = Date.utc_today()
-
-    Enum.reduce(0..13, [], fn days_ahead, acc ->
-      date = Date.add(today, days_ahead)
-      acc ++ [date]
-    end)
+    Enum.map(0..13, &Date.add(today, &1))
   end
 
+  defp format_time(hour) when hour == 0, do: "12:00 AM"
   defp format_time(hour) when hour < 12, do: "#{hour}:00 AM"
   defp format_time(12), do: "12:00 PM"
   defp format_time(hour), do: "#{hour - 12}:00 PM"
@@ -173,21 +202,33 @@ defmodule GymStudioWeb.Client.BookSessionLive do
     end
   end
 
+  # Group slots by trainer for visual display
+  defp group_slots_by_trainer(slots) do
+    slots
+    |> Enum.group_by(fn s -> {s.trainer_id, s.trainer_name} end)
+    |> Enum.sort_by(fn {{_id, name}, _} -> name end)
+  end
+
+  defp is_recommended?(slot, preferred_hours, preferred_trainer_id) do
+    hour = String.to_integer(slot.value)
+    MapSet.member?(preferred_hours, hour) or slot.trainer_id == preferred_trainer_id
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-gray-100 py-8">
+    <div class="min-h-screen bg-base-200 py-8">
       <div class="container mx-auto px-4">
         <div class="max-w-2xl mx-auto">
           <!-- Header -->
           <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">Book a Session</h1>
-            <p class="text-gray-600">Select your preferred date and time</p>
+            <h1 class="text-3xl font-bold mb-2">Book a Session</h1>
+            <p class="text-base-content/60">Select your preferred date and time</p>
           </div>
 
           <%= if @client == nil do %>
-            <div class="bg-white rounded-2xl shadow-lg p-8 text-center">
-              <div class="text-amber-500 mb-4">
+            <div class="card bg-base-100 shadow-lg p-8 text-center">
+              <div class="text-warning mb-4">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   class="h-16 w-16 mx-auto"
@@ -203,8 +244,8 @@ defmodule GymStudioWeb.Client.BookSessionLive do
                   />
                 </svg>
               </div>
-              <h2 class="text-xl font-semibold text-gray-800 mb-2">Profile Setup Required</h2>
-              <p class="text-gray-600">
+              <h2 class="text-xl font-semibold mb-2">Profile Setup Required</h2>
+              <p class="text-base-content/60">
                 Your client profile is not set up yet. Please contact an administrator.
               </p>
             </div>
@@ -261,39 +302,25 @@ defmodule GymStudioWeb.Client.BookSessionLive do
     <!-- Progress Steps -->
             <div class="flex justify-center mb-8">
               <div class="flex items-center space-x-4">
-                <div class={"flex items-center justify-center w-10 h-10 rounded-full font-semibold #{if @step >= 1, do: "bg-primary text-white", else: "bg-gray-300 text-gray-600"}"}>
+                <div class={"flex items-center justify-center w-10 h-10 rounded-full font-semibold #{if @step >= 1, do: "bg-primary text-primary-content", else: "bg-base-300 text-base-content/60"}"}>
                   1
                 </div>
-                <div class={"w-16 h-1 #{if @step >= 2, do: "bg-primary", else: "bg-gray-300"}"}></div>
-                <div class={"flex items-center justify-center w-10 h-10 rounded-full font-semibold #{if @step >= 2, do: "bg-primary text-white", else: "bg-gray-300 text-gray-600"}"}>
+                <div class={"w-16 h-1 #{if @step >= 2, do: "bg-primary", else: "bg-base-300"}"}></div>
+                <div class={"flex items-center justify-center w-10 h-10 rounded-full font-semibold #{if @step >= 2, do: "bg-primary text-primary-content", else: "bg-base-300 text-base-content/60"}"}>
                   2
                 </div>
-                <div class={"w-16 h-1 #{if @step >= 3, do: "bg-primary", else: "bg-gray-300"}"}></div>
-                <div class={"flex items-center justify-center w-10 h-10 rounded-full font-semibold #{if @step >= 3, do: "bg-primary text-white", else: "bg-gray-300 text-gray-600"}"}>
+                <div class={"w-16 h-1 #{if @step >= 3, do: "bg-primary", else: "bg-base-300"}"}></div>
+                <div class={"flex items-center justify-center w-10 h-10 rounded-full font-semibold #{if @step >= 3, do: "bg-primary text-primary-content", else: "bg-base-300 text-base-content/60"}"}>
                   3
                 </div>
               </div>
             </div>
             
     <!-- Step 1: Select Date -->
-            <div class={"bg-white rounded-2xl shadow-lg p-6 mb-6 #{if @step != 1, do: "opacity-60"}"}>
+            <div class={"card bg-base-100 shadow-lg p-6 mb-6 #{if @step != 1, do: "opacity-60"}"}>
               <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-6 w-6 text-primary"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                  Select Date
+                <h2 class="text-xl font-semibold flex items-center gap-2">
+                  📅 Select Date
                 </h2>
                 <%= if @step > 1 do %>
                   <button phx-click="back_to_date" class="text-primary hover:underline text-sm">
@@ -310,41 +337,29 @@ defmodule GymStudioWeb.Client.BookSessionLive do
                         type="button"
                         phx-click="select_date"
                         phx-value-date={Date.to_string(date)}
-                        class={"flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all min-w-[80px] #{if @selected_date == date, do: "border-primary bg-primary/10 text-primary", else: "border-gray-200 hover:border-primary/50"}"}
+                        class={"flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all min-w-[80px] #{if @selected_date == date, do: "border-primary bg-primary/10 text-primary", else: "border-base-300 hover:border-primary/50"}"}
                       >
-                        <span class="text-xs font-medium uppercase text-gray-500">
+                        <span class="text-xs font-medium uppercase text-base-content/50">
                           {Calendar.strftime(date, "%a")}
                         </span>
                         <span class="text-2xl font-bold">{Calendar.strftime(date, "%d")}</span>
-                        <span class="text-xs text-gray-500">{Calendar.strftime(date, "%b")}</span>
+                        <span class="text-xs text-base-content/50">
+                          {Calendar.strftime(date, "%b")}
+                        </span>
                       </button>
                     <% end %>
                   </div>
                 </div>
               <% else %>
-                <p class="text-gray-700 font-medium">{format_date_full(@selected_date)}</p>
+                <p class="font-medium">{format_date_full(@selected_date)}</p>
               <% end %>
             </div>
             
-    <!-- Step 2: Select Time & Trainer -->
-            <div class={"bg-white rounded-2xl shadow-lg p-6 mb-6 #{if @step < 2, do: "opacity-40 pointer-events-none"}"}>
+    <!-- Step 2: Select Time & Trainer (Grouped by Trainer) -->
+            <div class={"card bg-base-100 shadow-lg p-6 mb-6 #{if @step < 2, do: "opacity-40 pointer-events-none"}"}>
               <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-6 w-6 text-primary"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  Select Time & Trainer
+                <h2 class="text-xl font-semibold flex items-center gap-2">
+                  🕐 Select Time & Trainer
                 </h2>
                 <%= if @step > 2 do %>
                   <button phx-click="back_to_time" class="text-primary hover:underline text-sm">
@@ -356,101 +371,84 @@ defmodule GymStudioWeb.Client.BookSessionLive do
               <%= if @step == 2 do %>
                 <%= if Enum.empty?(@available_slots) do %>
                   <div class="text-center py-6">
-                    <p class="text-gray-500 mb-2">No trainers available on this date.</p>
-                    <p class="text-sm text-gray-400">Try selecting a different date.</p>
+                    <p class="text-base-content/50 mb-2">No trainers available on this date.</p>
+                    <p class="text-sm text-base-content/30">Try selecting a different date.</p>
                   </div>
                 <% else %>
-                  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    <%= for slot <- @available_slots do %>
-                      <button
-                        type="button"
-                        phx-click="select_slot"
-                        phx-value-slot={slot.value}
-                        phx-value-trainer={slot.trainer_id}
-                        class={"py-3 px-4 rounded-xl border-2 text-center transition-all #{if @selected_slot == slot.value && @selected_trainer_id == slot.trainer_id, do: "border-primary bg-primary text-white", else: "border-gray-200 hover:border-primary/50"}"}
-                      >
-                        <div class="font-medium">{slot.label}</div>
-                        <div class="text-xs opacity-75">{slot.trainer_name}</div>
-                      </button>
+                  <div class="space-y-6">
+                    <%= for {{trainer_id, trainer_name}, slots} <- group_slots_by_trainer(@available_slots) do %>
+                      <div>
+                        <div class="flex items-center gap-2 mb-3">
+                          <div class="avatar placeholder">
+                            <div class="bg-primary text-primary-content rounded-full w-8">
+                              <span class="text-xs">{String.first(trainer_name || "?")}</span>
+                            </div>
+                          </div>
+                          <span class="font-semibold">{trainer_name}</span>
+                          <%= if trainer_id == @preferred_trainer_id do %>
+                            <span class="badge badge-primary badge-xs">Preferred</span>
+                          <% end %>
+                        </div>
+                        <div class="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                          <%= for slot <- Enum.sort_by(slots, & &1.value) do %>
+                            <% recommended =
+                              is_recommended?(slot, @preferred_hours, @preferred_trainer_id) %>
+                            <button
+                              type="button"
+                              phx-click="select_slot"
+                              phx-value-slot={slot.value}
+                              phx-value-trainer={slot.trainer_id}
+                              class={"py-2.5 px-3 rounded-xl border-2 text-center transition-all relative #{cond do
+                                @selected_slot == slot.value && @selected_trainer_id == slot.trainer_id -> "border-primary bg-primary text-primary-content"
+                                recommended -> "border-primary/30 bg-primary/5 hover:border-primary/50"
+                                true -> "border-base-300 hover:border-primary/50"
+                              end}"}
+                            >
+                              <div class="font-medium text-sm">{slot.label}</div>
+                              <%= if recommended and not (@selected_slot == slot.value && @selected_trainer_id == slot.trainer_id) do %>
+                                <div class="text-[10px] text-primary font-medium">★ Recommended</div>
+                              <% end %>
+                            </button>
+                          <% end %>
+                        </div>
+                      </div>
                     <% end %>
                   </div>
                 <% end %>
               <% else %>
                 <%= if @selected_slot do %>
-                  <p class="text-gray-700 font-medium">
+                  <p class="font-medium">
                     {format_time(String.to_integer(@selected_slot))} - {format_time(
                       String.to_integer(@selected_slot) + 1
                     )}
-                    <span class="text-gray-500 ml-1">with {selected_trainer_name(assigns)}</span>
+                    <span class="text-base-content/50 ml-1">
+                      with {selected_trainer_name(assigns)}
+                    </span>
                   </p>
                 <% end %>
               <% end %>
             </div>
             
-    <!-- Step 3: Confirm Booking -->
-            <div class={"bg-white rounded-2xl shadow-lg p-6 #{if @step < 3, do: "opacity-40 pointer-events-none"}"}>
-              <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2 mb-4">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-6 w-6 text-primary"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                Confirm Booking
+    <!-- Step 3: Confirm -->
+            <div class={"card bg-base-100 shadow-lg p-6 #{if @step < 3, do: "opacity-40 pointer-events-none"}"}>
+              <h2 class="text-xl font-semibold flex items-center gap-2 mb-4">
+                ✅ Confirm Booking
               </h2>
 
               <%= if @step == 3 do %>
-                <div class="bg-gray-50 rounded-xl p-4 mb-4 space-y-3">
+                <div class="bg-base-200 rounded-xl p-4 mb-4 space-y-3">
                   <div class="flex items-center gap-4">
-                    <div class="bg-primary/10 p-3 rounded-lg">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-6 w-6 text-primary"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                    </div>
+                    <div class="bg-primary/10 p-3 rounded-lg">📅</div>
                     <div>
-                      <p class="text-sm text-gray-500">Date</p>
-                      <p class="font-semibold text-gray-800">{format_date_full(@selected_date)}</p>
+                      <p class="text-sm text-base-content/50">Date</p>
+                      <p class="font-semibold">{format_date_full(@selected_date)}</p>
                     </div>
                   </div>
                   <div class="flex items-center gap-4">
-                    <div class="bg-primary/10 p-3 rounded-lg">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-6 w-6 text-primary"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                    </div>
+                    <div class="bg-primary/10 p-3 rounded-lg">🕐</div>
                     <div>
-                      <p class="text-sm text-gray-500">Time</p>
-                      <p class="font-semibold text-gray-800">
+                      <p class="text-sm text-base-content/50">Time</p>
+                      <p class="font-semibold">
                         {format_time(String.to_integer(@selected_slot))} - {format_time(
                           String.to_integer(@selected_slot) + 1
                         )}
@@ -458,25 +456,10 @@ defmodule GymStudioWeb.Client.BookSessionLive do
                     </div>
                   </div>
                   <div class="flex items-center gap-4">
-                    <div class="bg-primary/10 p-3 rounded-lg">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-6 w-6 text-primary"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
-                      </svg>
-                    </div>
+                    <div class="bg-primary/10 p-3 rounded-lg">👤</div>
                     <div>
-                      <p class="text-sm text-gray-500">Trainer</p>
-                      <p class="font-semibold text-gray-800">{selected_trainer_name(assigns)}</p>
+                      <p class="text-sm text-base-content/50">Trainer</p>
+                      <p class="font-semibold">{selected_trainer_name(assigns)}</p>
                     </div>
                   </div>
                 </div>
