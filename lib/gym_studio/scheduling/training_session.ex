@@ -64,11 +64,19 @@ defmodule GymStudio.Scheduling.TrainingSession do
   """
   def changeset(training_session, attrs) do
     training_session
-    |> cast(attrs, [:client_id, :package_id, :scheduled_at, :duration_minutes, :notes])
+    |> cast(attrs, [
+      :client_id,
+      :trainer_id,
+      :package_id,
+      :scheduled_at,
+      :duration_minutes,
+      :notes
+    ])
     |> validate_required([:client_id, :scheduled_at, :duration_minutes])
     |> validate_number(:duration_minutes, greater_than: 0)
     |> validate_scheduled_at_in_future()
     |> foreign_key_constraint(:client_id)
+    |> foreign_key_constraint(:trainer_id)
     |> foreign_key_constraint(:package_id)
     |> put_change(:status, "pending")
   end
