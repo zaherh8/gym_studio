@@ -14,6 +14,8 @@ defmodule GymStudio.Scheduling do
 
   alias GymStudio.Scheduling.TrainingSession
   alias GymStudio.Scheduling.TimeSlot
+  alias GymStudio.Scheduling.TrainerAvailability
+  alias GymStudio.Scheduling.TrainerTimeOff
 
   # Training Session functions
 
@@ -837,4 +839,301 @@ defmodule GymStudio.Scheduling do
     |> Ecto.Changeset.change(%{trainer_id: trainer_id})
     |> Repo.update()
   end
+
+  # =============================================================================
+  # Trainer Availability
+  # =============================================================================
+
+  @doc """
+  Lists all availability records for a trainer, ordered by day_of_week.
+  """
+  def list_trainer_availabilities(trainer_id) do
+    TrainerAvailability
+    |> where([a], a.trainer_id == ^trainer_id)
+    |> order_by([a], asc: a.day_of_week)
+    |> Repo.all()
+  end
+
+  @doc """
+  Lists all availability records for the given trainer IDs in a single query.
+  Returns `%{trainer_id => %{day_of_week => availability}}`.
+  """
+  def list_all_trainer_availabilities(trainer_ids) do
+    TrainerAvailability
+    |> where([a], a.trainer_id in ^trainer_ids)
+    |> order_by([a], asc: a.day_of_week)
+    |> Repo.all()
+    |> Enum.group_by(& &1.trainer_id)
+    |> Map.new(fn {tid, avails} ->
+      {tid, Enum.into(avails, %{}, fn a -> {a.day_of_week, a} end)}
+    end)
+  end
+
+  @doc """
+  Upserts trainer availability for a specific day of week.
+  """
+  def set_trainer_availability(trainer_id, day_of_week, attrs) do
+    existing =
+      TrainerAvailability
+      |> where([a], a.trainer_id == ^trainer_id and a.day_of_week == ^day_of_week)
+      |> Repo.one()
+
+    changeset_attrs = Map.merge(attrs, %{trainer_id: trainer_id, day_of_week: day_of_week})
+
+    case existing do
+      nil ->
+        %TrainerAvailability{}
+        |> TrainerAvailability.changeset(changeset_attrs)
+        |> Repo.insert()
+
+      avail ->
+        avail
+        |> TrainerAvailability.changeset(changeset_attrs)
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Deletes trainer availability for a specific day (marks as day off).
+  """
+  def delete_trainer_availability(trainer_id, day_of_week) do
+    TrainerAvailability
+    |> where([a], a.trainer_id == ^trainer_id and a.day_of_week == ^day_of_week)
+    |> Repo.delete_all()
+
+    :ok
+  end
+
+  # =============================================================================
+  # Trainer Time Off
+  # =============================================================================
+
+  @doc """
+  Lists time-off entries for a trainer.
+
+  ## Options
+  - `:from_date` - Filter from date (default: today)
+  - `:to_date` - Filter to date
+  """
+  def list_trainer_time_offs(trainer_id, opts \\ []) do
+    from_date = Keyword.get(opts, :from_date)
+    to_date = Keyword.get(opts, :to_date)
+
+    TrainerTimeOff
+    |> where([t], t.trainer_id == ^trainer_id)
+    |> then(fn q ->
+      if from_date, do: where(q, [t], t.date >= ^from_date), else: q
+    end)
+    |> then(fn q ->
+      if to_date, do: where(q, [t], t.date <= ^to_date), else: q
+    end)
+    |> order_by([t], asc: t.date)
+    |> Repo.all()
+  end
+
+  @doc """
+  Creates a time-off entry.
+  """
+  def create_time_off(attrs) do
+    %TrainerTimeOff{}
+    |> TrainerTimeOff.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Deletes a time-off entry by ID.
+  """
+  def delete_time_off(id) do
+    case Repo.get(TrainerTimeOff, id) do
+      nil -> {:error, :not_found}
+      time_off -> Repo.delete(time_off)
+    end
+  end
+
+  @doc """
+  Gets a time-off entry, scoped to a trainer for authorization.
+  """
+  def get_time_off(id, trainer_id) do
+    TrainerTimeOff
+    |> where([t], t.id == ^id and t.trainer_id == ^trainer_id)
+    |> Repo.one()
+  end
+
+  # =============================================================================
+  # Available Slots (combines availability + bookings + time-offs)
+  # =============================================================================
+
+  @doc """
+  Returns available hourly slots for a trainer on a given date.
+
+  Combines:
+  1. Trainer's weekly availability for that day of week
+  2. Minus existing bookings (pending/confirmed)
+  3. Minus time-off entries
+
+  Returns a list of `%{hour: integer, label: string, trainer_id: id, trainer_name: string}`.
+  """
+  def get_trainer_available_slots(trainer_id, %Date{} = date) do
+    day_of_week = Date.day_of_week(date)
+
+    # 1. Get availability for this day
+    availability =
+      TrainerAvailability
+      |> where(
+        [a],
+        a.trainer_id == ^trainer_id and a.day_of_week == ^day_of_week and a.active == true
+      )
+      |> Repo.one()
+
+    case availability do
+      nil ->
+        []
+
+      %{start_time: start_time, end_time: end_time} ->
+        start_hour = start_time.hour
+        end_hour = end_time.hour
+
+        # Generate all possible hours
+        all_hours = Enum.to_list(start_hour..(end_hour - 1))
+
+        # 2. Remove booked hours
+        start_of_day = DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
+        end_of_day = DateTime.new!(date, ~T[23:59:59], "Etc/UTC")
+
+        booked_hours =
+          TrainingSession
+          |> where([s], s.trainer_id == ^trainer_id)
+          |> where([s], s.scheduled_at >= ^start_of_day and s.scheduled_at <= ^end_of_day)
+          |> where([s], s.status in ["pending", "confirmed"])
+          |> select([s], s.scheduled_at)
+          |> Repo.all()
+          |> Enum.map(fn dt -> dt.hour end)
+          |> MapSet.new()
+
+        # 3. Remove time-off hours
+        time_offs =
+          TrainerTimeOff
+          |> where([t], t.trainer_id == ^trainer_id and t.date == ^date)
+          |> Repo.all()
+
+        time_off_hours =
+          Enum.flat_map(time_offs, fn to ->
+            if is_nil(to.start_time) || is_nil(to.end_time) do
+              # All day off
+              all_hours
+            else
+              Enum.to_list(to.start_time.hour..(to.end_time.hour - 1))
+            end
+          end)
+          |> MapSet.new()
+
+        blocked = MapSet.union(booked_hours, time_off_hours)
+
+        all_hours
+        |> Enum.reject(&MapSet.member?(blocked, &1))
+        |> Enum.map(fn hour ->
+          %{hour: hour, label: format_hour(hour), value: Integer.to_string(hour)}
+        end)
+    end
+  end
+
+  @doc """
+  Returns available slots across ALL trainers for a given date.
+  Returns `[%{hour: integer, label: string, trainer_id: id, trainer_name: string}]`.
+  """
+  def get_all_available_slots(%Date{} = date) do
+    day_of_week = Date.day_of_week(date)
+
+    # Get all trainers with availability on this day
+    availabilities =
+      TrainerAvailability
+      |> where([a], a.day_of_week == ^day_of_week and a.active == true)
+      |> join(:inner, [a], u in GymStudio.Accounts.User, on: a.trainer_id == u.id)
+      |> select([a, u], %{
+        trainer_id: a.trainer_id,
+        trainer_name: u.name,
+        start_time: a.start_time,
+        end_time: a.end_time
+      })
+      |> Repo.all()
+
+    trainer_ids = Enum.map(availabilities, & &1.trainer_id) |> Enum.uniq()
+
+    # Batch-fetch all booked hours for all trainers on this date (2 queries total)
+    start_of_day = DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
+    end_of_day = DateTime.new!(date, ~T[23:59:59], "Etc/UTC")
+
+    booked_by_trainer =
+      TrainingSession
+      |> where([s], s.trainer_id in ^trainer_ids)
+      |> where([s], s.scheduled_at >= ^start_of_day and s.scheduled_at <= ^end_of_day)
+      |> where([s], s.status in ["pending", "confirmed"])
+      |> select([s], {s.trainer_id, s.scheduled_at})
+      |> Repo.all()
+      |> Enum.group_by(&elem(&1, 0), fn {_, dt} -> dt.hour end)
+      |> Map.new(fn {tid, hours} -> {tid, MapSet.new(hours)} end)
+
+    time_offs_by_trainer =
+      TrainerTimeOff
+      |> where([t], t.trainer_id in ^trainer_ids and t.date == ^date)
+      |> Repo.all()
+      |> Enum.group_by(& &1.trainer_id)
+
+    # For each trainer, compute available slots
+    Enum.flat_map(availabilities, fn %{
+                                       trainer_id: tid,
+                                       trainer_name: tname,
+                                       start_time: st,
+                                       end_time: et
+                                     } ->
+      start_hour = st.hour
+      end_hour = et.hour
+      all_hours = Enum.to_list(start_hour..(end_hour - 1))
+
+      booked_hours = Map.get(booked_by_trainer, tid, MapSet.new())
+
+      time_off_hours =
+        time_offs_by_trainer
+        |> Map.get(tid, [])
+        |> Enum.flat_map(fn to ->
+          if is_nil(to.start_time) || is_nil(to.end_time) do
+            all_hours
+          else
+            Enum.to_list(to.start_time.hour..(to.end_time.hour - 1))
+          end
+        end)
+        |> MapSet.new()
+
+      blocked = MapSet.union(booked_hours, time_off_hours)
+
+      all_hours
+      |> Enum.reject(&MapSet.member?(blocked, &1))
+      |> Enum.map(fn hour ->
+        %{
+          hour: hour,
+          label: format_hour(hour),
+          value: Integer.to_string(hour),
+          trainer_id: tid,
+          trainer_name: tname || "Trainer"
+        }
+      end)
+    end)
+    |> Enum.sort_by(& &1.hour)
+  end
+
+  @doc """
+  Lists all trainers who have availability configured.
+  """
+  def list_trainers_with_availability do
+    TrainerAvailability
+    |> join(:inner, [a], u in GymStudio.Accounts.User, on: a.trainer_id == u.id)
+    |> select([a, u], %{trainer_id: u.id, trainer_name: u.name})
+    |> distinct(true)
+    |> Repo.all()
+  end
+
+  defp format_hour(0), do: "12:00 AM"
+  defp format_hour(hour) when hour < 12, do: "#{hour}:00 AM"
+  defp format_hour(12), do: "12:00 PM"
+  defp format_hour(hour), do: "#{hour - 12}:00 PM"
 end

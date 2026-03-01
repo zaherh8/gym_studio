@@ -5,12 +5,25 @@ defmodule GymStudioWeb.Client.BookSessionLiveTest do
   import GymStudio.AccountsFixtures
   import GymStudio.PackagesFixtures
 
+  alias GymStudio.Scheduling
+
   describe "Book Session" do
     setup do
       client_user = user_fixture(%{role: :client})
       client = client_fixture(%{user_id: client_user.id})
 
-      %{client_user: client_user, client: client}
+      # Create a trainer with availability so slots show up
+      trainer_user = user_fixture(%{role: :trainer})
+
+      # Set availability for all 7 days (9 AM - 10 PM) so tests always have slots
+      for day <- 1..7 do
+        Scheduling.set_trainer_availability(trainer_user.id, day, %{
+          start_time: ~T[07:00:00],
+          end_time: ~T[22:00:00]
+        })
+      end
+
+      %{client_user: client_user, client: client, trainer_user: trainer_user}
     end
 
     test "requires authentication", %{conn: conn} do
@@ -55,24 +68,25 @@ defmodule GymStudioWeb.Client.BookSessionLiveTest do
       refute html =~ "No Active Package"
     end
 
-    test "prevents booking without active package", %{conn: conn, client_user: client_user} do
+    test "prevents booking without active package", %{
+      conn: conn,
+      client_user: client_user,
+      trainer_user: trainer_user
+    } do
       conn = log_in_user(conn, client_user)
       {:ok, view, _html} = live(conn, ~p"/client/book")
 
       # Select a date
-      today = Date.utc_today()
-      # Find a non-Sunday date
-      date =
-        if Date.day_of_week(today) == 7,
-          do: Date.add(today, 1),
-          else: today
+      date = Date.add(Date.utc_today(), 1)
 
       view |> element("button[phx-value-date='#{Date.to_string(date)}']") |> render_click()
 
-      # Select a time slot
-      view |> element("button[phx-value-slot='10']") |> render_click()
+      # Select a time slot (now includes trainer)
+      view
+      |> element("button[phx-value-slot='10'][phx-value-trainer='#{trainer_user.id}']")
+      |> render_click()
 
-      # Try to confirm - flash message is set
+      # Try to confirm
       view |> element("button", "Confirm Booking") |> render_click()
 
       assert has_element?(view, "[role=alert]") or
@@ -81,7 +95,8 @@ defmodule GymStudioWeb.Client.BookSessionLiveTest do
 
     test "3-step flow works with date, time, and confirm", %{
       conn: conn,
-      client_user: client_user
+      client_user: client_user,
+      trainer_user: trainer_user
     } do
       admin = user_fixture(%{role: :admin})
 
@@ -96,18 +111,17 @@ defmodule GymStudioWeb.Client.BookSessionLiveTest do
       {:ok, view, _html} = live(conn, ~p"/client/book")
 
       # Step 1: Select date
-      tomorrow = Date.add(Date.utc_today(), 1)
-
-      date =
-        if Date.day_of_week(tomorrow) == 7,
-          do: Date.add(tomorrow, 1),
-          else: tomorrow
+      date = Date.add(Date.utc_today(), 1)
 
       html = view |> element("button[phx-value-date='#{Date.to_string(date)}']") |> render_click()
       assert html =~ "Select Time"
 
-      # Step 2: Select time
-      html = view |> element("button[phx-value-slot='10']") |> render_click()
+      # Step 2: Select time + trainer
+      html =
+        view
+        |> element("button[phx-value-slot='10'][phx-value-trainer='#{trainer_user.id}']")
+        |> render_click()
+
       assert html =~ "Confirm Booking"
 
       # Step 3: Confirm - should redirect to sessions
@@ -115,7 +129,11 @@ defmodule GymStudioWeb.Client.BookSessionLiveTest do
       assert_redirected(view, ~p"/client/sessions")
     end
 
-    test "shows notes field in confirmation step", %{conn: conn, client_user: client_user} do
+    test "shows notes field in confirmation step", %{
+      conn: conn,
+      client_user: client_user,
+      trainer_user: trainer_user
+    } do
       admin = user_fixture(%{role: :admin})
 
       _package =
@@ -128,15 +146,14 @@ defmodule GymStudioWeb.Client.BookSessionLiveTest do
       conn = log_in_user(conn, client_user)
       {:ok, view, _html} = live(conn, ~p"/client/book")
 
-      tomorrow = Date.add(Date.utc_today(), 1)
-
-      date =
-        if Date.day_of_week(tomorrow) == 7,
-          do: Date.add(tomorrow, 1),
-          else: tomorrow
+      date = Date.add(Date.utc_today(), 1)
 
       view |> element("button[phx-value-date='#{Date.to_string(date)}']") |> render_click()
-      html = view |> element("button[phx-value-slot='10']") |> render_click()
+
+      html =
+        view
+        |> element("button[phx-value-slot='10'][phx-value-trainer='#{trainer_user.id}']")
+        |> render_click()
 
       assert html =~ "Session Notes"
       assert html =~ "goals or notes"
