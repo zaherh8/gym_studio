@@ -183,6 +183,20 @@ defmodule GymStudio.Packages do
   end
 
   @doc """
+  Returns a session to the package (decrements used_sessions by 1).
+  Used when a booked session is cancelled.
+  """
+  def return_session(%SessionPackage{} = package) do
+    package
+    |> SessionPackage.return_session_changeset()
+    |> Repo.update()
+    |> case do
+      {:ok, updated_package} -> {:ok, put_remaining_sessions(updated_package)}
+      error -> error
+    end
+  end
+
+  @doc """
   Lists all packages for a specific client.
 
   Returns packages ordered by creation date (newest first).

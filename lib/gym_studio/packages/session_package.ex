@@ -156,6 +156,32 @@ defmodule GymStudio.Packages.SessionPackage do
     put_change(changeset, :used_sessions, used_sessions + 1)
   end
 
+  @doc """
+  Creates a changeset that decrements `used_sessions` by 1 (returns a session to the package).
+  Validates that used_sessions won't go below 0.
+  """
+  def return_session_changeset(session_package) do
+    session_package
+    |> change()
+    |> decrement_used_sessions()
+    |> validate_used_sessions_not_negative()
+  end
+
+  defp decrement_used_sessions(changeset) do
+    used_sessions = get_field(changeset, :used_sessions, 0)
+    put_change(changeset, :used_sessions, max(used_sessions - 1, 0))
+  end
+
+  defp validate_used_sessions_not_negative(changeset) do
+    used = get_field(changeset, :used_sessions)
+
+    if used < 0 do
+      add_error(changeset, :used_sessions, "cannot be negative")
+    else
+      changeset
+    end
+  end
+
   defp validate_has_remaining_sessions(changeset) do
     total = get_field(changeset, :total_sessions)
     used = get_field(changeset, :used_sessions)

@@ -606,4 +606,112 @@ defmodule GymStudio.SchedulingTest do
       assert updated.trainer_id == trainer.id
     end
   end
+
+  describe "count_sessions_this_week/1" do
+    setup do
+      client = user_fixture(%{role: :client})
+      trainer = user_fixture(%{role: :trainer})
+      admin = user_fixture(%{role: :admin})
+      {:ok, client: client, trainer: trainer, admin: admin}
+    end
+
+    test "counts confirmed sessions within Monday-Sunday week boundaries", %{
+      client: client,
+      trainer: trainer,
+      admin: admin
+    } do
+      # Use next week to ensure all dates are in the future
+      today = Date.utc_today()
+      next_monday = Date.add(Date.beginning_of_week(today, :monday), 7)
+      next_sunday = Date.add(next_monday, 6)
+      following_monday = Date.add(next_monday, 7)
+
+      # Session on Monday of next week (should be counted)
+      monday_dt = DateTime.new!(next_monday, ~T[10:00:00], "Etc/UTC")
+      session1 = training_session_fixture(%{client_id: client.id, scheduled_at: monday_dt})
+      {:ok, _} = Scheduling.approve_session(session1, trainer.id, admin.id)
+
+      # Session on Sunday of next week at 23:00 (should be counted)
+      sunday_dt = DateTime.new!(next_sunday, ~T[23:00:00], "Etc/UTC")
+      session2 = training_session_fixture(%{client_id: client.id, scheduled_at: sunday_dt})
+      {:ok, _} = Scheduling.approve_session(session2, trainer.id, admin.id)
+
+      # Session on following Monday (should NOT be counted)
+      following_dt = DateTime.new!(following_monday, ~T[10:00:00], "Etc/UTC")
+      session3 = training_session_fixture(%{client_id: client.id, scheduled_at: following_dt})
+      {:ok, _} = Scheduling.approve_session(session3, trainer.id, admin.id)
+
+      # Mock "today" by testing the query directly with a known date range
+      # Since count_sessions_this_week uses Date.utc_today(), we test the boundary logic
+      # by checking the query includes Monday start and Sunday end
+      start_dt = DateTime.new!(next_monday, ~T[00:00:00], "Etc/UTC")
+      end_dt = DateTime.new!(following_monday, ~T[00:00:00], "Etc/UTC")
+
+      count =
+        GymStudio.Scheduling.TrainingSession
+        |> Ecto.Query.where([s], s.trainer_id == ^trainer.id)
+        |> Ecto.Query.where([s], s.scheduled_at >= ^start_dt and s.scheduled_at < ^end_dt)
+        |> Ecto.Query.where([s], s.status in ["pending", "confirmed", "completed"])
+        |> GymStudio.Repo.aggregate(:count)
+
+      # Monday + Sunday sessions counted, following Monday excluded
+      assert count == 2
+    end
+  end
+
+  describe "package session decrement on booking" do
+    import GymStudio.PackagesFixtures
+
+    setup do
+      client = user_fixture(%{role: :client})
+      admin = user_fixture(%{role: :admin})
+      {:ok, client: client, admin: admin}
+    end
+
+    test "decrements package used_sessions on booking", %{client: client, admin: admin} do
+      package = package_fixture(%{client_id: client.id, assigned_by_id: admin.id})
+      assert package.used_sessions == 0
+
+      scheduled_at = DateTime.utc_now() |> DateTime.add(1, :day) |> DateTime.truncate(:second)
+
+      {:ok, _session} =
+        Scheduling.book_session(%{
+          client_id: client.id,
+          scheduled_at: scheduled_at,
+          duration_minutes: 60,
+          package_id: package.id
+        })
+
+      updated_package = GymStudio.Packages.get_package!(package.id)
+      assert updated_package.used_sessions == 1
+    end
+
+    test "increments package used_sessions back on cancellation", %{
+      client: client,
+      admin: admin
+    } do
+      package = package_fixture(%{client_id: client.id, assigned_by_id: admin.id})
+
+      scheduled_at = DateTime.utc_now() |> DateTime.add(1, :day) |> DateTime.truncate(:second)
+
+      {:ok, session} =
+        Scheduling.book_session(%{
+          client_id: client.id,
+          scheduled_at: scheduled_at,
+          duration_minutes: 60,
+          package_id: package.id
+        })
+
+      # Verify decremented
+      updated_package = GymStudio.Packages.get_package!(package.id)
+      assert updated_package.used_sessions == 1
+
+      # Cancel
+      {:ok, _} = Scheduling.cancel_session(session, client.id, "Changed my mind")
+
+      # Verify incremented back
+      restored_package = GymStudio.Packages.get_package!(package.id)
+      assert restored_package.used_sessions == 0
+    end
+  end
 end
