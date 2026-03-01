@@ -11,6 +11,8 @@ Lessons learned from code reviews. Read this before every task.
 
 ## Ecto / Database
 
+- **Partial unique indexes:** When adding DB constraints, update test fixtures to avoid collisions. Use `System.unique_integer([:positive])` to generate unique values in fixtures (e.g., unique `scheduled_at` times).
+- **Constraint error handling:** Add `unique_constraint/3` with `:name` option in changeset, then pattern-match on the error message in the context to return domain-specific error tuples (e.g., `{:error, :slot_taken}`).
 - `on_delete: :restrict` when column is `null: false` — `:nilify_all` is incompatible with NOT NULL.
 - `training_sessions.client_id` references `users.id`, NOT `clients.id`.
 - Always add indexes on foreign key columns in migrations.
