@@ -35,6 +35,12 @@ Lessons learned from code reviews. Read this before every task.
 
 - **SRI hashes for CDN scripts:** Always add `integrity` and `crossorigin="anonymous"` attributes when loading scripts from CDNs. Pin to specific versions (e.g., `chart.js@4.4.8` not `chart.js@4`).
 
+## Concurrency / Race Conditions
+
+- **Never read-then-write in Ecto for counters.** Reading a value into Elixir memory then updating creates race conditions under concurrent requests. Use atomic SQL: `update_all` with `set: [col: p.col + 1]` and a WHERE guard, or `lock("FOR UPDATE")` inside a transaction.
+- **Dead code from defensive clamping:** If you `max(value, 0)` before `validate_number >= 0`, the validation is dead code. Pick one approach: clamp OR validate, not both.
+- **Always test boundary conditions:** exhausted packages, zero balances, max capacity — don't just test the happy path.
+
 ## Testing
 
 - Test that form values actually persist (save → reload → verify).

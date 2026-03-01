@@ -169,7 +169,7 @@ defmodule GymStudio.Packages.SessionPackage do
 
   defp decrement_used_sessions(changeset) do
     used_sessions = get_field(changeset, :used_sessions, 0)
-    put_change(changeset, :used_sessions, max(used_sessions - 1, 0))
+    put_change(changeset, :used_sessions, used_sessions - 1)
   end
 
   defp validate_used_sessions_not_negative(changeset) do

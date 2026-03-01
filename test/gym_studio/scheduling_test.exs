@@ -686,6 +686,46 @@ defmodule GymStudio.SchedulingTest do
       assert updated_package.used_sessions == 1
     end
 
+    test "fails to book with exhausted package (no remaining sessions)", %{
+      client: client,
+      admin: admin
+    } do
+      package =
+        package_fixture(%{
+          client_id: client.id,
+          assigned_by_id: admin.id,
+          package_type: "standard_8"
+        })
+
+      # Exhaust all 8 sessions
+      for _ <- 1..8 do
+        scheduled_at = DateTime.utc_now() |> DateTime.add(1, :day) |> DateTime.truncate(:second)
+
+        {:ok, _session} =
+          Scheduling.book_session(%{
+            client_id: client.id,
+            scheduled_at: scheduled_at,
+            duration_minutes: 60,
+            package_id: package.id
+          })
+      end
+
+      updated_package = GymStudio.Packages.get_package!(package.id)
+      assert updated_package.used_sessions == 8
+      assert updated_package.remaining_sessions == 0
+
+      # Attempt to book with exhausted package should fail
+      scheduled_at = DateTime.utc_now() |> DateTime.add(2, :day) |> DateTime.truncate(:second)
+
+      assert {:error, _} =
+               Scheduling.book_session(%{
+                 client_id: client.id,
+                 scheduled_at: scheduled_at,
+                 duration_minutes: 60,
+                 package_id: package.id
+               })
+    end
+
     test "increments package used_sessions back on cancellation", %{
       client: client,
       admin: admin
