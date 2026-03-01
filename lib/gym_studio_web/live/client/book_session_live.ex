@@ -162,6 +162,19 @@ defmodule GymStudioWeb.Client.BookSessionLive do
 
             {:noreply, socket}
 
+          {:error, :slot_taken} ->
+            socket =
+              socket
+              |> put_flash(:error, "This slot was just taken. Please choose another time.")
+              |> assign(
+                available_slots: load_slots(socket.assigns.selected_date),
+                selected_slot: nil,
+                selected_trainer_id: nil,
+                step: 2
+              )
+
+            {:noreply, socket}
+
           {:error, _reason} ->
             {:noreply, put_flash(socket, :error, "Could not book session. Please try again.")}
         end
