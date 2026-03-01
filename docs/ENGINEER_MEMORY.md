@@ -60,6 +60,18 @@ Lessons learned from code reviews. Read this before every task.
 - Time inputs from HTML forms come as "HH:MM" strings — append ":00" before `Time.from_iso8601/1`.
 - `format_hour/1`: Always handle hour 0 explicitly — `format_hour(0)` must return "12:00 AM", not "0:00 AM".
 
+## Calendar / Schedule Views
+
+- Trainer schedule uses `list_trainer_availabilities/1` to show available hours (not time_slots).
+- Admin calendar uses `list_all_sessions/1` with `trainer_id` filter option.
+- Sessions grouped by `{date, hour}` for O(1) lookup in calendar grid.
+- Mobile calendar: single day view with `mobile_day_offset` assign (0-6).
+- Trainer colors in admin calendar: cycle through 8 predefined color pairs.
+- `@hours_range` (6..21) defines visible calendar hours.
+- **Use `Enum.group_by` not `Enum.into` for hour grouping** — `Enum.into` overwrites when multiple sessions share the same hour. Always use list-based grouping for calendar data.
+- **Modal click-through:** Never put `phx-click="close_modal"` on the outer `.modal` div — click events bubble up from content. Use only `phx-click-away` on `.modal-box`.
+- **Type consistency in filters:** Form params arrive as strings. Compare with `to_string(uuid)` when matching against Ecto UUID fields in templates.
+
 ## Project Conventions
 
 - Package types: `standard_8`, `standard_12`, `premium_20`
