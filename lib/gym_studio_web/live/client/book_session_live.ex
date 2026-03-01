@@ -28,8 +28,13 @@ defmodule GymStudioWeb.Client.BookSessionLive do
         []
       end
 
-    preferred_hours = compute_preferred_hours(past_sessions)
-    preferred_trainer_id = compute_preferred_trainer(past_sessions)
+    has_enough_history = length(past_sessions) >= 3
+
+    preferred_hours =
+      if has_enough_history, do: compute_preferred_hours(past_sessions), else: MapSet.new()
+
+    preferred_trainer_id =
+      if has_enough_history, do: compute_preferred_trainer(past_sessions), else: nil
 
     available_dates = generate_available_dates()
     selected_date = List.first(available_dates)
@@ -209,9 +214,9 @@ defmodule GymStudioWeb.Client.BookSessionLive do
     |> Enum.sort_by(fn {{_id, name}, _} -> name end)
   end
 
-  defp is_recommended?(slot, preferred_hours, preferred_trainer_id) do
+  defp is_recommended?(slot, preferred_hours, _preferred_trainer_id) do
     hour = String.to_integer(slot.value)
-    MapSet.member?(preferred_hours, hour) or slot.trainer_id == preferred_trainer_id
+    MapSet.member?(preferred_hours, hour)
   end
 
   @impl true
