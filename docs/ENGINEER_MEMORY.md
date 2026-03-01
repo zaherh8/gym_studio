@@ -51,6 +51,13 @@ Lessons learned from code reviews. Read this before every task.
 - Use `assign_new` for optional assigns with defaults.
 - Display helpers: always handle nil with fallbacks (e.g., `name || email || "Unknown"`).
 
+## Scheduling / Availability
+
+- Trainer availability uses `users.id` as `trainer_id` (not `trainers.id`).
+- `get_all_available_slots/1` returns slots with `trainer_id` + `trainer_name` — client booking selects both slot AND trainer.
+- When updating BookSessionLive, existing tests that click `button[phx-value-slot]` need updating to also include `phx-value-trainer`.
+- Time inputs from HTML forms come as "HH:MM" strings — append ":00" before `Time.from_iso8601/1`.
+
 ## Project Conventions
 
 - Package types: `standard_8`, `standard_12`, `premium_20`
