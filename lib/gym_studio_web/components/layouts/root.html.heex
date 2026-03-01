@@ -32,6 +32,13 @@
     <%!-- Additional SEO --%>
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://gym-studio.fly.dev/" />
+    <%!-- PWA --%>
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#DC2626" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="React Gym" />
     <%!-- Structured Data (JSON-LD) --%>
     <script type="application/ld+json">
       {
@@ -231,5 +238,12 @@
     </header>
 
     {@inner_content}
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/sw.js").catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>

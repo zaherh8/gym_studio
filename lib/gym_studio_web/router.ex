@@ -22,6 +22,7 @@ defmodule GymStudioWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    get "/offline", OfflineController, :index
 
     live_session :public, on_mount: {GymStudioWeb.UserAuth, :mount_current_scope} do
       live "/trainers", TrainersLive, :index
