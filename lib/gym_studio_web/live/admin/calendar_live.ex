@@ -147,15 +147,19 @@ defmodule GymStudioWeb.Admin.CalendarLive do
         do: Map.put(attrs, :status, "confirmed"),
         else: attrs
 
-    {:ok, _} = Scheduling.admin_update_session(session, attrs)
+    case Scheduling.admin_update_session(session, attrs) do
+      {:ok, _} ->
+        socket =
+          socket
+          |> assign(selected_session: nil, available_trainers: [])
+          |> put_flash(:info, "Trainer assigned successfully")
+          |> load_week_data()
 
-    socket =
-      socket
-      |> assign(selected_session: nil, available_trainers: [])
-      |> put_flash(:info, "Trainer assigned successfully")
-      |> load_week_data()
+        {:noreply, socket}
 
-    {:noreply, socket}
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to assign trainer")}
+    end
   end
 
   defp find_session(week_sessions, session_id) do
