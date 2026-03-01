@@ -78,6 +78,10 @@ defmodule GymStudio.Scheduling.TrainingSession do
     |> foreign_key_constraint(:client_id)
     |> foreign_key_constraint(:trainer_id)
     |> foreign_key_constraint(:package_id)
+    |> unique_constraint(:trainer_id,
+      name: :training_sessions_trainer_scheduled_at_active_index,
+      message: "slot already taken"
+    )
     |> put_change(:status, "pending")
   end
 
@@ -101,6 +105,10 @@ defmodule GymStudio.Scheduling.TrainingSession do
     |> validate_status_is("pending", "Only pending sessions can be approved")
     |> foreign_key_constraint(:trainer_id)
     |> foreign_key_constraint(:approved_by_id)
+    |> unique_constraint(:trainer_id,
+      name: :training_sessions_trainer_scheduled_at_active_index,
+      message: "slot already taken"
+    )
     |> put_change(:status, "confirmed")
     |> put_change(:approved_at, DateTime.utc_now(:second))
   end

@@ -30,6 +30,7 @@ defmodule GymStudio.SchedulingFixtures do
       attrs[:scheduled_at] ||
         DateTime.utc_now()
         |> DateTime.add(1, :day)
+        |> DateTime.add(System.unique_integer([:positive, :monotonic]), :second)
         |> DateTime.truncate(:second)
 
     base_attrs = %{
