@@ -58,6 +58,13 @@ Lessons learned from code reviews. Read this before every task.
 - Use `assign_new` for optional assigns with defaults.
 - Display helpers: always handle nil with fallbacks (e.g., `name || email || "Unknown"`).
 
+## Double-Booking Prevention
+
+- Partial unique index `training_sessions_trainer_scheduled_at_active_index` on `(trainer_id, scheduled_at) WHERE status != 'cancelled'` prevents double-booking at the DB level.
+- `unique_constraint` in `TrainingSession.changeset/2` catches the violation; `book_session/1` translates it to `{:error, :slot_taken}`.
+- LiveView handles `:slot_taken` by flashing an error and resetting to slot selection.
+- An older index `training_sessions_trainer_scheduled_active_index` (without `_at_`) existed from a previous attempt — migration drops it.
+
 ## Scheduling / Availability
 
 - Trainer availability uses `users.id` as `trainer_id` (not `trainers.id`).

@@ -33,28 +33,42 @@ defmodule GymStudio.Scheduling do
       {:error, %Ecto.Changeset{}}
   """
   def book_session(attrs \\ %{}) do
-    Repo.transaction(fn ->
-      with {:ok, session} <-
-             %TrainingSession{}
-             |> TrainingSession.changeset(attrs)
-             |> Repo.insert(),
-           :ok <- maybe_decrement_package(session) do
-        # Notify the client that their session is booked (pending)
-        GymStudio.Notifications.create_notification(%{
-          user_id: session.client_id,
-          title: "Session Booked",
-          message:
-            "Your session on #{Calendar.strftime(session.scheduled_at, "%A, %B %d at %I:%M %p")} has been booked and is pending confirmation.",
-          type: "booking_created",
-          action_url: "/client/sessions",
-          metadata: %{session_id: session.id}
-        })
+    result =
+      Repo.transaction(fn ->
+        with {:ok, session} <-
+               %TrainingSession{}
+               |> TrainingSession.changeset(attrs)
+               |> Repo.insert(),
+             :ok <- maybe_decrement_package(session) do
+          # Notify the client that their session is booked (pending)
+          GymStudio.Notifications.create_notification(%{
+            user_id: session.client_id,
+            title: "Session Booked",
+            message:
+              "Your session on #{Calendar.strftime(session.scheduled_at, "%A, %B %d at %I:%M %p")} has been booked and is pending confirmation.",
+            type: "booking_created",
+            action_url: "/client/sessions",
+            metadata: %{session_id: session.id}
+          })
 
-        session
-      else
-        {:error, changeset} -> Repo.rollback(changeset)
-      end
-    end)
+          session
+        else
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      end)
+
+    case result do
+      {:error, %Ecto.Changeset{errors: errors} = changeset} ->
+        if Keyword.get_values(errors, :trainer_id)
+           |> Enum.any?(fn {msg, _} -> msg == "slot already taken" end) do
+          {:error, :slot_taken}
+        else
+          {:error, changeset}
+        end
+
+      other ->
+        other
+    end
   end
 
   defp maybe_decrement_package(%TrainingSession{package_id: nil}), do: :ok

@@ -202,7 +202,7 @@ defmodule GymStudioWeb.Client.BookSessionLive do
     case Enum.find(assigns.available_slots, fn s ->
            s.value == assigns.selected_slot && s.trainer_id == assigns.selected_trainer_id
          end) do
-      nil -> "Unknown"
+      nil -> "Unassigned"
       slot -> slot.trainer_name
     end
   end
