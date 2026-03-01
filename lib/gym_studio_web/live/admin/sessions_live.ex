@@ -70,13 +70,20 @@ defmodule GymStudioWeb.Admin.SessionsLive do
         do: Map.put(attrs, :status, "confirmed"),
         else: attrs
 
-    {:ok, _} = Scheduling.admin_update_session(session, attrs)
+    case Scheduling.admin_update_session(session, attrs) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign(assigning_session_id: nil, available_trainers_for_assign: [])
+         |> reload_sessions()
+         |> put_flash(:info, "Trainer assigned successfully")}
 
-    {:noreply,
-     socket
-     |> assign(assigning_session_id: nil, available_trainers_for_assign: [])
-     |> reload_sessions()
-     |> put_flash(:info, "Trainer assigned successfully")}
+      {:error, _changeset} ->
+        {:noreply,
+         socket
+         |> assign(assigning_session_id: nil, available_trainers_for_assign: [])
+         |> put_flash(:error, "Failed to assign trainer. Please try again.")}
+    end
   end
 
   defp reload_sessions(socket) do

@@ -125,7 +125,7 @@ defmodule GymStudioWeb.Admin.CalendarLive do
     session = find_session(socket.assigns.week_sessions, session_id)
 
     available_trainers =
-      if is_nil(session.trainer_id) do
+      if session && is_nil(session.trainer_id) do
         date = DateTime.to_date(session.scheduled_at)
         hour = DateTime.to_time(session.scheduled_at).hour
 
@@ -149,14 +149,19 @@ defmodule GymStudioWeb.Admin.CalendarLive do
         socket
       ) do
     session = Scheduling.get_session!(session_id)
-    {:ok, _} = Scheduling.admin_update_session(session, %{trainer_id: trainer_id})
 
-    socket =
-      socket
-      |> assign(selected_session: nil, available_trainers: [])
-      |> load_week_data()
+    case Scheduling.admin_update_session(session, %{trainer_id: trainer_id}) do
+      {:ok, _} ->
+        socket =
+          socket
+          |> assign(selected_session: nil, available_trainers: [])
+          |> load_week_data()
 
-    {:noreply, put_flash(socket, :info, "Trainer assigned successfully")}
+        {:noreply, put_flash(socket, :info, "Trainer assigned successfully")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to assign trainer. Please try again.")}
+    end
   end
 
   defp find_session(week_sessions, session_id) do
