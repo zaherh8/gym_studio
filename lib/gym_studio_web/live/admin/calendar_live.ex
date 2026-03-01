@@ -188,7 +188,10 @@ defmodule GymStudioWeb.Admin.CalendarLive do
           <select name="trainer_id" class="select select-bordered select-sm w-full sm:w-64">
             <option value="">All Trainers</option>
             <%= for trainer <- @trainers do %>
-              <option value={trainer.user_id} selected={@filter_trainer_id == trainer.user_id}>
+              <option
+                value={trainer.user_id}
+                selected={@filter_trainer_id == to_string(trainer.user_id)}
+              >
                 {trainer.user.name || trainer.user.email}
               </option>
             <% end %>
@@ -271,7 +274,7 @@ defmodule GymStudioWeb.Admin.CalendarLive do
       
     <!-- Session Detail Modal -->
       <%= if @selected_session do %>
-        <div class="modal modal-open" phx-click="close_modal">
+        <div class="modal modal-open">
           <div class="modal-box" phx-click-away="close_modal">
             <button
               phx-click="close_modal"

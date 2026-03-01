@@ -47,8 +47,8 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
       |> Enum.group_by(fn session -> DateTime.to_date(session.scheduled_at) end)
       |> Map.new(fn {date, day_sessions} ->
         by_hour =
-          Enum.into(day_sessions, %{}, fn s ->
-            {DateTime.to_time(s.scheduled_at).hour, s}
+          Enum.group_by(day_sessions, fn s ->
+            DateTime.to_time(s.scheduled_at).hour
           end)
 
         {date, by_hour}
@@ -217,18 +217,20 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
                   <% day = Date.add(@current_week_start, day_offset) %>
                   <% dow = Date.day_of_week(day) %>
                   <% available = is_available?(@availability_map, dow, hour) %>
-                  <% session = get_in(@week_sessions, [day, hour]) %>
+                  <% sessions = get_in(@week_sessions, [day, hour]) || [] %>
                   <div class={"border-l border-base-200 p-0.5 #{if available, do: "bg-base-100", else: "bg-base-200/50"}"}>
-                    <%= if session do %>
-                      <button
-                        type="button"
-                        phx-click="show_session"
-                        phx-value-session-id={session.id}
-                        class={"w-full text-left p-1.5 rounded text-xs cursor-pointer hover:opacity-80 #{session_color(session.status)}"}
-                      >
-                        <div class="font-semibold truncate">{display_name(session.client)}</div>
-                        <div class="truncate opacity-75">{session.status}</div>
-                      </button>
+                    <%= if sessions != [] do %>
+                      <%= for session <- sessions do %>
+                        <button
+                          type="button"
+                          phx-click="show_session"
+                          phx-value-session-id={session.id}
+                          class={"w-full text-left p-1.5 rounded text-xs cursor-pointer hover:opacity-80 #{session_color(session.status)}"}
+                        >
+                          <div class="font-semibold truncate">{display_name(session.client)}</div>
+                          <div class="truncate opacity-75">{session.status}</div>
+                        </button>
+                      <% end %>
                     <% else %>
                       <%= if available do %>
                         <div class="w-full h-full min-h-[40px]"></div>
@@ -280,22 +282,24 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
           <div class="space-y-1">
             <%= for hour <- @hours_range do %>
               <% available = is_available?(@availability_map, mobile_dow, hour) %>
-              <% session = get_in(@week_sessions, [mobile_day, hour]) %>
+              <% sessions = get_in(@week_sessions, [mobile_day, hour]) || [] %>
               <div class={"flex items-stretch rounded-lg overflow-hidden #{if available, do: "bg-base-100", else: "bg-base-200/30"}"}>
                 <div class="w-16 shrink-0 text-xs text-base-content/40 p-2 flex items-center justify-end pr-3">
                   {format_hour(hour)}
                 </div>
                 <div class="flex-1 min-h-[44px] border-l border-base-200">
-                  <%= if session do %>
-                    <button
-                      type="button"
-                      phx-click="show_session"
-                      phx-value-session-id={session.id}
-                      class={"w-full text-left p-2 #{session_color(session.status)}"}
-                    >
-                      <div class="font-semibold text-sm">{display_name(session.client)}</div>
-                      <div class="text-xs opacity-75">{session.status}</div>
-                    </button>
+                  <%= if sessions != [] do %>
+                    <%= for session <- sessions do %>
+                      <button
+                        type="button"
+                        phx-click="show_session"
+                        phx-value-session-id={session.id}
+                        class={"w-full text-left p-2 #{session_color(session.status)}"}
+                      >
+                        <div class="font-semibold text-sm">{display_name(session.client)}</div>
+                        <div class="text-xs opacity-75">{session.status}</div>
+                      </button>
+                    <% end %>
                   <% else %>
                     <%= if available do %>
                       <div class="p-2 text-xs text-base-content/20 italic">Available</div>
@@ -337,7 +341,7 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
         
     <!-- Session Detail Modal -->
         <%= if @selected_session do %>
-          <div class="modal modal-open" phx-click="close_modal">
+          <div class="modal modal-open">
             <div class="modal-box" phx-click-away="close_modal">
               <button
                 phx-click="close_modal"
