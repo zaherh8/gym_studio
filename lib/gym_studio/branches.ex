@@ -25,6 +25,7 @@ defmodule GymStudio.Branches do
       iex> list_branches(active: true)
       [%Branch{}, ...]
   """
+  @spec list_branches(keyword()) :: [Branch.t()]
   def list_branches(opts \\ []) do
     query =
       if Keyword.has_key?(opts, :active) do
@@ -108,6 +109,10 @@ defmodule GymStudio.Branches do
 
   @doc """
   Deletes a branch.
+
+  > #### Warning {: .warning}
+  > Deleting a branch will fail with a foreign key constraint error once
+  > associations (e.g. sessions, trainers) are added in future issues.
 
   ## Examples
 

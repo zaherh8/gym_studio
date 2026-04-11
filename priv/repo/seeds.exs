@@ -27,8 +27,10 @@ IO.puts("Seeding database...")
 # =============================================================================
 IO.puts("Creating branches...")
 
-{:ok, _sin_el_fil} =
-  Branches.create_branch(%{
+now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+branch_seeds = [
+  %{
     name: "React — Sin El Fil",
     slug: "sin-el-fil",
     address: "Plot 274, Sin El Fil",
@@ -37,29 +39,36 @@ IO.puts("Creating branches...")
     latitude: 33.8713,
     longitude: 35.5297,
     operating_hours: %{
-      mon: "06:00-22:00",
-      tue: "06:00-22:00",
-      wed: "06:00-22:00",
-      thu: "06:00-22:00",
-      fri: "06:00-22:00",
-      sat: "08:00-18:00",
-      sun: "10:00-16:00"
+      "mon" => "06:00-22:00",
+      "tue" => "06:00-22:00",
+      "wed" => "06:00-22:00",
+      "thu" => "06:00-22:00",
+      "fri" => "06:00-22:00",
+      "sat" => "08:00-18:00",
+      "sun" => "10:00-16:00"
     },
-    active: true
-  })
-
-IO.puts("  Branch created: React — Sin El Fil")
-
-{:ok, _other} =
-  Branches.create_branch(%{
+    active: true,
+    inserted_at: now,
+    updated_at: now
+  },
+  %{
     name: "React — Other Branch",
     slug: "other",
     address: "TBD",
     capacity: 6,
-    active: true
-  })
+    active: true,
+    inserted_at: now,
+    updated_at: now
+  }
+]
 
-IO.puts("  Branch created: React — Other Branch")
+{count, _} = Repo.insert_all(Branch, branch_seeds, on_conflict: :nothing)
+
+if count > 0 do
+  IO.puts("  #{count} branch(es) created")
+else
+  IO.puts("  Branches already exist, skipping")
+end
 
 # Helper function to create user with password
 defmodule SeedHelpers do
