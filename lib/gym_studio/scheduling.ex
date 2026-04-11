@@ -376,9 +376,19 @@ defmodule GymStudio.Scheduling do
 
   # Additional trainer/client specific queries
 
-  def list_pending_sessions_for_trainer(trainer_id) do
-    TrainingSession
-    |> where([s], s.trainer_id == ^trainer_id and s.status == "pending")
+  def list_pending_sessions_for_trainer(trainer_id, opts \\ []) do
+    query =
+      TrainingSession
+      |> where([s], s.trainer_id == ^trainer_id and s.status == "pending")
+
+    query =
+      if opts[:branch_id] do
+        where(query, [s], s.branch_id == ^opts[:branch_id])
+      else
+        query
+      end
+
+    query
     |> order_by([s], asc: s.scheduled_at)
     |> preload([:client, :package])
     |> Repo.all()
@@ -398,6 +408,16 @@ defmodule GymStudio.Scheduling do
       |> where([s], s.client_id == ^client_id)
       |> where([s], s.status in ["pending", "confirmed"])
       |> where([s], s.scheduled_at >= ^now)
+
+    query =
+      if opts[:branch_id] do
+        where(query, [s], s.branch_id == ^opts[:branch_id])
+      else
+        query
+      end
+
+    query =
+      query
       |> order_by([s], asc: s.scheduled_at)
       |> preload([:trainer, :package])
 
@@ -444,7 +464,7 @@ defmodule GymStudio.Scheduling do
 
     query =
       if opts[:branch_id] do
-        where(query, [_s, c], c.branch_id == ^opts[:branch_id])
+        where(query, [s, _c], s.branch_id == ^opts[:branch_id])
       else
         query
       end
@@ -457,9 +477,19 @@ defmodule GymStudio.Scheduling do
   @doc """
   Checks if a trainer has at least one training session with the given client.
   """
-  def trainer_has_client?(trainer_id, client_id) do
-    TrainingSession
-    |> where([s], s.trainer_id == ^trainer_id and s.client_id == ^client_id)
+  def trainer_has_client?(trainer_id, client_id, opts \\ []) do
+    query =
+      TrainingSession
+      |> where([s], s.trainer_id == ^trainer_id and s.client_id == ^client_id)
+
+    query =
+      if opts[:branch_id] do
+        where(query, [s], s.branch_id == ^opts[:branch_id])
+      else
+        query
+      end
+
+    query
     |> limit(1)
     |> Repo.exists?()
   end
@@ -474,9 +504,19 @@ defmodule GymStudio.Scheduling do
   @doc """
   Counts unique clients for a trainer.
   """
-  def count_unique_clients_for_trainer(trainer_id) do
-    TrainingSession
-    |> where([s], s.trainer_id == ^trainer_id)
+  def count_unique_clients_for_trainer(trainer_id, opts \\ []) do
+    query =
+      TrainingSession
+      |> where([s], s.trainer_id == ^trainer_id)
+
+    query =
+      if opts[:branch_id] do
+        where(query, [s], s.branch_id == ^opts[:branch_id])
+      else
+        query
+      end
+
+    query
     |> select([s], count(s.client_id, :distinct))
     |> Repo.one() || 0
   end
@@ -484,7 +524,7 @@ defmodule GymStudio.Scheduling do
   @doc """
   Counts sessions for a trainer in the current week.
   """
-  def count_sessions_this_week(trainer_id) do
+  def count_sessions_this_week(trainer_id, opts \\ []) do
     today = Date.utc_today()
     start_of_week = Date.beginning_of_week(today, :monday)
     end_of_next_week = Date.add(start_of_week, 7)
@@ -492,10 +532,20 @@ defmodule GymStudio.Scheduling do
     start_datetime = DateTime.new!(start_of_week, ~T[00:00:00], "Etc/UTC")
     end_datetime = DateTime.new!(end_of_next_week, ~T[00:00:00], "Etc/UTC")
 
-    TrainingSession
-    |> where([s], s.trainer_id == ^trainer_id)
-    |> where([s], s.scheduled_at >= ^start_datetime and s.scheduled_at < ^end_datetime)
-    |> where([s], s.status in ["pending", "confirmed", "completed"])
+    query =
+      TrainingSession
+      |> where([s], s.trainer_id == ^trainer_id)
+      |> where([s], s.scheduled_at >= ^start_datetime and s.scheduled_at < ^end_datetime)
+      |> where([s], s.status in ["pending", "confirmed", "completed"])
+
+    query =
+      if opts[:branch_id] do
+        where(query, [s], s.branch_id == ^opts[:branch_id])
+      else
+        query
+      end
+
+    query
     |> Repo.aggregate(:count)
   end
 

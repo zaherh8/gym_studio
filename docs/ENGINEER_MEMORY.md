@@ -128,3 +128,16 @@ Lessons learned from code reviews. Read this before every task.
 - PATH: `export PATH="/opt/homebrew/opt/postgresql@17/bin:/Users/zaherhassan/.fly/bin:$PATH"`
 - Checks before push: `mix format --check-formatted && mix compile --warnings-as-errors && mix test`
 - Feature branches: `feat/<issue-number>-<short-name>`
+
+## Branch Scoping (#68)
+
+- All Scheduling context functions that accept `opts \\ []` support `:branch_id` for scoping.
+- When adding branch_id to existing functions, always use `opts \\ []` keyword list for backward compatibility — never add a required positional arg.
+- Client/trainer profile views show "My Branch" label with badge — use `Branches.get_branch!(user.branch_id)`.
+- Registration form includes branch dropdown for clients; trainers get branch assigned by admin.
+- Cross-branch access guard pattern: check `session.branch_id != user.branch_id` → redirect with flash error.
+- `trainer_has_client?/3` now accepts `opts` (3rd arg) with `:branch_id` — update all call sites.
+- Pre-existing test failures (9) in registration/forgot_password tests are unrelated to branch work — Telnyx OTP mock issue.
+- **Branch filter consistency:** When joining sessions + users, always filter on `s.branch_id` (session's branch), not `c.branch_id` (client's current branch). If a client moves branches, filtering on `c.branch_id` leaks old sessions into the wrong branch's client list.
+- **`get_branch/1` doesn't exist** — only `get_branch!/1` (raises) and `get_branch_by_slug/1`. For validation in changesets, use `get_branch!` with `rescue Ecto.NoResultsError`.
+- **Registration must validate branch is active**, not just that it exists. `foreign_key_constraint` only checks FK integrity — it doesn't validate business rules like `active == true`. Use a custom `validate_branch_active` changeset helper.

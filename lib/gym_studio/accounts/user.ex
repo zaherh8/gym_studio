@@ -56,6 +56,25 @@ defmodule GymStudio.Accounts.User do
     |> validate_confirmation(:password, message: "does not match password")
     |> validate_password(opts)
     |> foreign_key_constraint(:branch_id)
+    |> validate_branch_active()
+  end
+
+  defp validate_branch_active(changeset) do
+    case get_change(changeset, :branch_id) do
+      nil ->
+        changeset
+
+      branch_id ->
+        try do
+          case GymStudio.Branches.get_branch!(branch_id) do
+            %GymStudio.Branches.Branch{active: true} -> changeset
+            _ -> add_error(changeset, :branch_id, "is not an active branch")
+          end
+        rescue
+          Ecto.NoResultsError ->
+            add_error(changeset, :branch_id, "does not exist")
+        end
+    end
   end
 
   @doc """

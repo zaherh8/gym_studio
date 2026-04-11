@@ -1,6 +1,6 @@
 defmodule GymStudioWeb.Trainer.DashboardLive do
   use GymStudioWeb, :live_view
-  alias GymStudio.{Accounts, Scheduling}
+  alias GymStudio.{Accounts, Branches, Scheduling}
 
   @impl true
   def mount(_params, _session, socket) do
@@ -11,6 +11,7 @@ defmodule GymStudioWeb.Trainer.DashboardLive do
       socket
       |> assign(page_title: "Trainer Dashboard")
       |> assign(trainer: trainer)
+      |> assign(branch: Branches.get_branch!(user.branch_id))
       |> assign(show_cancel_modal: false, cancel_session_id: nil, cancel_reason: "")
       |> assign(show_complete_modal: false, complete_session_id: nil, trainer_notes: "")
       |> assign_dashboard_data(trainer)
@@ -37,7 +38,8 @@ defmodule GymStudioWeb.Trainer.DashboardLive do
         branch_id: branch_id
       )
 
-    pending_sessions = Scheduling.list_pending_sessions_for_trainer(trainer.user_id)
+    pending_sessions =
+      Scheduling.list_pending_sessions_for_trainer(trainer.user_id, branch_id: branch_id)
 
     # Upcoming 7 days (excluding today)
     tomorrow = Date.add(today, 1)
@@ -53,8 +55,10 @@ defmodule GymStudioWeb.Trainer.DashboardLive do
       |> Enum.sort_by(& &1.scheduled_at, DateTime)
 
     stats = %{
-      total_clients: Scheduling.count_unique_clients_for_trainer(trainer.user_id),
-      sessions_this_week: Scheduling.count_sessions_this_week(trainer.user_id),
+      total_clients:
+        Scheduling.count_unique_clients_for_trainer(trainer.user_id, branch_id: branch_id),
+      sessions_this_week:
+        Scheduling.count_sessions_this_week(trainer.user_id, branch_id: branch_id),
       pending_count: length(pending_sessions)
     }
 
@@ -158,7 +162,10 @@ defmodule GymStudioWeb.Trainer.DashboardLive do
   def render(assigns) do
     ~H"""
     <div class="container mx-auto px-4 py-8">
-      <h1 class="text-3xl font-bold mb-8">Trainer Dashboard</h1>
+      <h1 class="text-3xl font-bold mb-2">Trainer Dashboard</h1>
+      <p class="text-base-content/60 mb-8">
+        <span class="badge badge-primary badge-lg">{@branch.name}</span>
+      </p>
 
       <%= if @trainer == nil do %>
         <div class="alert alert-warning">

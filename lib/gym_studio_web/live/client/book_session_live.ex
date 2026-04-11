@@ -9,7 +9,7 @@ defmodule GymStudioWeb.Client.BookSessionLive do
 
     active_package =
       if client do
-        case Packages.get_active_package_for_client(client.user_id) do
+        case Packages.get_active_package_for_client(client.user_id, branch_id: user.branch_id) do
           {:ok, package} -> package
           {:error, :no_active_package} -> nil
         end
@@ -22,6 +22,7 @@ defmodule GymStudioWeb.Client.BookSessionLive do
       if client do
         Scheduling.list_sessions_for_client(user.id,
           status: "completed",
+          branch_id: user.branch_id,
           preload: [:trainer]
         )
       else

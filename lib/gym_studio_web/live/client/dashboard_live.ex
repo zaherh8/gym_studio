@@ -1,6 +1,6 @@
 defmodule GymStudioWeb.Client.DashboardLive do
   use GymStudioWeb, :live_view
-  alias GymStudio.{Packages, Scheduling, Notifications}
+  alias GymStudio.{Branches, Packages, Scheduling, Notifications}
 
   @impl true
   def mount(_params, _session, socket) do
@@ -15,6 +15,7 @@ defmodule GymStudioWeb.Client.DashboardLive do
       socket
       |> assign(page_title: "Dashboard")
       |> assign(client: client)
+      |> assign(branch: Branches.get_branch!(user.branch_id))
       |> assign_dashboard_data(client)
 
     {:ok, socket}
@@ -35,7 +36,8 @@ defmodule GymStudioWeb.Client.DashboardLive do
         {:error, :no_active_package} -> nil
       end
 
-    upcoming_sessions = Scheduling.list_upcoming_sessions_for_client(client.user_id, limit: 5)
+    upcoming_sessions =
+      Scheduling.list_upcoming_sessions_for_client(client.user_id, limit: 5, branch_id: branch_id)
 
     socket
     |> assign(active_package: active_package)
@@ -60,6 +62,9 @@ defmodule GymStudioWeb.Client.DashboardLive do
                 Welcome back, {@current_scope.user.name || "there"}!
               </h1>
               <p class="text-gray-600 mt-1">Ready to crush your fitness goals?</p>
+              <p class="mt-1">
+                <span class="badge badge-primary badge-lg">{@branch.name}</span>
+              </p>
             </div>
             <!-- Package Info Badge -->
             <%= if @active_package do %>
