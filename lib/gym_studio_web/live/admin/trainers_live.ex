@@ -1,24 +1,50 @@
 defmodule GymStudioWeb.Admin.TrainersLive do
   use GymStudioWeb, :live_view
-  alias GymStudio.Accounts
+  alias GymStudio.{Accounts, Branches}
+  alias GymStudioWeb.Admin.BranchSelectorComponent
 
   @impl true
   def mount(_params, _session, socket) do
-    trainers = Accounts.list_trainers(branch_id: socket.assigns.current_scope.user.branch_id)
-    {:ok, assign(socket, page_title: "Manage Trainers", trainers: trainers)}
+    branches = Branches.list_branches(active: true)
+    selected_branch_id = "all"
+    branch_id = BranchSelectorComponent.effective_branch_id(selected_branch_id)
+    trainers = Accounts.list_trainers(branch_id: branch_id)
+
+    {:ok,
+     assign(socket,
+       page_title: "Manage Trainers",
+       branches: branches,
+       selected_branch_id: selected_branch_id,
+       trainers: trainers
+     )}
+  end
+
+  @impl true
+  def handle_event("select_branch", %{"branch_id" => branch_id}, socket) do
+    effective_id = BranchSelectorComponent.effective_branch_id(branch_id)
+    trainers = Accounts.list_trainers(branch_id: effective_id)
+
+    {:noreply, assign(socket, selected_branch_id: branch_id, trainers: trainers)}
   end
 
   @impl true
   def render(assigns) do
     ~H"""
     <div class="container mx-auto px-4 py-8">
-      <h1 class="text-3xl font-bold mb-8">Manage Trainers</h1>
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h1 class="text-3xl font-bold">Manage Trainers</h1>
+        <BranchSelectorComponent.branch_selector
+          branches={@branches}
+          selected_branch_id={@selected_branch_id}
+        />
+      </div>
       <div class="overflow-x-auto">
         <table class="table">
           <thead>
             <tr>
-              <th>Email</th>
+              <th>Name</th>
               <th>Status</th>
+              <th>Branch</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -30,6 +56,14 @@ defmodule GymStudioWeb.Admin.TrainersLive do
                   <span class={"badge #{status_badge_class(trainer.status)}"}>{trainer.status}</span>
                 </td>
                 <td>
+                  <span :if={trainer.user.branch_id} class="badge badge-outline badge-sm">
+                    {branch_name(trainer.user.branch_id, @branches)}
+                  </span>
+                  <span :if={is_nil(trainer.user.branch_id)} class="text-base-content/40 text-sm">
+                    —
+                  </span>
+                </td>
+                <td>
                   <.link navigate={~p"/admin/trainers/#{trainer.id}"} class="btn btn-sm btn-ghost">
                     View
                   </.link>
@@ -39,6 +73,8 @@ defmodule GymStudioWeb.Admin.TrainersLive do
           </tbody>
         </table>
       </div>
+
+      <p :if={@trainers == []} class="text-base-content/60 text-center py-8">No trainers found.</p>
     </div>
     """
   end
@@ -47,4 +83,11 @@ defmodule GymStudioWeb.Admin.TrainersLive do
   defp status_badge_class("approved"), do: "badge-success"
   defp status_badge_class("suspended"), do: "badge-error"
   defp status_badge_class(_), do: "badge-ghost"
+
+  defp branch_name(branch_id, branches) do
+    case Enum.find(branches, fn b -> b.id == branch_id end) do
+      nil -> "Unknown"
+      branch -> branch.name
+    end
+  end
 end

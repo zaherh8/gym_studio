@@ -1,14 +1,38 @@
 defmodule GymStudioWeb.Admin.DashboardLive do
   @moduledoc """
   Admin dashboard showing overview statistics and quick actions.
+  Supports branch filtering via session-persisted branch selector.
   """
   use GymStudioWeb, :live_view
 
-  alias GymStudio.{Accounts, Packages, Scheduling}
+  alias GymStudio.{Accounts, Branches, Packages, Scheduling}
+  alias GymStudioWeb.Admin.BranchSelectorComponent
 
   @impl true
   def mount(_params, _session, socket) do
-    branch_id = socket.assigns.current_scope.user.branch_id
+    branches = Branches.list_branches(active: true)
+    selected_branch_id = "all"
+
+    socket =
+      socket
+      |> assign(:branches, branches)
+      |> assign(:selected_branch_id, selected_branch_id)
+      |> load_dashboard_data()
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("select_branch", %{"branch_id" => branch_id}, socket) do
+    {:noreply,
+     socket
+     |> assign(:selected_branch_id, branch_id)
+     |> load_dashboard_data()}
+  end
+
+  defp load_dashboard_data(socket) do
+    branch_id = BranchSelectorComponent.effective_branch_id(socket.assigns.selected_branch_id)
+
     user_counts = Accounts.count_users_by_role(branch_id: branch_id)
     pending_trainers = length(Accounts.list_trainers(status: "pending", branch_id: branch_id))
     pending_sessions = length(Scheduling.list_pending_sessions(branch_id: branch_id))
@@ -25,26 +49,31 @@ defmodule GymStudioWeb.Admin.DashboardLive do
     sessions_today = Scheduling.count_sessions_today(branch_id: branch_id)
     sessions_this_week = Scheduling.count_all_sessions_this_week(branch_id: branch_id)
 
-    {:ok,
-     assign(socket,
-       page_title: "Admin Dashboard",
-       user_counts: user_counts,
-       pending_trainers: pending_trainers,
-       pending_sessions: pending_sessions,
-       active_packages: active_packages,
-       sessions_today: sessions_today,
-       sessions_this_week: sessions_this_week
-     )}
+    assign(socket,
+      page_title: "Admin Dashboard",
+      user_counts: user_counts,
+      pending_trainers: pending_trainers,
+      pending_sessions: pending_sessions,
+      active_packages: active_packages,
+      sessions_today: sessions_today,
+      sessions_this_week: sessions_this_week
+    )
   end
 
   @impl true
   def render(assigns) do
     ~H"""
     <div class="container mx-auto px-4 py-8">
-      <h1 class="text-3xl font-bold mb-8">Admin Dashboard</h1>
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h1 class="text-3xl font-bold">Admin Dashboard</h1>
+        <BranchSelectorComponent.branch_selector
+          branches={@branches}
+          selected_branch_id={@selected_branch_id}
+        />
+      </div>
 
       <%!-- Stats Grid --%>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div class="stat bg-base-200 rounded-box">
           <div class="stat-title">Total Clients</div>
           <div class="stat-value text-primary">{Map.get(@user_counts, :client, 0)}</div>
@@ -70,7 +99,7 @@ defmodule GymStudioWeb.Admin.DashboardLive do
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div class="stat bg-warning/10 rounded-box">
           <div class="stat-title">Pending Sessions</div>
           <div class="stat-value text-warning">{@pending_sessions}</div>
@@ -92,7 +121,7 @@ defmodule GymStudioWeb.Admin.DashboardLive do
 
       <%!-- Quick Actions --%>
       <h2 class="text-xl font-semibold mb-4">Quick Actions</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <.link
           navigate={~p"/admin/sessions"}
           class="card bg-base-200 hover:bg-base-300 transition-colors"
@@ -164,12 +193,12 @@ defmodule GymStudioWeb.Admin.DashboardLive do
         </.link>
 
         <.link
-          navigate={~p"/admin/gallery"}
+          navigate={~p"/admin/branches"}
           class="card bg-base-200 hover:bg-base-300 transition-colors"
         >
           <div class="card-body">
-            <h2 class="card-title">🖼️ Manage Gallery</h2>
-            <p class="text-base-content/70">Upload and manage gym photos</p>
+            <h2 class="card-title">🏢 Manage Branches</h2>
+            <p class="text-base-content/70">Add, edit, and configure gym locations</p>
           </div>
         </.link>
       </div>

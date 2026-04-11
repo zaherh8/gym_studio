@@ -1,21 +1,26 @@
 defmodule GymStudioWeb.Admin.UsersLive do
   use GymStudioWeb, :live_view
 
-  alias GymStudio.Accounts
+  alias GymStudio.{Accounts, Branches}
+  alias GymStudioWeb.Admin.BranchSelectorComponent
 
   @impl true
   def mount(_params, _session, socket) do
-    branch_id = socket.assigns.current_scope.user.branch_id
+    branches = Branches.list_branches(active: true)
+    selected_branch_id = "all"
+    branch_id = BranchSelectorComponent.effective_branch_id(selected_branch_id)
 
     {:ok,
      assign(socket,
        page_title: "Manage Users",
+       branches: branches,
+       selected_branch_id: selected_branch_id,
        users: Accounts.list_users(branch_id: branch_id),
        search: "",
        role_filter: "",
        confirm_action: nil,
        confirm_user_id: nil,
-       branch_id: branch_id
+       show_create_user: false
      )}
   end
 
@@ -30,8 +35,17 @@ defmodule GymStudioWeb.Admin.UsersLive do
   end
 
   @impl true
+  def handle_event("select_branch", %{"branch_id" => branch_id}, socket) do
+    effective_id = BranchSelectorComponent.effective_branch_id(branch_id)
+
+    users =
+      filter_users(socket.assigns.search, socket.assigns.role_filter, effective_id)
+
+    {:noreply, assign(socket, selected_branch_id: branch_id, users: users)}
+  end
+
   def handle_event("search", %{"search" => search, "role" => role}, socket) do
-    branch_id = socket.assigns.branch_id
+    branch_id = BranchSelectorComponent.effective_branch_id(socket.assigns.selected_branch_id)
     users = filter_users(search, role, branch_id)
     {:noreply, assign(socket, users: users, search: search, role_filter: role)}
   end
@@ -45,8 +59,8 @@ defmodule GymStudioWeb.Admin.UsersLive do
       {:ok, _} = Accounts.activate_user(user)
     end
 
-    users =
-      filter_users(socket.assigns.search, socket.assigns.role_filter, socket.assigns.branch_id)
+    branch_id = BranchSelectorComponent.effective_branch_id(socket.assigns.selected_branch_id)
+    users = filter_users(socket.assigns.search, socket.assigns.role_filter, branch_id)
 
     {:noreply, assign(socket, users: users)}
   end
@@ -64,8 +78,8 @@ defmodule GymStudioWeb.Admin.UsersLive do
     user = Accounts.get_user!(socket.assigns.confirm_user_id)
     {:ok, _} = Accounts.change_user_role(user, socket.assigns.confirm_role)
 
-    users =
-      filter_users(socket.assigns.search, socket.assigns.role_filter, socket.assigns.branch_id)
+    branch_id = BranchSelectorComponent.effective_branch_id(socket.assigns.selected_branch_id)
+    users = filter_users(socket.assigns.search, socket.assigns.role_filter, branch_id)
 
     {:noreply, assign(socket, users: users, confirm_action: nil, confirm_user_id: nil)}
   end
@@ -73,6 +87,63 @@ defmodule GymStudioWeb.Admin.UsersLive do
   def handle_event("cancel_confirm", _params, socket) do
     {:noreply, assign(socket, confirm_action: nil, confirm_user_id: nil)}
   end
+
+  def handle_event("show_create_user", _params, socket) do
+    {:noreply, assign(socket, show_create_user: true)}
+  end
+
+  def handle_event("hide_create_user", _params, socket) do
+    {:noreply, assign(socket, show_create_user: false)}
+  end
+
+  def handle_event("create_user", params, socket) do
+    role = String.to_existing_atom(params["role"] || "client")
+
+    attrs = %{
+      name: params["name"],
+      phone_number: params["phone_number"],
+      email: if(params["email"] != "", do: params["email"], else: nil),
+      password: params["password"],
+      password_confirmation: params["password"],
+      role: role,
+      branch_id: String.to_integer(params["branch_id"])
+    }
+
+    case Accounts.register_user(attrs) do
+      {:ok, user} ->
+        # Auto-confirm the user
+        Accounts.confirm_user(user)
+
+        # Create profile if client or trainer
+        case role do
+          :client ->
+            Accounts.create_client_profile(user)
+
+          :trainer ->
+            Accounts.create_trainer_profile(user, %{
+              bio: "Professional fitness trainer",
+              specializations: ["General Fitness"]
+            })
+
+          _ ->
+            :ok
+        end
+
+        branch_id = BranchSelectorComponent.effective_branch_id(socket.assigns.selected_branch_id)
+        users = filter_users(socket.assigns.search, socket.assigns.role_filter, branch_id)
+
+        {:noreply,
+         socket
+         |> put_flash(:info, "User created successfully")
+         |> assign(users: users, show_create_user: false)}
+
+      {:error, _changeset} ->
+        {:noreply,
+         put_flash(socket, :error, "Failed to create user. Check the form and try again.")}
+    end
+  end
+
+  defp filter_users("", "", nil), do: Accounts.list_users(branch_id: nil)
 
   defp filter_users("", "", branch_id), do: Accounts.list_users(branch_id: branch_id)
 
@@ -93,7 +164,18 @@ defmodule GymStudioWeb.Admin.UsersLive do
   def render(assigns) do
     ~H"""
     <div class="container mx-auto px-4 py-8">
-      <h1 class="text-3xl font-bold mb-8">Manage Users</h1>
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h1 class="text-3xl font-bold">Manage Users</h1>
+        <div class="flex items-center gap-3 flex-wrap">
+          <button phx-click="show_create_user" class="btn btn-primary btn-sm">
+            <.icon name="hero-plus" class="size-4" /> Add User
+          </button>
+          <BranchSelectorComponent.branch_selector
+            branches={@branches}
+            selected_branch_id={@selected_branch_id}
+          />
+        </div>
+      </div>
 
       <%!-- Search & Filter --%>
       <form phx-change="search" class="flex flex-col sm:flex-row gap-4 mb-6">
@@ -112,6 +194,76 @@ defmodule GymStudioWeb.Admin.UsersLive do
           <option value="admin" selected={@role_filter == "admin"}>Admin</option>
         </select>
       </form>
+
+      <%!-- Create User modal --%>
+      <div :if={@show_create_user} class="modal modal-open">
+        <div class="modal-box">
+          <h3 class="font-bold text-lg mb-4">Create New User</h3>
+          <form phx-submit="create_user" class="space-y-4">
+            <div class="form-control">
+              <label class="label"><span class="label-text">Name</span></label>
+              <input
+                type="text"
+                name="name"
+                class="input input-bordered"
+                required
+                placeholder="Full name"
+              />
+            </div>
+            <div class="form-control">
+              <label class="label"><span class="label-text">Phone Number</span></label>
+              <input
+                type="tel"
+                name="phone_number"
+                class="input input-bordered"
+                required
+                placeholder="+961..."
+              />
+            </div>
+            <div class="form-control">
+              <label class="label"><span class="label-text">Email (optional)</span></label>
+              <input
+                type="email"
+                name="email"
+                class="input input-bordered"
+                placeholder="user@example.com"
+              />
+            </div>
+            <div class="form-control">
+              <label class="label"><span class="label-text">Role</span></label>
+              <select name="role" class="select select-bordered" required>
+                <option value="client">Client</option>
+                <option value="trainer">Trainer</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div class="form-control">
+              <label class="label"><span class="label-text">Branch</span></label>
+              <select name="branch_id" class="select select-bordered" required>
+                <option value="">Select Branch</option>
+                <%= for branch <- @branches do %>
+                  <option value={branch.id}>{branch.name}</option>
+                <% end %>
+              </select>
+            </div>
+            <div class="form-control">
+              <label class="label"><span class="label-text">Password</span></label>
+              <input
+                type="password"
+                name="password"
+                class="input input-bordered"
+                required
+                minlength="8"
+                placeholder="Min 8 characters"
+              />
+            </div>
+            <div class="modal-action">
+              <button type="button" phx-click="hide_create_user" class="btn">Cancel</button>
+              <button type="submit" class="btn btn-primary">Create User</button>
+            </div>
+          </form>
+        </div>
+      </div>
 
       <%!-- Confirm modal --%>
       <div :if={@confirm_action == :change_role} class="modal modal-open">
@@ -135,8 +287,9 @@ defmodule GymStudioWeb.Admin.UsersLive do
               <th>Name</th>
               <th>Phone</th>
               <th>Role</th>
+              <th>Branch</th>
               <th>Status</th>
-              <th>Registered</th>
+              <th class="hidden sm:table-cell">Registered</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -151,11 +304,19 @@ defmodule GymStudioWeb.Admin.UsersLive do
                 <span class={"badge #{role_badge_class(user.role)}"}>{user.role}</span>
               </td>
               <td>
+                <span :if={user.branch_id} class="badge badge-outline badge-sm">
+                  {branch_name(user.branch_id, @branches)}
+                </span>
+                <span :if={is_nil(user.branch_id)} class="text-base-content/40 text-sm">—</span>
+              </td>
+              <td>
                 <span class={"badge #{if user.active, do: "badge-success", else: "badge-error"}"}>
                   {if user.active, do: "Active", else: "Inactive"}
                 </span>
               </td>
-              <td class="text-sm">{Calendar.strftime(user.inserted_at, "%Y-%m-%d")}</td>
+              <td class="hidden sm:table-cell text-sm">
+                {Calendar.strftime(user.inserted_at, "%Y-%m-%d")}
+              </td>
               <td>
                 <div class="flex gap-2">
                   <button
@@ -199,4 +360,11 @@ defmodule GymStudioWeb.Admin.UsersLive do
   defp role_badge_class(:trainer), do: "badge-secondary"
   defp role_badge_class(:client), do: "badge-primary"
   defp role_badge_class(_), do: "badge-ghost"
+
+  defp branch_name(branch_id, branches) do
+    case Enum.find(branches, fn b -> b.id == branch_id end) do
+      nil -> "Unknown"
+      branch -> branch.name
+    end
+  end
 end

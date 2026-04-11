@@ -1,11 +1,37 @@
 defmodule GymStudioWeb.Admin.AnalyticsLive do
+  @moduledoc """
+  Admin analytics page with branch filtering support.
+  """
   use GymStudioWeb, :live_view
 
-  alias GymStudio.Scheduling
+  alias GymStudio.{Accounts, Branches, Scheduling}
+  alias GymStudioWeb.Admin.BranchSelectorComponent
 
   @impl true
   def mount(_params, _session, socket) do
-    branch_id = socket.assigns.current_scope.user.branch_id
+    branches = Branches.list_branches(active: true)
+    selected_branch_id = "all"
+
+    socket =
+      socket
+      |> assign(:branches, branches)
+      |> assign(:selected_branch_id, selected_branch_id)
+      |> load_analytics_data()
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("select_branch", %{"branch_id" => branch_id}, socket) do
+    {:noreply,
+     socket
+     |> assign(:selected_branch_id, branch_id)
+     |> load_analytics_data()}
+  end
+
+  defp load_analytics_data(socket) do
+    branch_id = BranchSelectorComponent.effective_branch_id(socket.assigns.selected_branch_id)
+
     status_counts = Scheduling.count_sessions_by_status(branch_id: branch_id)
     weekly_sessions = Scheduling.sessions_per_week(4, branch_id: branch_id)
     popular_slots = Scheduling.popular_time_slots(branch_id: branch_id)
@@ -13,22 +39,44 @@ defmodule GymStudioWeb.Admin.AnalyticsLive do
 
     total_sessions = status_counts |> Map.values() |> Enum.sum()
 
-    {:ok,
-     assign(socket,
-       page_title: "Analytics",
-       status_counts: status_counts,
-       total_sessions: total_sessions,
-       weekly_sessions: weekly_sessions,
-       popular_slots: popular_slots,
-       trainer_counts: trainer_counts
-     )}
+    # Pre-compute per-branch stats when showing all branches
+    per_branch_stats =
+      if is_nil(branch_id) do
+        socket.assigns.branches
+        |> Enum.map(fn b ->
+          {b.id,
+           %{
+             sessions_this_week: Scheduling.count_all_sessions_this_week(branch_id: b.id),
+             client_count: Map.get(Accounts.count_users_by_role(branch_id: b.id), :client, 0)
+           }}
+        end)
+        |> Map.new()
+      else
+        %{}
+      end
+
+    assign(socket,
+      page_title: "Analytics",
+      status_counts: status_counts,
+      total_sessions: total_sessions,
+      weekly_sessions: weekly_sessions,
+      popular_slots: popular_slots,
+      trainer_counts: trainer_counts,
+      per_branch_stats: per_branch_stats
+    )
   end
 
   @impl true
   def render(assigns) do
     ~H"""
     <div class="container mx-auto px-4 py-8">
-      <h1 class="text-3xl font-bold mb-8">Analytics</h1>
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <h1 class="text-3xl font-bold">Analytics</h1>
+        <BranchSelectorComponent.branch_selector
+          branches={@branches}
+          selected_branch_id={@selected_branch_id}
+        />
+      </div>
 
       <%!-- Sessions by Status --%>
       <h2 class="text-xl font-semibold mb-4">Sessions by Status</h2>
@@ -129,6 +177,32 @@ defmodule GymStudioWeb.Admin.AnalyticsLive do
       <p :if={@trainer_counts == []} class="text-base-content/60 mb-8">
         No trainer session data yet.
       </p>
+
+      <%!-- Per-branch stats (shown when "All Branches" is selected) --%>
+      <div :if={@selected_branch_id == "all" && @branches != []}>
+        <h2 class="text-xl font-semibold mb-4">Per-Branch Stats</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          <div :for={%{id: bid, name: bname} <- @branches} class="card bg-base-200">
+            <div class="card-body">
+              <h3 class="card-title text-base">{bname}</h3>
+              <div class="stats stats-vertical shadow">
+                <div class="stat">
+                  <div class="stat-title">Sessions This Week</div>
+                  <div class="stat-value text-primary">
+                    {Map.get(@per_branch_stats, bid, %{}) |> Map.get(:sessions_this_week, 0)}
+                  </div>
+                </div>
+                <div class="stat">
+                  <div class="stat-title">Active Clients</div>
+                  <div class="stat-value text-secondary">
+                    {Map.get(@per_branch_stats, bid, %{}) |> Map.get(:client_count, 0)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <%!-- Revenue Placeholder --%>
       <div class="alert alert-info">

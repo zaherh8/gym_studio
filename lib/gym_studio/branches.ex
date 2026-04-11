@@ -146,4 +146,69 @@ defmodule GymStudio.Branches do
   def delete_branch(%Branch{} = branch) do
     Repo.delete(branch)
   end
+
+  @doc """
+  Returns branch stats: client count, trainer count, sessions this week.
+
+  ## Examples
+
+      iex> get_branch_stats(1)
+      %{client_count: 10, trainer_count: 3, sessions_this_week: 25}
+  """
+  def get_branch_stats(branch_id) do
+    alias GymStudio.Accounts.User
+    alias GymStudio.Scheduling.TrainingSession
+
+    client_count =
+      from(u in User,
+        where: u.branch_id == ^branch_id and u.role == :client,
+        select: count(u.id)
+      )
+      |> Repo.one()
+
+    trainer_count =
+      from(u in User,
+        where: u.branch_id == ^branch_id and u.role == :trainer,
+        select: count(u.id)
+      )
+      |> Repo.one()
+
+    now = DateTime.utc_now()
+    start_of_week = Date.beginning_of_week(now, :monday)
+    start_of_week_dt = DateTime.new!(start_of_week, ~T[00:00:00], "Etc/UTC")
+
+    sessions_this_week =
+      from(s in TrainingSession,
+        where: s.branch_id == ^branch_id and s.scheduled_at >= ^start_of_week_dt,
+        select: count(s.id)
+      )
+      |> Repo.one()
+
+    %{
+      client_count: client_count,
+      trainer_count: trainer_count,
+      sessions_this_week: sessions_this_week
+    }
+  end
+
+  @doc """
+  Toggles a branch's active status.
+
+  ## Examples
+
+      iex> toggle_branch_active(branch)
+      {:ok, %Branch{}}
+  """
+  def toggle_branch_active(%Branch{} = branch) do
+    branch
+    |> Branch.update_changeset(%{active: !branch.active})
+    |> Repo.update()
+  end
+
+  @doc """
+  Returns a changeset for tracking branch form changes.
+  """
+  def change_branch(%Branch{} = branch, attrs \\ %{}) do
+    Branch.changeset(branch, attrs)
+  end
 end

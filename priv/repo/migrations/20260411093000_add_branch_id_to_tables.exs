@@ -33,9 +33,13 @@ defmodule GymStudio.Repo.Migrations.AddBranchIdToTables do
     # 3. Backfill all existing records to the default branch
     # Use subquery instead of hardcoding ID 1 (production may have different IDs)
     execute "UPDATE users SET branch_id = (SELECT id FROM branches WHERE slug = 'sin-el-fil') WHERE branch_id IS NULL"
+
     execute "UPDATE session_packages SET branch_id = (SELECT id FROM branches WHERE slug = 'sin-el-fil') WHERE branch_id IS NULL"
+
     execute "UPDATE training_sessions SET branch_id = (SELECT id FROM branches WHERE slug = 'sin-el-fil') WHERE branch_id IS NULL"
+
     execute "UPDATE trainer_availabilities SET branch_id = (SELECT id FROM branches WHERE slug = 'sin-el-fil') WHERE branch_id IS NULL"
+
     execute "UPDATE trainer_time_offs SET branch_id = (SELECT id FROM branches WHERE slug = 'sin-el-fil') WHERE branch_id IS NULL"
 
     # 4. Make branch_id NOT NULL

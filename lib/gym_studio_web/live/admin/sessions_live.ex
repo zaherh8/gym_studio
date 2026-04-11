@@ -1,47 +1,55 @@
 defmodule GymStudioWeb.Admin.SessionsLive do
   use GymStudioWeb, :live_view
-  alias GymStudio.{Scheduling, Accounts}
+  alias GymStudio.{Scheduling, Accounts, Branches}
+  alias GymStudioWeb.Admin.BranchSelectorComponent
 
   @impl true
   def mount(_params, _session, socket) do
-    branch_id = socket.assigns.current_scope.user.branch_id
+    branches = Branches.list_branches(active: true)
+    selected_branch_id = "all"
+    branch_id = BranchSelectorComponent.effective_branch_id(selected_branch_id)
     trainers = Accounts.list_approved_trainers(branch_id: branch_id)
 
     {:ok,
      assign(socket,
        page_title: "Manage Sessions",
+       branches: branches,
+       selected_branch_id: selected_branch_id,
        sessions: Scheduling.list_all_sessions(branch_id: branch_id),
        trainers: trainers,
        status_filter: "",
        trainer_filter: "",
-       editing_session_id: nil,
-       branch_id: branch_id
+       editing_session_id: nil
      )}
   end
 
   @impl true
+  def handle_event("select_branch", %{"branch_id" => branch_id_str}, socket) do
+    branch_id = BranchSelectorComponent.effective_branch_id(branch_id_str)
+    trainers = Accounts.list_approved_trainers(branch_id: branch_id)
+
+    {:noreply,
+     socket
+     |> assign(selected_branch_id: branch_id_str, trainers: trainers)
+     |> reload_sessions()}
+  end
+
   def handle_event("filter", params, socket) do
     status = params["status"] || ""
     trainer = params["trainer"] || ""
 
-    opts =
-      []
-      |> then(fn o -> if status != "", do: [{:status, status} | o], else: o end)
-      |> then(fn o -> if trainer != "", do: [{:trainer_id, trainer} | o], else: o end)
-      |> Keyword.put(:branch_id, socket.assigns.branch_id)
-
-    sessions = Scheduling.list_all_sessions(opts)
-
-    {:noreply, assign(socket, sessions: sessions, status_filter: status, trainer_filter: trainer)}
+    {:noreply,
+     socket
+     |> assign(status_filter: status, trainer_filter: trainer)
+     |> reload_sessions()}
   end
 
   def handle_event("set_status", %{"id" => id, "status" => new_status}, socket) do
     session = Scheduling.get_session!(id)
+    branch_id = BranchSelectorComponent.effective_branch_id(socket.assigns.selected_branch_id)
 
     {:ok, _} =
-      Scheduling.admin_update_session(session, %{status: new_status},
-        branch_id: socket.assigns.branch_id
-      )
+      Scheduling.admin_update_session(session, %{status: new_status}, branch_id: branch_id)
 
     {:noreply, reload_sessions(socket)}
   end
@@ -55,13 +63,17 @@ defmodule GymStudioWeb.Admin.SessionsLive do
         do: Map.put(attrs, :status, "confirmed"),
         else: attrs
 
+    branch_id = BranchSelectorComponent.effective_branch_id(socket.assigns.selected_branch_id)
+
     {:ok, _} =
-      Scheduling.admin_update_session(session, attrs, branch_id: socket.assigns.branch_id)
+      Scheduling.admin_update_session(session, attrs, branch_id: branch_id)
 
     {:noreply, reload_sessions(socket)}
   end
 
   defp reload_sessions(socket) do
+    branch_id = BranchSelectorComponent.effective_branch_id(socket.assigns.selected_branch_id)
+
     opts =
       []
       |> then(fn o ->
@@ -74,7 +86,7 @@ defmodule GymStudioWeb.Admin.SessionsLive do
           do: [{:trainer_id, socket.assigns.trainer_filter} | o],
           else: o
       end)
-      |> Keyword.put(:branch_id, socket.assigns.branch_id)
+      |> Keyword.put(:branch_id, branch_id)
 
     assign(socket, sessions: Scheduling.list_all_sessions(opts))
   end
@@ -83,7 +95,13 @@ defmodule GymStudioWeb.Admin.SessionsLive do
   def render(assigns) do
     ~H"""
     <div class="container mx-auto px-4 py-8">
-      <h1 class="text-3xl font-bold mb-8">Manage Sessions</h1>
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h1 class="text-3xl font-bold">Manage Sessions</h1>
+        <BranchSelectorComponent.branch_selector
+          branches={@branches}
+          selected_branch_id={@selected_branch_id}
+        />
+      </div>
 
       <%!-- Filters --%>
       <form phx-change="filter" class="flex flex-col sm:flex-row gap-4 mb-6">
