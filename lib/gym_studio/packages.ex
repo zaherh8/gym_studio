@@ -475,4 +475,26 @@ defmodule GymStudio.Packages do
     remaining = SessionPackage.calculate_remaining_sessions(package)
     %{package | remaining_sessions: remaining}
   end
+
+  @doc """
+  Counts active packages with available sessions.
+
+  ## Options
+    * `:branch_id` - Filter by branch ID
+  """
+  def count_active_packages(opts \\ []) do
+    query =
+      SessionPackage
+      |> where([p], p.active == true)
+      |> where([p], fragment("? - ? > 0", p.total_sessions, p.used_sessions))
+
+    query =
+      if branch_id = opts[:branch_id] do
+        where(query, [p], p.branch_id == ^branch_id)
+      else
+        query
+      end
+
+    Repo.aggregate(query, :count)
+  end
 end

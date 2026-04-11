@@ -290,6 +290,19 @@ defmodule GymStudio.Scheduling do
   end
 
   @doc """
+  Counts pending training sessions.
+
+  ## Options
+  - `:branch_id` - Filter by branch ID
+  """
+  def count_pending_sessions(opts \\ []) do
+    TrainingSession
+    |> where([s], s.status == "pending")
+    |> filter_by_branch(opts[:branch_id])
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
   Lists upcoming training sessions within the next N days.
 
   ## Options
@@ -1228,6 +1241,42 @@ defmodule GymStudio.Scheduling do
       end
 
     Repo.all(query)
+  end
+
+  @doc """
+  Counts sessions this week grouped by branch_id.
+
+  Returns a map of `%{branch_id => count}`. Only includes branches that have
+  sessions this week. Used by Analytics to batch-fetch per-branch stats
+  instead of N+1 queries.
+
+  ## Options
+  - `:branch_ids` - Filter to only these branch IDs
+  """
+  def count_sessions_this_week_by_branch(opts \\ []) do
+    today = Date.utc_today()
+    start_of_week = Date.beginning_of_week(today, :monday)
+    end_of_next_week = Date.add(start_of_week, 7)
+    from_dt = DateTime.new!(start_of_week, ~T[00:00:00], "Etc/UTC")
+    to_dt = DateTime.new!(end_of_next_week, ~T[00:00:00], "Etc/UTC")
+
+    query =
+      TrainingSession
+      |> where([s], s.scheduled_at >= ^from_dt and s.scheduled_at < ^to_dt)
+      |> where([s], s.status in ["pending", "confirmed", "completed"])
+      |> where([s], not is_nil(s.branch_id))
+      |> group_by([s], s.branch_id)
+      |> select([s], {s.branch_id, count(s.id)})
+
+    query =
+      if branch_ids = opts[:branch_ids] do
+        where(query, [s], s.branch_id in ^branch_ids)
+      else
+        query
+      end
+
+    Repo.all(query)
+    |> Map.new()
   end
 
   defp format_hour(0), do: "12:00 AM"

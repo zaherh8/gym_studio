@@ -790,4 +790,44 @@ defmodule GymStudio.Accounts do
     |> Repo.all()
     |> Map.new()
   end
+
+  @doc """
+  Counts clients grouped by branch_id.
+
+  Returns a map of `%{branch_id => count}`. Only includes branches that have
+  clients. Used by Analytics to batch-fetch per-branch stats instead of N+1 queries.
+
+  ## Options
+    * `:branch_ids` - Filter to only these branch IDs
+  """
+  def count_clients_by_branch(opts \\ []) do
+    query =
+      User
+      |> where([u], u.role == :client and not is_nil(u.branch_id))
+      |> group_by([u], u.branch_id)
+      |> select([u], {u.branch_id, count(u.id)})
+
+    query =
+      if branch_ids = opts[:branch_ids] do
+        where(query, [u], u.branch_id in ^branch_ids)
+      else
+        query
+      end
+
+    Repo.all(query)
+    |> Map.new()
+  end
+
+  @doc """
+  Counts pending trainers.
+
+  ## Options
+    * `:branch_id` - Filter by branch ID
+  """
+  def count_pending_trainers(opts \\ []) do
+    Trainer
+    |> filter_trainers_by_status("pending")
+    |> filter_trainers_by_branch(opts[:branch_id])
+    |> Repo.aggregate(:count)
+  end
 end

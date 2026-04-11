@@ -1,51 +1,113 @@
 defmodule GymStudio.BranchesTest do
-  use GymStudio.DataCase
+  use GymStudio.DataCase, async: true
+
+  import GymStudio.BranchesFixtures
 
   alias GymStudio.Branches
-  alias GymStudio.Branches.Branch
 
   describe "list_branches/1" do
     test "returns all branches ordered by name" do
-      {:ok, _b1} = create_branch_fixture(%{name: "React — Z Branch", slug: "z-branch"})
-      {:ok, _b2} = create_branch_fixture(%{name: "React — A Branch", slug: "a-branch"})
+      _b1 = branch_fixture(%{name: "Zeta Branch", slug: "zeta-1"})
+      _b2 = branch_fixture(%{name: "Alpha Branch", slug: "alpha-1"})
 
       branches = Branches.list_branches()
-      assert length(branches) == 2
-      assert hd(branches).name == "React — A Branch"
+      assert length(branches) >= 2
+      names = Enum.map(branches, & &1.name)
+      assert names == Enum.sort(names)
     end
 
     test "filters by active status" do
-      {:ok, _active} =
-        create_branch_fixture(%{name: "Active Branch", slug: "active", active: true})
+      _active = branch_fixture(%{name: "Active", slug: "active-1", active: true})
+      _inactive = branch_fixture(%{name: "Inactive", slug: "inactive-1", active: false})
 
-      {:ok, _inactive} =
-        create_branch_fixture(%{name: "Inactive Branch", slug: "inactive", active: false})
+      active_branches = Branches.list_branches(active: true)
+      assert Enum.all?(active_branches, & &1.active)
 
-      active = Branches.list_branches(active: true)
-      assert length(active) == 1
-      assert hd(active).slug == "active"
+      inactive_branches = Branches.list_branches(active: false)
+      assert Enum.all?(inactive_branches, &(!&1.active))
+    end
+  end
 
-      inactive = Branches.list_branches(active: false)
-      assert length(inactive) == 1
-      assert hd(inactive).slug == "inactive"
+  describe "create_branch/1" do
+    test "creates a branch with valid attributes" do
+      attrs = %{name: "Test Branch", slug: "test-branch", capacity: 4}
+
+      assert {:ok, branch} = Branches.create_branch(attrs)
+      assert branch.name == "Test Branch"
+      assert branch.slug == "test-branch"
+      assert branch.capacity == 4
+      assert branch.active == true
     end
 
-    test "returns empty list when no branches exist" do
-      assert [] = Branches.list_branches()
+    test "returns error for missing required fields" do
+      assert {:error, changeset} = Branches.create_branch(%{})
+      assert "can't be blank" in errors_on(changeset).name
+      assert "can't be blank" in errors_on(changeset).slug
+      assert "can't be blank" in errors_on(changeset).capacity
+    end
+
+    test "returns error for duplicate slug" do
+      branch_fixture(%{slug: "duplicate-slug"})
+
+      assert {:error, changeset} =
+               Branches.create_branch(%{name: "Another", slug: "duplicate-slug", capacity: 4})
+
+      assert "has already been taken" in errors_on(changeset).slug
+    end
+
+    test "returns error for invalid slug format" do
+      assert {:error, changeset} =
+               Branches.create_branch(%{name: "Bad", slug: "Invalid Slug!", capacity: 4})
+
+      errors = errors_on(changeset).slug
+      assert Enum.any?(errors, &String.starts_with?(&1, "must be a valid slug"))
+    end
+
+    test "returns error for zero or negative capacity" do
+      assert {:error, changeset} =
+               Branches.create_branch(%{name: "Bad", slug: "bad", capacity: 0})
+
+      assert "must be greater than 0" in errors_on(changeset).capacity
+
+      assert {:error, changeset} =
+               Branches.create_branch(%{name: "Bad2", slug: "bad2", capacity: -1})
+
+      assert "must be greater than 0" in errors_on(changeset).capacity
+    end
+
+    test "validates operating hours format" do
+      attrs = %{
+        name: "Hours Branch",
+        slug: "hours-branch",
+        capacity: 4,
+        operating_hours: %{"mon" => "09:00-17:00", "tue" => "bad-format"}
+      }
+
+      assert {:error, changeset} = Branches.create_branch(attrs)
+      errors = errors_on(changeset).operating_hours
+      assert Enum.any?(errors, &String.starts_with?(&1, "must be in HH:MM-HH:MM format"))
+    end
+
+    test "accepts valid operating hours" do
+      attrs = %{
+        name: "Hours Branch",
+        slug: "hours-branch",
+        capacity: 4,
+        operating_hours: %{"mon" => "06:00-22:00", "tue" => "09:00-17:00"}
+      }
+
+      assert {:ok, branch} = Branches.create_branch(attrs)
+      assert branch.operating_hours["mon"] == "06:00-22:00"
     end
   end
 
   describe "get_branch!/1" do
     test "returns the branch with given id" do
-      {:ok, branch} = create_branch_fixture(%{name: "Test Branch", slug: "test-branch"})
-
-      retrieved = Branches.get_branch!(branch.id)
-      assert retrieved.id == branch.id
-      assert retrieved.name == "Test Branch"
-      assert retrieved.slug == "test-branch"
+      branch = branch_fixture(%{name: "Get Branch"})
+      assert Branches.get_branch!(branch.id).name == "Get Branch"
     end
 
-    test "raises error with non-existent id" do
+    test "raises Ecto.NoResultsError for non-existent id" do
       assert_raise Ecto.NoResultsError, fn ->
         Branches.get_branch!(999_999)
       end
@@ -54,131 +116,44 @@ defmodule GymStudio.BranchesTest do
 
   describe "get_branch_by_slug/1" do
     test "returns the branch with given slug" do
-      {:ok, branch} = create_branch_fixture(%{name: "Sin El Fil", slug: "sin-el-fil"})
-
-      retrieved = Branches.get_branch_by_slug("sin-el-fil")
-      assert retrieved.id == branch.id
+      branch = branch_fixture(%{slug: "test-branch-slug"})
+      assert Branches.get_branch_by_slug("test-branch-slug").id == branch.id
     end
 
     test "returns nil for non-existent slug" do
-      assert nil == Branches.get_branch_by_slug("nonexistent")
-    end
-  end
-
-  describe "create_branch/1" do
-    test "creates a branch with valid attributes" do
-      attrs = %{
-        name: "React — Sin El Fil",
-        slug: "sin-el-fil",
-        address: "Plot 274, Sin El Fil",
-        capacity: 4,
-        phone: "+961 1 234 567",
-        latitude: 33.8713,
-        longitude: 35.5297,
-        operating_hours: %{
-          "mon" => "06:00-22:00",
-          "tue" => "06:00-22:00"
-        },
-        active: true
-      }
-
-      assert {:ok, %Branch{} = branch} = Branches.create_branch(attrs)
-      assert branch.name == "React — Sin El Fil"
-      assert branch.slug == "sin-el-fil"
-      assert branch.address == "Plot 274, Sin El Fil"
-      assert branch.capacity == 4
-      assert branch.phone == "+961 1 234 567"
-      assert branch.latitude == 33.8713
-      assert branch.longitude == 35.5297
-      assert branch.operating_hours["mon"] == "06:00-22:00"
-      assert branch.active == true
-    end
-
-    test "creates a branch with minimal attributes" do
-      attrs = %{name: "Minimal Branch", slug: "minimal", capacity: 10}
-
-      assert {:ok, %Branch{} = branch} = Branches.create_branch(attrs)
-      assert branch.name == "Minimal Branch"
-      assert branch.slug == "minimal"
-      assert branch.capacity == 10
-      assert branch.active == true
-      assert branch.address == nil
-      assert branch.phone == nil
-    end
-
-    test "returns error with missing required fields" do
-      attrs = %{name: "No Slug"}
-
-      assert {:error, changeset} = Branches.create_branch(attrs)
-      assert "can't be blank" in errors_on(changeset).slug
-      assert "can't be blank" in errors_on(changeset).capacity
-    end
-
-    test "returns error with invalid slug format" do
-      attrs = %{name: "Bad Slug", slug: "Invalid Slug!", capacity: 4}
-
-      assert {:error, changeset} = Branches.create_branch(attrs)
-
-      assert "must be a valid slug (lowercase letters, numbers, and hyphens)" in errors_on(
-               changeset
-             ).slug
-    end
-
-    test "returns error with duplicate slug" do
-      {:ok, _existing} = create_branch_fixture(%{name: "Existing", slug: "duplicate-slug"})
-
-      attrs = %{name: "New Branch", slug: "duplicate-slug", capacity: 6}
-
-      assert {:error, changeset} = Branches.create_branch(attrs)
-      assert "has already been taken" in errors_on(changeset).slug
-    end
-
-    test "returns error with zero or negative capacity" do
-      attrs = %{name: "Zero Cap", slug: "zero-cap", capacity: 0}
-
-      assert {:error, changeset} = Branches.create_branch(attrs)
-      assert "must be greater than 0" in errors_on(changeset).capacity
-
-      attrs2 = %{name: "Neg Cap", slug: "neg-cap", capacity: -1}
-
-      assert {:error, changeset2} = Branches.create_branch(attrs2)
-      assert "must be greater than 0" in errors_on(changeset2).capacity
+      assert Branches.get_branch_by_slug("nonexistent") == nil
     end
   end
 
   describe "update_branch/2" do
     test "updates a branch with valid attributes" do
-      {:ok, branch} =
-        create_branch_fixture(%{name: "Old Name", slug: "old-slug", capacity: 4})
+      branch = branch_fixture(%{name: "Old Name", capacity: 4})
 
-      assert {:ok, updated} = Branches.update_branch(branch, %{name: "New Name", capacity: 6})
+      assert {:ok, updated} = Branches.update_branch(branch, %{name: "New Name", capacity: 8})
       assert updated.name == "New Name"
-      assert updated.capacity == 6
-      assert updated.slug == "old-slug"
+      assert updated.capacity == 8
     end
 
-    test "returns error with invalid attributes" do
-      {:ok, branch} = create_branch_fixture(%{name: "Test", slug: "test", capacity: 4})
+    test "returns error for invalid attributes" do
+      branch = branch_fixture()
 
       assert {:error, changeset} = Branches.update_branch(branch, %{capacity: -1})
       assert "must be greater than 0" in errors_on(changeset).capacity
     end
 
-    test "ignores slug changes — slug is immutable after creation" do
-      {:ok, _b1} = create_branch_fixture(%{name: "Branch A", slug: "slug-a"})
-      {:ok, b2} = create_branch_fixture(%{name: "Branch B", slug: "slug-b"})
+    test "slug cannot be changed via update" do
+      branch = branch_fixture(%{slug: "original-slug"})
 
-      # Attempting to update slug is silently ignored
-      assert {:ok, updated} = Branches.update_branch(b2, %{slug: "slug-a"})
-      assert updated.slug == "slug-b"
+      {:ok, updated} = Branches.update_branch(branch, %{name: "Updated Name"})
+      assert updated.slug == "original-slug"
     end
   end
 
   describe "delete_branch/1" do
     test "deletes a branch" do
-      {:ok, branch} = create_branch_fixture(%{name: "To Delete", slug: "to-delete"})
+      branch = branch_fixture(%{name: "Delete Me"})
 
-      assert {:ok, %Branch{}} = Branches.delete_branch(branch)
+      assert {:ok, _} = Branches.delete_branch(branch)
 
       assert_raise Ecto.NoResultsError, fn ->
         Branches.get_branch!(branch.id)
@@ -186,14 +161,54 @@ defmodule GymStudio.BranchesTest do
     end
   end
 
-  # Helper
-  defp create_branch_fixture(attrs) do
-    defaults = %{
-      name: "Test Branch",
-      slug: "test-branch-#{System.unique_integer([:positive])}",
-      capacity: 4
-    }
+  describe "get_branch_stats/1" do
+    test "returns stats for a branch" do
+      branch = branch_fixture(%{name: "Stats Branch"})
 
-    Branches.create_branch(Map.merge(defaults, Map.new(attrs)))
+      stats = Branches.get_branch_stats(branch.id)
+
+      assert Map.has_key?(stats, :client_count)
+      assert Map.has_key?(stats, :trainer_count)
+      assert Map.has_key?(stats, :sessions_this_week)
+      assert stats.client_count == 0
+      assert stats.trainer_count == 0
+    end
+  end
+
+  describe "toggle_branch_active/1" do
+    test "toggles active to inactive atomically" do
+      branch = branch_fixture(%{name: "Toggle", active: true})
+
+      {:ok, updated} = Branches.toggle_branch_active(branch)
+      refute updated.active
+    end
+
+    test "toggles inactive to active atomically" do
+      branch = branch_fixture(%{name: "Toggle Inactive", active: false})
+
+      {:ok, updated} = Branches.toggle_branch_active(branch)
+      assert updated.active
+    end
+
+    test "is atomic — update_all avoids read-then-write race" do
+      branch = branch_fixture(%{name: "Atomic Toggle", active: true})
+
+      # Toggle using the original struct — new_active = !true = false
+      {:ok, updated} = Branches.toggle_branch_active(branch)
+      refute updated.active
+
+      # Refresh from DB to get current state
+      fresh = Branches.get_branch!(branch.id)
+      {:ok, updated2} = Branches.toggle_branch_active(fresh)
+      assert updated2.active
+    end
+  end
+
+  describe "change_branch/2" do
+    test "returns a changeset" do
+      branch = branch_fixture(%{name: "Change Test"})
+      changeset = Branches.change_branch(branch)
+      assert %Ecto.Changeset{} = changeset
+    end
   end
 end

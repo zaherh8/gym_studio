@@ -146,4 +146,83 @@ defmodule GymStudio.Branches do
   def delete_branch(%Branch{} = branch) do
     Repo.delete(branch)
   end
+
+  @doc """
+  Returns branch stats: client count, trainer count, sessions this week.
+
+  ## Examples
+
+      iex> get_branch_stats(1)
+      %{client_count: 10, trainer_count: 3, sessions_this_week: 25}
+  """
+  def get_branch_stats(branch_id) do
+    alias GymStudio.Accounts.User
+    alias GymStudio.Scheduling.TrainingSession
+
+    client_count =
+      from(u in User,
+        where: u.branch_id == ^branch_id and u.role == :client,
+        select: count(u.id)
+      )
+      |> Repo.one()
+
+    trainer_count =
+      from(u in User,
+        where: u.branch_id == ^branch_id and u.role == :trainer,
+        select: count(u.id)
+      )
+      |> Repo.one()
+
+    now = DateTime.utc_now()
+    start_of_week = Date.beginning_of_week(now, :monday)
+    start_of_week_dt = DateTime.new!(start_of_week, ~T[00:00:00], "Etc/UTC")
+
+    sessions_this_week =
+      from(s in TrainingSession,
+        where: s.branch_id == ^branch_id and s.scheduled_at >= ^start_of_week_dt,
+        select: count(s.id)
+      )
+      |> Repo.one()
+
+    %{
+      client_count: client_count,
+      trainer_count: trainer_count,
+      sessions_this_week: sessions_this_week
+    }
+  end
+
+  @doc """
+  Toggles a branch's active status atomically.
+
+  Uses `update_all` to avoid the read-then-write race condition that occurs
+  when loading the branch into Elixir memory before toggling.
+
+  Returns `{:ok, %Branch{}}` on success or `{:error, :not_found}` if the
+  branch no longer exists.
+
+  ## Examples
+
+      iex> toggle_branch_active(branch)
+      {:ok, %Branch{}}
+  """
+  def toggle_branch_active(%Branch{} = branch) do
+    new_active = !branch.active
+
+    from(b in Branch, where: b.id == ^branch.id, update: [set: [active: ^new_active]])
+    |> Repo.update_all([])
+    |> case do
+      {1, _} ->
+        {:ok, Repo.get!(Branch, branch.id)}
+
+      {0, _} ->
+        {:error, :not_found}
+    end
+  end
+
+  @doc """
+  Returns a changeset for tracking branch form changes.
+  """
+  def change_branch(%Branch{} = branch, attrs \\ %{}) do
+    Branch.changeset(branch, attrs)
+  end
 end

@@ -8,6 +8,9 @@ Lessons learned from code reviews. Read this before every task.
 - **Form-based saves > auto-save.** Users need explicit Save buttons with visual feedback (flash messages).
 - Use `phx-change` on forms for live search/filter. Use `phx-submit` for saves.
 - `phx-debounce="300"` on search inputs to avoid excessive server calls.
+- **LiveComponent forms with `phx-target={@myself}`** submit params under the form's `as` key (e.g., `"branch"`). Handle events with `%{"branch" => params}` pattern.
+- **`input_value/2` is NOT available in LiveComponents by default.** Use `Phoenix.HTML.Form.input_value/2` instead.
+- **CoreComponents `<.input>` does NOT support arbitrary attrs like `hint`.** Only use documented attributes.
 
 ## Ecto / Database
 
@@ -15,6 +18,7 @@ Lessons learned from code reviews. Read this before every task.
 - `training_sessions.client_id` references `users.id`, NOT `clients.id`.
 - Always add indexes on foreign key columns in migrations.
 - Use `Repo.transaction` for multi-step operations (e.g., reorder).
+- **Date vs DateTime in queries:** When comparing against `:utc_datetime` columns, use `DateTime`, not `Date`. Use `DateTime.new!/3` to convert.
 
 ## Authorization
 
@@ -30,6 +34,7 @@ Lessons learned from code reviews. Read this before every task.
 - **N+1 pattern to avoid:** Never `Enum.map` over results to fire individual queries. Use window functions (`ROW_NUMBER() OVER (PARTITION BY ...)`) or lateral joins to batch. When multiple entities need the same data, use `where(field in ^ids)` + `Enum.group_by` in Elixir.
 - **Batch query pattern:** Fetch all records with `where([x], x.foreign_key in ^ids)`, then `Enum.group_by(&1.foreign_key)` to build a lookup map. Avoids N+1 while keeping logic simple.
 - **Always filter in SQL, not Elixir.** Push WHERE clauses into the query — don't fetch all rows then `Enum.filter` in memory. This is especially bad when combined with N+1 (queries run for rows that get discarded).
+- **Never call context functions from templates.** Pre-compute all data in mount/handle_event and pass as assigns. Template-side context calls cause N+1.
 
 ## Security
 
@@ -38,6 +43,29 @@ Lessons learned from code reviews. Read this before every task.
 ## Concurrency / Race Conditions
 
 - **Never read-then-write in Ecto for counters.** Reading a value into Elixir memory then updating creates race conditions under concurrent requests. Use atomic SQL: `update_all` with `set: [col: p.col + 1]` and a WHERE guard, or `lock("FOR UPDATE")` inside a transaction.
+- **`toggle_branch_active` must use atomic `update_all`.** The old read-then-toggle pattern (`branch |> change(%{active: !branch.active}) |> update`) was a race condition. Use `from(b in Branch, where: b.id == ^branch.id, update: [set: [active: ^new_active]]) |> Repo.update_all([])` instead. Note: pinned variables in `update_all` keyword lists only work inside `from` macro's `update:` option, NOT in `Repo.update_all(query, set: [...])`.
+
+## String Safety
+
+- **Never use `String.to_existing_atom/1` on user input.** Use a whitelist approach: `if role in ~w(client trainer admin), do: String.to_existing_atom(role), else: :default`. Extracted as `BranchHelpers.parse_role/1`.
+- **Never use `String.to_integer/1` on untrusted input.** Always guard against empty strings and invalid format. Extracted as `BranchHelpers.safe_string_to_integer/1`.
+
+## Confirmation Modals
+
+- **Dangerous actions must have confirmation.** Deactivating a branch strands users/trainers/sessions — always show a confirmation modal before executing. Reactivating is safe and doesn't need confirmation.
+
+## Form Validation with Ecto
+
+- **Always use Ecto changesets for forms.** Raw HTML forms bypass validation. Use `<.form for={@changeset}>` with `phx-change="validate"` for live feedback and `phx-submit="save"` for persistence.
+- **Access field errors from form:** Use `form.source.errors |> Enum.filter(fn {f, _} -> f == field end)` to get per-field error messages. `Phoenix.HTML.Form.input_errors/2` may not be available in all versions.
+- **The `<.error>` component in CoreComponents is PRIVATE** — it can only be used inside `<.input>`. For standalone error display, use `<p class="text-sm text-error">` instead.
+- **`as:` attribute not supported in `<.form>` component.** The form's `as` name is derived from the changeset's data struct. Use `Phoenix.HTML.Form.input_name/2` for input name attributes.
+
+## Branch Filtering Pattern
+
+- All context functions that accept `branch_id: nil` should return unfiltered results (all branches).
+- The `BranchSelectorComponent.effective_branch_id/1` helper converts `"all"` to `nil` for query filtering.
+- Branch selector is a reusable function component — use `BranchSelectorComponent.branch_selector/1` in any admin LiveView.
 - **Dead code from defensive clamping:** If you `max(value, 0)` before `validate_number >= 0`, the validation is dead code. Pick one approach: clamp OR validate, not both.
 - **Always test boundary conditions:** exhausted packages, zero balances, max capacity — don't just test the happy path.
 

@@ -92,6 +92,10 @@ defmodule GymStudioWeb.Router do
       live "/calendar", CalendarLive, :index
       live "/exercises", ExercisesLive, :index
       live "/availability", AvailabilityLive, :index
+      live "/branches", BranchesLive, :index
+      live "/branches/new", BranchesLive, :new
+      live "/branches/:id", BranchesLive, :show
+      live "/branches/:id/edit", BranchesLive, :edit
     end
   end
 

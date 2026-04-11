@@ -45,6 +45,7 @@ defmodule GymStudio.Branches.Branch do
       message: "must be a valid slug (lowercase letters, numbers, and hyphens)"
     )
     |> validate_number(:capacity, greater_than: 0)
+    |> validate_operating_hours()
     |> unique_constraint(:slug)
   end
 
@@ -67,5 +68,34 @@ defmodule GymStudio.Branches.Branch do
     ])
     |> validate_required([:name, :capacity])
     |> validate_number(:capacity, greater_than: 0)
+    |> validate_operating_hours()
+  end
+
+  @hours_regex ~r/^\d{2}:\d{2}-\d{2}:\d{2}$/
+
+  defp validate_operating_hours(changeset) do
+    case get_change(changeset, :operating_hours) do
+      nil ->
+        changeset
+
+      hours when is_map(hours) ->
+        invalid =
+          hours
+          |> Enum.filter(fn {_day, val} -> is_binary(val) and val != "" end)
+          |> Enum.any?(fn {_day, val} -> val =~ @hours_regex == false end)
+
+        if invalid do
+          add_error(
+            changeset,
+            :operating_hours,
+            "must be in HH:MM-HH:MM format (e.g. 06:00-22:00)"
+          )
+        else
+          changeset
+        end
+
+      _ ->
+        changeset
+    end
   end
 end
