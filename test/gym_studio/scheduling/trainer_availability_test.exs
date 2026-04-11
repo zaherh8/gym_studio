@@ -5,6 +5,8 @@ defmodule GymStudio.Scheduling.TrainerAvailabilityTest do
   alias GymStudio.Scheduling.TrainerAvailability
 
   setup do
+    branch = GymStudio.BranchesFixtures.branch_fixture()
+
     user =
       %GymStudio.Accounts.User{}
       |> GymStudio.Accounts.User.registration_changeset(%{
@@ -13,46 +15,50 @@ defmodule GymStudio.Scheduling.TrainerAvailabilityTest do
         email: "avail_test@test.com",
         password: "password123456",
         password_confirmation: "password123456",
-        role: :trainer
+        role: :trainer,
+        branch_id: branch.id
       })
       |> GymStudio.Accounts.User.confirm_changeset()
       |> GymStudio.Repo.insert!()
 
-    %{trainer: user}
+    %{trainer: user, branch: branch}
   end
 
   describe "TrainerAvailability schema" do
-    test "valid changeset", %{trainer: trainer} do
+    test "valid changeset", %{trainer: trainer, branch: branch} do
       changeset =
         TrainerAvailability.changeset(%TrainerAvailability{}, %{
           trainer_id: trainer.id,
           day_of_week: 1,
           start_time: ~T[07:00:00],
-          end_time: ~T[22:00:00]
+          end_time: ~T[22:00:00],
+          branch_id: branch.id
         })
 
       assert changeset.valid?
     end
 
-    test "invalid day_of_week", %{trainer: trainer} do
+    test "invalid day_of_week", %{trainer: trainer, branch: branch} do
       changeset =
         TrainerAvailability.changeset(%TrainerAvailability{}, %{
           trainer_id: trainer.id,
           day_of_week: 8,
           start_time: ~T[07:00:00],
-          end_time: ~T[22:00:00]
+          end_time: ~T[22:00:00],
+          branch_id: branch.id
         })
 
       refute changeset.valid?
     end
 
-    test "end_time must be after start_time", %{trainer: trainer} do
+    test "end_time must be after start_time", %{trainer: trainer, branch: branch} do
       changeset =
         TrainerAvailability.changeset(%TrainerAvailability{}, %{
           trainer_id: trainer.id,
           day_of_week: 1,
           start_time: ~T[22:00:00],
-          end_time: ~T[07:00:00]
+          end_time: ~T[07:00:00],
+          branch_id: branch.id
         })
 
       refute changeset.valid?

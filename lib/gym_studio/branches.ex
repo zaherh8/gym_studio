@@ -40,6 +40,27 @@ defmodule GymStudio.Branches do
   end
 
   @doc """
+  Gets the default branch (first active branch).
+
+  Returns `nil` if no active branches exist.
+
+  ## Examples
+
+      iex> get_default_branch()
+      %Branch{}
+
+      iex> get_default_branch()
+      nil
+  """
+  def get_default_branch do
+    Branch
+    |> where([b], b.active == true)
+    |> order_by([b], asc: b.id)
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  @doc """
   Gets a single branch.
 
   Raises `Ecto.NoResultsError` if the branch does not exist.

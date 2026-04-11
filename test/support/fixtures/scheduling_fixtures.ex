@@ -16,13 +16,14 @@ defmodule GymStudio.SchedulingFixtures do
   - `:duration_minutes` - Optional. Defaults to 60.
   - `:status` - Optional. Defaults to "pending".
   - `:notes` - Optional. Client notes.
+  - `:branch_id` - Optional. The branch ID for the session.
 
   ## Examples
 
-      iex> training_session_fixture(%{client_id: client.id})
+      iex> training_session_fixture(%{client_id: client.id, branch_id: branch.id})
       %TrainingSession{}
 
-      iex> training_session_fixture(%{client_id: client.id, status: "confirmed", trainer_id: trainer.id})
+      iex> training_session_fixture(%{client_id: client.id, status: "confirmed", trainer_id: trainer.id, branch_id: branch.id})
       %TrainingSession{}
   """
   def training_session_fixture(attrs \\ %{}) do
@@ -33,10 +34,21 @@ defmodule GymStudio.SchedulingFixtures do
         |> DateTime.add(System.unique_integer([:positive, :monotonic]), :second)
         |> DateTime.truncate(:second)
 
+    # Get branch_id from client if not provided
+    branch_id =
+      attrs[:branch_id] ||
+        if attrs[:client_id] do
+          client = GymStudio.Accounts.get_user!(attrs[:client_id])
+          client.branch_id
+        else
+          nil
+        end
+
     base_attrs = %{
       scheduled_at: scheduled_at,
       duration_minutes: 60,
-      notes: "Test session notes"
+      notes: "Test session notes",
+      branch_id: branch_id
     }
 
     attrs = Map.merge(base_attrs, Enum.into(attrs, %{}))
@@ -70,13 +82,15 @@ defmodule GymStudio.SchedulingFixtures do
   - `:approved_by_id` - Required. The ID of the user who approved it.
   - `:scheduled_at` - Optional. Defaults to tomorrow at 10:00 UTC.
   - `:duration_minutes` - Optional. Defaults to 60.
+  - `:branch_id` - Optional. The branch ID for the session.
 
   ## Examples
 
       iex> confirmed_session_fixture(%{
       ...>   client_id: client.id,
       ...>   trainer_id: trainer.id,
-      ...>   approved_by_id: admin.id
+      ...>   approved_by_id: admin.id,
+      ...>   branch_id: branch.id
       ...> })
       %TrainingSession{}
   """

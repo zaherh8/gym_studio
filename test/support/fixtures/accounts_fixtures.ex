@@ -17,13 +17,36 @@ defmodule GymStudio.AccountsFixtures do
   def valid_user_password, do: "hello world!"
 
   def valid_user_attributes(attrs \\ %{}) do
+    # Convert keyword list to map if needed
+    attrs = Enum.into(attrs, %{})
+    branch_id = Map.get(attrs, :branch_id) || ensure_test_branch()
+
     Enum.into(attrs, %{
       name: "Test User #{System.unique_integer([:positive])}",
       email: unique_user_email(),
       phone_number: unique_phone_number(),
       password: valid_user_password(),
-      password_confirmation: valid_user_password()
+      password_confirmation: valid_user_password(),
+      branch_id: branch_id
     })
+  end
+
+  defp ensure_test_branch do
+    case GymStudio.Branches.list_branches() do
+      [branch | _] ->
+        branch.id
+
+      [] ->
+        {:ok, branch} =
+          GymStudio.Branches.create_branch(%{
+            name: "Default Test Branch",
+            slug: "test-branch-#{System.unique_integer([:positive])}",
+            capacity: 4,
+            active: true
+          })
+
+        branch.id
+    end
   end
 
   def unconfirmed_user_fixture(attrs \\ %{}) do

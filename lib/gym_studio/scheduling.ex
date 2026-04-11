@@ -3,6 +3,7 @@ defmodule GymStudio.Scheduling do
   The Scheduling context manages training sessions and time slots.
 
   ## Booking Flow
+
   1. Client books a session using `book_session/2` (status: pending)
   2. Admin/Trainer approves using `approve_session/3` (status: confirmed, assigns trainer)
   3. After session, trainer marks complete using `complete_session/2` (status: completed)
@@ -10,6 +11,7 @@ defmodule GymStudio.Scheduling do
   """
 
   import Ecto.Query, warn: false
+  require Logger
   alias GymStudio.Repo
 
   alias GymStudio.Scheduling.TrainingSession
@@ -33,6 +35,25 @@ defmodule GymStudio.Scheduling do
       {:error, %Ecto.Changeset{}}
   """
   def book_session(attrs \\ %{}) do
+    # Auto-fill branch_id from client if not provided
+    attrs =
+      if is_nil(attrs[:branch_id]) && attrs[:client_id] do
+        case GymStudio.Accounts.get_user(attrs[:client_id]) do
+          %GymStudio.Accounts.User{branch_id: bid} when not is_nil(bid) ->
+            Map.put(attrs, :branch_id, bid)
+
+          %GymStudio.Accounts.User{} ->
+            Logger.warning("Auto-fill branch_id: client #{attrs[:client_id]} has nil branch_id")
+            attrs
+
+          nil ->
+            Logger.warning("Auto-fill branch_id: client #{attrs[:client_id]} not found")
+            attrs
+        end
+      else
+        attrs
+      end
+
     result =
       Repo.transaction(fn ->
         with {:ok, session} <-
@@ -85,76 +106,63 @@ defmodule GymStudio.Scheduling do
   @doc """
   Approves a pending training session and assigns a trainer.
 
-  ## Parameters
-  - `session` - The TrainingSession struct to approve
-  - `trainer_id` - The ID of the trainer to assign
-  - `approved_by_id` - The ID of the user (admin/trainer) approving the session
-
-  ## Examples
-
-      iex> approve_session(session, trainer.id, admin.id)
-      {:ok, %TrainingSession{}}
-
-      iex> approve_session(completed_session, trainer.id, admin.id)
-      {:error, %Ecto.Changeset{}}
+  ## Options
+  - `:branch_id` - Verify the session belongs to this branch (returns `{:error, :wrong_branch}` if mismatch)
   """
-  def approve_session(%TrainingSession{} = session, trainer_id, approved_by_id) do
-    result =
-      session
-      |> TrainingSession.approval_changeset(%{
-        trainer_id: trainer_id,
-        approved_by_id: approved_by_id
-      })
-      |> Repo.update()
+  def approve_session(%TrainingSession{} = session, trainer_id, approved_by_id, opts \\ []) do
+    with :ok <- verify_branch(session, opts[:branch_id]) do
+      result =
+        session
+        |> TrainingSession.approval_changeset(%{
+          trainer_id: trainer_id,
+          approved_by_id: approved_by_id
+        })
+        |> Repo.update()
 
-    case result do
-      {:ok, updated_session} ->
-        GymStudio.Notifications.notify_booking_confirmed(
-          updated_session.client_id,
-          updated_session
-        )
+      case result do
+        {:ok, updated_session} ->
+          GymStudio.Notifications.notify_booking_confirmed(
+            updated_session.client_id,
+            updated_session
+          )
 
-        result
+          result
 
-      _ ->
-        result
+        _ ->
+          result
+      end
     end
   end
 
   @doc """
   Cancels a training session.
 
-  ## Parameters
-  - `session` - The TrainingSession struct to cancel
-  - `cancelled_by_id` - The ID of the user cancelling the session
-  - `reason` - The reason for cancellation
-
-  ## Examples
-
-      iex> cancel_session(session, user.id, "Client requested cancellation")
-      {:ok, %TrainingSession{}}
+  ## Options
+  - `:branch_id` - Verify the session belongs to this branch (returns `{:error, :wrong_branch}` if mismatch)
   """
-  def cancel_session(%TrainingSession{} = session, cancelled_by_id, reason) do
-    Repo.transaction(fn ->
-      with {:ok, updated_session} <-
-             session
-             |> TrainingSession.cancellation_changeset(%{
-               cancelled_by_id: cancelled_by_id,
-               cancellation_reason: reason
-             })
-             |> Repo.update(),
-           :ok <- maybe_increment_package(updated_session) do
-        GymStudio.Notifications.notify_booking_cancelled(
-          updated_session.client_id,
-          updated_session,
-          reason
-        )
+  def cancel_session(%TrainingSession{} = session, cancelled_by_id, reason, opts \\ []) do
+    with :ok <- verify_branch(session, opts[:branch_id]) do
+      Repo.transaction(fn ->
+        with {:ok, updated_session} <-
+               session
+               |> TrainingSession.cancellation_changeset(%{
+                 cancelled_by_id: cancelled_by_id,
+                 cancellation_reason: reason
+               })
+               |> Repo.update(),
+             :ok <- maybe_increment_package(updated_session) do
+          GymStudio.Notifications.notify_booking_cancelled(
+            updated_session.client_id,
+            updated_session,
+            reason
+          )
 
-        updated_session
-      else
-        {:error, changeset} -> Repo.rollback(changeset)
-      end
-    end)
+          updated_session
+        else
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      end)
+    end
   end
 
   defp maybe_increment_package(%TrainingSession{package_id: nil}), do: :ok
@@ -171,69 +179,52 @@ defmodule GymStudio.Scheduling do
   @doc """
   Marks a confirmed training session as completed.
 
-  Optionally includes trainer notes about the session.
-
-  ## Examples
-
-      iex> complete_session(session, %{trainer_notes: "Great progress today"})
-      {:ok, %TrainingSession{}}
-
-      iex> complete_session(pending_session, %{})
-      {:error, %Ecto.Changeset{}}
+  ## Options
+  - `:branch_id` - Verify the session belongs to this branch (returns `{:error, :wrong_branch}` if mismatch)
   """
-  def complete_session(%TrainingSession{} = session, attrs \\ %{}) do
-    result =
-      session
-      |> TrainingSession.completion_changeset(attrs)
-      |> Repo.update()
+  def complete_session(%TrainingSession{} = session, attrs \\ %{}, opts \\ []) do
+    with :ok <- verify_branch(session, opts[:branch_id]) do
+      result =
+        session
+        |> TrainingSession.completion_changeset(attrs)
+        |> Repo.update()
 
-    case result do
-      {:ok, updated_session} ->
-        GymStudio.Notifications.create_notification(%{
-          user_id: updated_session.client_id,
-          title: "Session Completed",
-          message:
-            "Your session on #{Calendar.strftime(updated_session.scheduled_at, "%A, %B %d at %I:%M %p")} has been marked as completed.",
-          type: "session_completed",
-          action_url: "/client/sessions",
-          metadata: %{session_id: updated_session.id}
-        })
+      case result do
+        {:ok, updated_session} ->
+          GymStudio.Notifications.create_notification(%{
+            user_id: updated_session.client_id,
+            title: "Session Completed",
+            message:
+              "Your session on #{Calendar.strftime(updated_session.scheduled_at, "%A, %B %d at %I:%M %p")} has been marked as completed.",
+            type: "session_completed",
+            action_url: "/client/sessions",
+            metadata: %{session_id: updated_session.id}
+          })
 
-        result
+          result
 
-      _ ->
-        result
+        _ ->
+          result
+      end
     end
   end
 
   @doc """
   Marks a confirmed training session as no-show.
 
-  Used when a client doesn't attend their scheduled session.
-
-  ## Examples
-
-      iex> mark_no_show(session)
-      {:ok, %TrainingSession{}}
+  ## Options
+  - `:branch_id` - Verify the session belongs to this branch (returns `{:error, :wrong_branch}` if mismatch)
   """
-  def mark_no_show(%TrainingSession{} = session) do
-    session
-    |> TrainingSession.no_show_changeset()
-    |> Repo.update()
+  def mark_no_show(%TrainingSession{} = session, opts \\ []) do
+    with :ok <- verify_branch(session, opts[:branch_id]) do
+      session
+      |> TrainingSession.no_show_changeset()
+      |> Repo.update()
+    end
   end
 
   @doc """
   Gets a single training session.
-
-  Raises `Ecto.NoResultsError` if the Training session does not exist.
-
-  ## Examples
-
-      iex> get_session!(123)
-      %TrainingSession{}
-
-      iex> get_session!(456)
-      ** (Ecto.NoResultsError)
   """
   def get_session!(id) do
     TrainingSession
@@ -245,24 +236,18 @@ defmodule GymStudio.Scheduling do
   Lists training sessions for a specific client.
 
   ## Options
-  - `:status` - Filter by status (e.g., "pending", "confirmed")
+  - `:status` - Filter by status
   - `:from_date` - Only sessions scheduled on or after this date
   - `:to_date` - Only sessions scheduled on or before this date
   - `:preload` - List of associations to preload (default: [:trainer, :package])
-
-  ## Examples
-
-      iex> list_sessions_for_client(client.id, status: "confirmed")
-      [%TrainingSession{}, ...]
-
-      iex> list_sessions_for_client(client.id, from_date: ~U[2026-02-01 00:00:00Z])
-      [%TrainingSession{}, ...]
+  - `:branch_id` - Filter by branch ID
   """
   def list_sessions_for_client(client_id, opts \\ []) do
     TrainingSession
     |> where([s], s.client_id == ^client_id)
     |> filter_by_status(opts[:status])
     |> filter_by_date_range(opts[:from_date], opts[:to_date])
+    |> filter_by_branch(opts[:branch_id])
     |> order_by([s], desc: s.scheduled_at)
     |> preload(^Keyword.get(opts, :preload, [:trainer, :package]))
     |> Repo.all()
@@ -272,21 +257,18 @@ defmodule GymStudio.Scheduling do
   Lists training sessions for a specific trainer.
 
   ## Options
-  - `:status` - Filter by status (e.g., "pending", "confirmed")
+  - `:status` - Filter by status
   - `:from_date` - Only sessions scheduled on or after this date
   - `:to_date` - Only sessions scheduled on or before this date
   - `:preload` - List of associations to preload (default: [:client, :package])
-
-  ## Examples
-
-      iex> list_sessions_for_trainer(trainer.id, status: "confirmed")
-      [%TrainingSession{}, ...]
+  - `:branch_id` - Filter by branch ID
   """
   def list_sessions_for_trainer(trainer_id, opts \\ []) do
     TrainingSession
     |> where([s], s.trainer_id == ^trainer_id)
     |> filter_by_status(opts[:status])
     |> filter_by_date_range(opts[:from_date], opts[:to_date])
+    |> filter_by_branch(opts[:branch_id])
     |> order_by([s], desc: s.scheduled_at)
     |> preload(^Keyword.get(opts, :preload, [:client, :package]))
     |> Repo.all()
@@ -295,16 +277,13 @@ defmodule GymStudio.Scheduling do
   @doc """
   Lists all pending training sessions.
 
-  Used by admins to see sessions awaiting approval.
-
-  ## Examples
-
-      iex> list_pending_sessions()
-      [%TrainingSession{}, ...]
+  ## Options
+  - `:branch_id` - Filter by branch ID
   """
-  def list_pending_sessions do
+  def list_pending_sessions(opts \\ []) do
     TrainingSession
     |> where([s], s.status == "pending")
+    |> filter_by_branch(opts[:branch_id])
     |> order_by([s], asc: s.scheduled_at)
     |> preload([:client, :package])
     |> Repo.all()
@@ -313,21 +292,17 @@ defmodule GymStudio.Scheduling do
   @doc """
   Lists upcoming training sessions within the next N days.
 
-  ## Parameters
-  - `days` - Number of days to look ahead (default: 7)
-
-  ## Examples
-
-      iex> list_upcoming_sessions(7)
-      [%TrainingSession{}, ...]
+  ## Options
+  - `:branch_id` - Filter by branch ID
   """
-  def list_upcoming_sessions(days \\ 7) do
+  def list_upcoming_sessions(days \\ 7, opts \\ []) do
     now = DateTime.utc_now()
     future = DateTime.add(now, days, :day)
 
     TrainingSession
     |> where([s], s.status in ["pending", "confirmed"])
     |> where([s], s.scheduled_at >= ^now and s.scheduled_at <= ^future)
+    |> filter_by_branch(opts[:branch_id])
     |> order_by([s], asc: s.scheduled_at)
     |> preload([:client, :trainer, :package])
     |> Repo.all()
@@ -335,13 +310,6 @@ defmodule GymStudio.Scheduling do
 
   @doc """
   Gets available time slots for a given date.
-
-  Returns active time slots that match the day of the week for the given date.
-
-  ## Examples
-
-      iex> get_available_slots(~D[2026-02-10])
-      [%TimeSlot{}, ...]
   """
   def get_available_slots(%Date{} = date) do
     day_of_week = Date.day_of_week(date)
@@ -354,34 +322,12 @@ defmodule GymStudio.Scheduling do
 
   # Time Slot functions
 
-  @doc """
-  Creates a time slot.
-
-  ## Examples
-
-      iex> create_time_slot(%{day_of_week: 1, start_time: ~T[09:00:00], end_time: ~T[10:00:00]})
-      {:ok, %TimeSlot{}}
-
-      iex> create_time_slot(%{})
-      {:error, %Ecto.Changeset{}}
-  """
   def create_time_slot(attrs \\ %{}) do
     %TimeSlot{}
     |> TimeSlot.changeset(attrs)
     |> Repo.insert()
   end
 
-  @doc """
-  Updates a time slot.
-
-  ## Examples
-
-      iex> update_time_slot(time_slot, %{active: false})
-      {:ok, %TimeSlot{}}
-
-      iex> update_time_slot(time_slot, %{day_of_week: 0})
-      {:error, %Ecto.Changeset{}}
-  """
   def update_time_slot(%TimeSlot{} = time_slot, attrs) do
     time_slot
     |> TimeSlot.changeset(attrs)
@@ -393,14 +339,6 @@ defmodule GymStudio.Scheduling do
 
   ## Options
   - `:active_only` - Only return active time slots (default: false)
-
-  ## Examples
-
-      iex> list_time_slots()
-      [%TimeSlot{}, ...]
-
-      iex> list_time_slots(active_only: true)
-      [%TimeSlot{}, ...]
   """
   def list_time_slots(opts \\ []) do
     query = TimeSlot
@@ -417,41 +355,14 @@ defmodule GymStudio.Scheduling do
     |> Repo.all()
   end
 
-  @doc """
-  Gets a single time slot.
-
-  Raises `Ecto.NoResultsError` if the Time slot does not exist.
-
-  ## Examples
-
-      iex> get_time_slot!(123)
-      %TimeSlot{}
-
-      iex> get_time_slot!(456)
-      ** (Ecto.NoResultsError)
-  """
   def get_time_slot!(id), do: Repo.get!(TimeSlot, id)
 
-  @doc """
-  Deletes a time slot.
-
-  ## Examples
-
-      iex> delete_time_slot(time_slot)
-      {:ok, %TimeSlot{}}
-
-      iex> delete_time_slot(time_slot)
-      {:error, %Ecto.Changeset{}}
-  """
   def delete_time_slot(%TimeSlot{} = time_slot) do
     Repo.delete(time_slot)
   end
 
   # Additional trainer/client specific queries
 
-  @doc """
-  Lists pending sessions for a specific trainer.
-  """
   def list_pending_sessions_for_trainer(trainer_id) do
     TrainingSession
     |> where([s], s.trainer_id == ^trainer_id and s.status == "pending")
@@ -490,17 +401,9 @@ defmodule GymStudio.Scheduling do
   @doc """
   Lists all unique clients for a trainer with session stats.
 
-  Returns a list of maps with `:user`, `:total_sessions`, and `:last_session_date`.
-
   ## Options
-
     * `:search` - Filter by client name (case-insensitive, ILIKE-safe)
-
-  ## Examples
-
-      iex> list_trainer_clients(trainer_id)
-      [%{user: %User{}, total_sessions: 5, last_session_date: ~U[...]}]
-
+    * `:branch_id` - Filter by branch ID
   """
   def list_trainer_clients(trainer_id, opts \\ []) do
     search = opts[:search]
@@ -526,6 +429,13 @@ defmodule GymStudio.Scheduling do
         query
       end
 
+    query =
+      if opts[:branch_id] do
+        where(query, [_s, c], c.branch_id == ^opts[:branch_id])
+      else
+        query
+      end
+
     query
     |> order_by([_s, c], asc: c.name)
     |> Repo.all()
@@ -533,12 +443,6 @@ defmodule GymStudio.Scheduling do
 
   @doc """
   Checks if a trainer has at least one training session with the given client.
-
-  ## Examples
-
-      iex> trainer_has_client?(trainer_id, client_id)
-      true
-
   """
   def trainer_has_client?(trainer_id, client_id) do
     TrainingSession
@@ -584,45 +488,61 @@ defmodule GymStudio.Scheduling do
 
   @doc """
   Confirms a pending session (wrapper for approve when trainer is already assigned).
+
+  ## Options
+  - `:branch_id` - Verify the session belongs to this branch (returns `{:error, :wrong_branch}` if mismatch)
   """
-  def confirm_session(session_id) when is_binary(session_id) do
+  def confirm_session(session_or_id, opts \\ [])
+
+  def confirm_session(session_id, opts) when is_binary(session_id) do
     session = get_session!(session_id)
-    confirm_session(session)
+    confirm_session(session, opts)
   end
 
-  def confirm_session(%TrainingSession{} = session) do
-    if session.status == "pending" and session.trainer_id do
-      session
-      |> Ecto.Changeset.change(%{status: "confirmed"})
-      |> Repo.update()
-    else
-      {:error, :invalid_status}
+  def confirm_session(%TrainingSession{} = session, opts) do
+    with :ok <- verify_branch(session, opts[:branch_id]) do
+      if session.status == "pending" and session.trainer_id do
+        session
+        |> Ecto.Changeset.change(%{status: "confirmed"})
+        |> Repo.update()
+      else
+        {:error, :invalid_status}
+      end
     end
   end
 
   @doc """
   Cancels a session by ID with a default reason.
+
+  ## Options
+  - `:branch_id` - Verify the session belongs to this branch (returns `{:error, :wrong_branch}` if mismatch)
   """
-  def cancel_session(session_id) when is_binary(session_id) do
+  def cancel_session(session_id, opts \\ []) when is_binary(session_id) do
     session = get_session!(session_id)
-    cancel_session(session, nil, "Cancelled by user")
+    cancel_session(session, nil, "Cancelled by user", opts)
   end
 
   @doc """
   Cancels a session by ID with a specific user and reason.
+
+  ## Options
+  - `:branch_id` - Verify the session belongs to this branch (returns `{:error, :wrong_branch}` if mismatch)
   """
-  def cancel_session_by_id(session_id, cancelled_by_id, reason)
+  def cancel_session_by_id(session_id, cancelled_by_id, reason, opts \\ [])
       when is_binary(session_id) do
     session = get_session!(session_id)
-    cancel_session(session, cancelled_by_id, reason)
+    cancel_session(session, cancelled_by_id, reason, opts)
   end
 
   @doc """
   Completes a session by ID with optional attrs (e.g. trainer_notes).
+
+  ## Options
+  - `:branch_id` - Verify the session belongs to this branch (returns `{:error, :wrong_branch}` if mismatch)
   """
-  def complete_session_by_id(session_id, attrs \\ %{}) when is_binary(session_id) do
+  def complete_session_by_id(session_id, attrs \\ %{}, opts \\ []) when is_binary(session_id) do
     session = get_session!(session_id)
-    complete_session(session, attrs)
+    complete_session(session, attrs, opts)
   end
 
   @doc """
@@ -646,11 +566,19 @@ defmodule GymStudio.Scheduling do
     target_date = Date.add(today, days_until)
     scheduled_at = DateTime.new!(target_date, slot.start_time, "Etc/UTC")
 
-    book_session(%{
-      client_id: client_id,
-      scheduled_at: scheduled_at,
-      duration_minutes: Time.diff(slot.end_time, slot.start_time, :minute)
-    })
+    # Get the client's branch_id
+    case GymStudio.Accounts.get_user(client_id) do
+      %GymStudio.Accounts.User{branch_id: bid} when not is_nil(bid) ->
+        book_session(%{
+          client_id: client_id,
+          scheduled_at: scheduled_at,
+          duration_minutes: Time.diff(slot.end_time, slot.start_time, :minute),
+          branch_id: bid
+        })
+
+      _ ->
+        {:error, :user_not_found}
+    end
   end
 
   @doc """
@@ -687,6 +615,24 @@ defmodule GymStudio.Scheduling do
     where(query, [s], s.status == ^status)
   end
 
+  defp filter_by_branch(query, nil), do: query
+
+  defp filter_by_branch(query, branch_id) do
+    where(query, [s], s.branch_id == ^branch_id)
+  end
+
+  defp filter_time_off_by_branch(query, nil), do: query
+
+  defp filter_time_off_by_branch(query, branch_id) do
+    where(query, [t], t.branch_id == ^branch_id)
+  end
+
+  defp verify_branch(_session, nil), do: :ok
+
+  defp verify_branch(%TrainingSession{branch_id: session_branch_id}, branch_id) do
+    if session_branch_id == branch_id, do: :ok, else: {:error, :wrong_branch}
+  end
+
   defp filter_by_date_range(query, nil, nil), do: query
 
   defp filter_by_date_range(query, %Date{} = from_date, nil) do
@@ -721,9 +667,13 @@ defmodule GymStudio.Scheduling do
 
   @doc """
   Counts sessions grouped by status.
+
+  ## Options
+  - `:branch_id` - Filter by branch ID
   """
-  def count_sessions_by_status do
+  def count_sessions_by_status(opts \\ []) do
     TrainingSession
+    |> filter_by_branch(opts[:branch_id])
     |> group_by([s], s.status)
     |> select([s], {s.status, count(s.id)})
     |> Repo.all()
@@ -732,23 +682,33 @@ defmodule GymStudio.Scheduling do
 
   @doc """
   Counts sessions per week for the last N weeks.
-  Returns a list of {week_start_date, count} tuples.
+
+  ## Options
+  - `:branch_id` - Filter by branch ID
   """
-  def sessions_per_week(num_weeks \\ 4) do
+  def sessions_per_week(num_weeks \\ 4, opts \\ []) do
     today = Date.utc_today()
     start_of_this_week = Date.beginning_of_week(today, :monday)
+    earliest = Date.add(start_of_this_week, -7 * (num_weeks - 1))
+
+    from_dt = DateTime.new!(earliest, ~T[00:00:00], "Etc/UTC")
+    to_dt = DateTime.new!(Date.add(start_of_this_week, 6), ~T[23:59:59], "Etc/UTC")
+
+    # Single query: compute the Monday of each session's week, then GROUP BY that
+    counts_by_week =
+      TrainingSession
+      |> where([s], s.scheduled_at >= ^from_dt and s.scheduled_at <= ^to_dt)
+      |> filter_by_branch(opts[:branch_id])
+      |> group_by([s], fragment("date_trunc('week', ?)::date", s.scheduled_at))
+      |> select([s], {fragment("date_trunc('week', ?)::date", s.scheduled_at), count(s.id)})
+      |> Repo.all()
+      |> Map.new()
 
     Enum.map(0..(num_weeks - 1), fn weeks_ago ->
       week_start = Date.add(start_of_this_week, -7 * weeks_ago)
       week_end = Date.add(week_start, 6)
-      from_dt = DateTime.new!(week_start, ~T[00:00:00], "Etc/UTC")
-      to_dt = DateTime.new!(week_end, ~T[23:59:59], "Etc/UTC")
-
-      count =
-        TrainingSession
-        |> where([s], s.scheduled_at >= ^from_dt and s.scheduled_at <= ^to_dt)
-        |> Repo.aggregate(:count) || 0
-
+      # PostgreSQL date_trunc('week') returns Monday
+      count = Map.get(counts_by_week, week_start, 0)
       {week_start, week_end, count}
     end)
     |> Enum.reverse()
@@ -756,10 +716,13 @@ defmodule GymStudio.Scheduling do
 
   @doc """
   Returns popular time slots based on session bookings.
-  Groups by hour of day and returns counts.
+
+  ## Options
+  - `:branch_id` - Filter by branch ID
   """
-  def popular_time_slots do
+  def popular_time_slots(opts \\ []) do
     TrainingSession
+    |> filter_by_branch(opts[:branch_id])
     |> select([s], {fragment("extract(hour from ?)::integer", s.scheduled_at), count(s.id)})
     |> group_by([s], fragment("extract(hour from ?)", s.scheduled_at))
     |> order_by([s], desc: count(s.id))
@@ -770,11 +733,14 @@ defmodule GymStudio.Scheduling do
 
   @doc """
   Counts sessions per trainer.
-  Returns a list of {trainer_name, count} tuples.
+
+  ## Options
+  - `:branch_id` - Filter by branch ID
   """
-  def trainer_session_counts do
+  def trainer_session_counts(opts \\ []) do
     TrainingSession
     |> where([s], not is_nil(s.trainer_id))
+    |> filter_by_branch(opts[:branch_id])
     |> join(:inner, [s], t in assoc(s, :trainer))
     |> group_by([s, t], [t.id, t.name, t.email])
     |> select([s, t], {coalesce(t.name, t.email), count(s.id)})
@@ -784,8 +750,11 @@ defmodule GymStudio.Scheduling do
 
   @doc """
   Counts sessions today.
+
+  ## Options
+  - `:branch_id` - Filter by branch ID
   """
-  def count_sessions_today do
+  def count_sessions_today(opts \\ []) do
     today = Date.utc_today()
     from_dt = DateTime.new!(today, ~T[00:00:00], "Etc/UTC")
     to_dt = DateTime.new!(today, ~T[23:59:59], "Etc/UTC")
@@ -793,13 +762,17 @@ defmodule GymStudio.Scheduling do
     TrainingSession
     |> where([s], s.scheduled_at >= ^from_dt and s.scheduled_at <= ^to_dt)
     |> where([s], s.status in ["pending", "confirmed", "completed"])
+    |> filter_by_branch(opts[:branch_id])
     |> Repo.aggregate(:count) || 0
   end
 
   @doc """
   Counts sessions this week (all trainers).
+
+  ## Options
+  - `:branch_id` - Filter by branch ID
   """
-  def count_all_sessions_this_week do
+  def count_all_sessions_this_week(opts \\ []) do
     today = Date.utc_today()
     start_of_week = Date.beginning_of_week(today, :monday)
     end_of_next_week = Date.add(start_of_week, 7)
@@ -809,6 +782,7 @@ defmodule GymStudio.Scheduling do
     TrainingSession
     |> where([s], s.scheduled_at >= ^from_dt and s.scheduled_at < ^to_dt)
     |> where([s], s.status in ["pending", "confirmed", "completed"])
+    |> filter_by_branch(opts[:branch_id])
     |> Repo.aggregate(:count)
   end
 
@@ -821,6 +795,7 @@ defmodule GymStudio.Scheduling do
     * `:client_id` - Filter by client
     * `:from_date` - Filter from date
     * `:to_date` - Filter to date
+    * `:branch_id` - Filter by branch ID
   """
   def list_all_sessions(opts \\ []) do
     TrainingSession
@@ -828,6 +803,7 @@ defmodule GymStudio.Scheduling do
     |> filter_by_trainer(opts[:trainer_id])
     |> filter_by_client(opts[:client_id])
     |> filter_by_date_range(opts[:from_date], opts[:to_date])
+    |> filter_by_branch(opts[:branch_id])
     |> order_by([s], desc: s.scheduled_at)
     |> preload([:client, :trainer, :package])
     |> Repo.all()
@@ -849,29 +825,44 @@ defmodule GymStudio.Scheduling do
 
   @doc """
   Admin override: directly set a session's status.
+
+  ## Options
+  - `:branch_id` - Verify the session belongs to this branch (returns `{:error, :wrong_branch}` if mismatch)
   """
-  def admin_update_session(%TrainingSession{} = session, attrs) do
-    session
-    |> Ecto.Changeset.cast(attrs, [:status, :trainer_id, :notes])
-    |> Repo.update()
+  def admin_update_session(%TrainingSession{} = session, attrs, opts \\ []) do
+    with :ok <- verify_branch(session, opts[:branch_id]) do
+      session
+      |> Ecto.Changeset.cast(attrs, [:status, :trainer_id, :notes])
+      |> Repo.update()
+    end
   end
 
   @doc """
   Updates a session's status directly (admin override).
+
+  ## Options
+  - `:branch_id` - Verify the session belongs to this branch (returns `{:error, :wrong_branch}` if mismatch)
   """
-  def update_session_status(%TrainingSession{} = session, new_status) do
-    session
-    |> Ecto.Changeset.change(%{status: new_status})
-    |> Repo.update()
+  def update_session_status(%TrainingSession{} = session, new_status, opts \\ []) do
+    with :ok <- verify_branch(session, opts[:branch_id]) do
+      session
+      |> Ecto.Changeset.change(%{status: new_status})
+      |> Repo.update()
+    end
   end
 
   @doc """
   Assigns a trainer to a session.
+
+  ## Options
+  - `:branch_id` - Verify the session belongs to this branch (returns `{:error, :wrong_branch}` if mismatch)
   """
-  def assign_trainer(%TrainingSession{} = session, trainer_id) do
-    session
-    |> Ecto.Changeset.change(%{trainer_id: trainer_id})
-    |> Repo.update()
+  def assign_trainer(%TrainingSession{} = session, trainer_id, opts \\ []) do
+    with :ok <- verify_branch(session, opts[:branch_id]) do
+      session
+      |> Ecto.Changeset.change(%{trainer_id: trainer_id})
+      |> Repo.update()
+    end
   end
 
   # =============================================================================
@@ -912,6 +903,31 @@ defmodule GymStudio.Scheduling do
       |> where([a], a.trainer_id == ^trainer_id and a.day_of_week == ^day_of_week)
       |> Repo.one()
 
+    # Auto-fill branch_id from trainer if not provided
+    attrs =
+      if is_nil(attrs[:branch_id]) do
+        case GymStudio.Accounts.get_user(trainer_id) do
+          %GymStudio.Accounts.User{branch_id: bid} when not is_nil(bid) ->
+            Map.put(attrs, :branch_id, bid)
+
+          %GymStudio.Accounts.User{} ->
+            Logger.warning(
+              "Auto-fill branch_id: trainer #{trainer_id} has nil branch_id in set_trainer_availability"
+            )
+
+            attrs
+
+          nil ->
+            Logger.warning(
+              "Auto-fill branch_id: trainer #{trainer_id} not found in set_trainer_availability"
+            )
+
+            attrs
+        end
+      else
+        attrs
+      end
+
     changeset_attrs = Map.merge(attrs, %{trainer_id: trainer_id, day_of_week: day_of_week})
 
     case existing do
@@ -946,8 +962,9 @@ defmodule GymStudio.Scheduling do
   Lists time-off entries for a trainer.
 
   ## Options
-  - `:from_date` - Filter from date (default: today)
+  - `:from_date` - Filter from date
   - `:to_date` - Filter to date
+  - `:branch_id` - Filter by branch ID
   """
   def list_trainer_time_offs(trainer_id, opts \\ []) do
     from_date = Keyword.get(opts, :from_date)
@@ -961,6 +978,7 @@ defmodule GymStudio.Scheduling do
     |> then(fn q ->
       if to_date, do: where(q, [t], t.date <= ^to_date), else: q
     end)
+    |> filter_time_off_by_branch(opts[:branch_id])
     |> order_by([t], asc: t.date)
     |> Repo.all()
   end
@@ -969,6 +987,31 @@ defmodule GymStudio.Scheduling do
   Creates a time-off entry.
   """
   def create_time_off(attrs) do
+    # Auto-fill branch_id from trainer if not provided
+    attrs =
+      if is_nil(attrs[:branch_id]) && attrs[:trainer_id] do
+        case GymStudio.Accounts.get_user(attrs[:trainer_id]) do
+          %GymStudio.Accounts.User{branch_id: bid} when not is_nil(bid) ->
+            Map.put(attrs, :branch_id, bid)
+
+          %GymStudio.Accounts.User{} ->
+            Logger.warning(
+              "Auto-fill branch_id: trainer #{attrs[:trainer_id]} has nil branch_id in create_time_off"
+            )
+
+            attrs
+
+          nil ->
+            Logger.warning(
+              "Auto-fill branch_id: trainer #{attrs[:trainer_id]} not found in create_time_off"
+            )
+
+            attrs
+        end
+      else
+        attrs
+      end
+
     %TrainerTimeOff{}
     |> TrainerTimeOff.changeset(attrs)
     |> Repo.insert()
@@ -1010,7 +1053,6 @@ defmodule GymStudio.Scheduling do
   def get_trainer_available_slots(trainer_id, %Date{} = date) do
     day_of_week = Date.day_of_week(date)
 
-    # 1. Get availability for this day
     availability =
       TrainerAvailability
       |> where(
@@ -1027,10 +1069,8 @@ defmodule GymStudio.Scheduling do
         start_hour = start_time.hour
         end_hour = end_time.hour
 
-        # Generate all possible hours
         all_hours = Enum.to_list(start_hour..(end_hour - 1))
 
-        # 2. Remove booked hours
         start_of_day = DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
         end_of_day = DateTime.new!(date, ~T[23:59:59], "Etc/UTC")
 
@@ -1044,7 +1084,6 @@ defmodule GymStudio.Scheduling do
           |> Enum.map(fn dt -> dt.hour end)
           |> MapSet.new()
 
-        # 3. Remove time-off hours
         time_offs =
           TrainerTimeOff
           |> where([t], t.trainer_id == ^trainer_id and t.date == ^date)
@@ -1053,7 +1092,6 @@ defmodule GymStudio.Scheduling do
         time_off_hours =
           Enum.flat_map(time_offs, fn to ->
             if is_nil(to.start_time) || is_nil(to.end_time) do
-              # All day off
               all_hours
             else
               Enum.to_list(to.start_time.hour..(to.end_time.hour - 1))
@@ -1074,12 +1112,15 @@ defmodule GymStudio.Scheduling do
   @doc """
   Returns available slots across ALL trainers for a given date.
   Returns `[%{hour: integer, label: string, trainer_id: id, trainer_name: string}]`.
+
+  ## Options
+  - `:branch_id` - Filter by branch ID
   """
-  def get_all_available_slots(%Date{} = date) do
+  def get_all_available_slots(%Date{} = date, opts \\ []) do
     day_of_week = Date.day_of_week(date)
 
     # Get all trainers with availability on this day
-    availabilities =
+    availability_query =
       TrainerAvailability
       |> where([a], a.day_of_week == ^day_of_week and a.active == true)
       |> join(:inner, [a], u in GymStudio.Accounts.User, on: a.trainer_id == u.id)
@@ -1089,81 +1130,104 @@ defmodule GymStudio.Scheduling do
         start_time: a.start_time,
         end_time: a.end_time
       })
-      |> Repo.all()
+
+    availability_query =
+      if opts[:branch_id] do
+        where(availability_query, [_a, u], u.branch_id == ^opts[:branch_id])
+      else
+        availability_query
+      end
+
+    availabilities = Repo.all(availability_query)
 
     trainer_ids = Enum.map(availabilities, & &1.trainer_id) |> Enum.uniq()
 
-    # Batch-fetch all booked hours for all trainers on this date (2 queries total)
-    start_of_day = DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
-    end_of_day = DateTime.new!(date, ~T[23:59:59], "Etc/UTC")
+    if trainer_ids == [] do
+      []
+    else
+      # Batch-fetch all booked hours for all trainers on this date
+      start_of_day = DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
+      end_of_day = DateTime.new!(date, ~T[23:59:59], "Etc/UTC")
 
-    booked_by_trainer =
-      TrainingSession
-      |> where([s], s.trainer_id in ^trainer_ids)
-      |> where([s], s.scheduled_at >= ^start_of_day and s.scheduled_at <= ^end_of_day)
-      |> where([s], s.status in ["pending", "confirmed"])
-      |> select([s], {s.trainer_id, s.scheduled_at})
-      |> Repo.all()
-      |> Enum.group_by(&elem(&1, 0), fn {_, dt} -> dt.hour end)
-      |> Map.new(fn {tid, hours} -> {tid, MapSet.new(hours)} end)
+      booked_by_trainer =
+        TrainingSession
+        |> where([s], s.trainer_id in ^trainer_ids)
+        |> where([s], s.scheduled_at >= ^start_of_day and s.scheduled_at <= ^end_of_day)
+        |> where([s], s.status in ["pending", "confirmed"])
+        |> select([s], {s.trainer_id, s.scheduled_at})
+        |> Repo.all()
+        |> Enum.group_by(&elem(&1, 0), fn {_, dt} -> dt.hour end)
+        |> Map.new(fn {tid, hours} -> {tid, MapSet.new(hours)} end)
 
-    time_offs_by_trainer =
-      TrainerTimeOff
-      |> where([t], t.trainer_id in ^trainer_ids and t.date == ^date)
-      |> Repo.all()
-      |> Enum.group_by(& &1.trainer_id)
+      time_offs_by_trainer =
+        TrainerTimeOff
+        |> where([t], t.trainer_id in ^trainer_ids and t.date == ^date)
+        |> Repo.all()
+        |> Enum.group_by(& &1.trainer_id)
 
-    # For each trainer, compute available slots
-    Enum.flat_map(availabilities, fn %{
-                                       trainer_id: tid,
-                                       trainer_name: tname,
-                                       start_time: st,
-                                       end_time: et
-                                     } ->
-      start_hour = st.hour
-      end_hour = et.hour
-      all_hours = Enum.to_list(start_hour..(end_hour - 1))
+      Enum.flat_map(availabilities, fn %{
+                                         trainer_id: tid,
+                                         trainer_name: tname,
+                                         start_time: st,
+                                         end_time: et
+                                       } ->
+        start_hour = st.hour
+        end_hour = et.hour
+        all_hours = Enum.to_list(start_hour..(end_hour - 1))
 
-      booked_hours = Map.get(booked_by_trainer, tid, MapSet.new())
+        booked_hours = Map.get(booked_by_trainer, tid, MapSet.new())
 
-      time_off_hours =
-        time_offs_by_trainer
-        |> Map.get(tid, [])
-        |> Enum.flat_map(fn to ->
-          if is_nil(to.start_time) || is_nil(to.end_time) do
-            all_hours
-          else
-            Enum.to_list(to.start_time.hour..(to.end_time.hour - 1))
-          end
+        time_off_hours =
+          time_offs_by_trainer
+          |> Map.get(tid, [])
+          |> Enum.flat_map(fn to ->
+            if is_nil(to.start_time) || is_nil(to.end_time) do
+              all_hours
+            else
+              Enum.to_list(to.start_time.hour..(to.end_time.hour - 1))
+            end
+          end)
+          |> MapSet.new()
+
+        blocked = MapSet.union(booked_hours, time_off_hours)
+
+        all_hours
+        |> Enum.reject(&MapSet.member?(blocked, &1))
+        |> Enum.map(fn hour ->
+          %{
+            hour: hour,
+            label: format_hour(hour),
+            value: Integer.to_string(hour),
+            trainer_id: tid,
+            trainer_name: tname || "Trainer"
+          }
         end)
-        |> MapSet.new()
-
-      blocked = MapSet.union(booked_hours, time_off_hours)
-
-      all_hours
-      |> Enum.reject(&MapSet.member?(blocked, &1))
-      |> Enum.map(fn hour ->
-        %{
-          hour: hour,
-          label: format_hour(hour),
-          value: Integer.to_string(hour),
-          trainer_id: tid,
-          trainer_name: tname || "Trainer"
-        }
       end)
-    end)
-    |> Enum.sort_by(& &1.hour)
+      |> Enum.sort_by(& &1.hour)
+    end
   end
 
   @doc """
   Lists all trainers who have availability configured.
+
+  ## Options
+  - `:branch_id` - Filter by branch ID
   """
-  def list_trainers_with_availability do
-    TrainerAvailability
-    |> join(:inner, [a], u in GymStudio.Accounts.User, on: a.trainer_id == u.id)
-    |> select([a, u], %{trainer_id: u.id, trainer_name: u.name})
-    |> distinct(true)
-    |> Repo.all()
+  def list_trainers_with_availability(opts \\ []) do
+    query =
+      TrainerAvailability
+      |> join(:inner, [a], u in GymStudio.Accounts.User, on: a.trainer_id == u.id)
+      |> select([a, u], %{trainer_id: u.id, trainer_name: u.name})
+      |> distinct(true)
+
+    query =
+      if opts[:branch_id] do
+        where(query, [_a, u], u.branch_id == ^opts[:branch_id])
+      else
+        query
+      end
+
+    Repo.all(query)
   end
 
   defp format_hour(0), do: "12:00 AM"

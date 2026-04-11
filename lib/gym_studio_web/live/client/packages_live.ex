@@ -7,7 +7,7 @@ defmodule GymStudioWeb.Client.PackagesLive do
     user = socket.assigns.current_scope.user
     client = Accounts.get_client_by_user_id(user.id)
 
-    packages = Packages.list_packages_for_client(user.id)
+    packages = Packages.list_packages_for_client(user.id, branch_id: user.branch_id)
 
     socket =
       socket

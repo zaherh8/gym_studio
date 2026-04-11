@@ -46,7 +46,9 @@ defmodule GymStudioWeb.Client.BookSessionLive do
       |> assign(active_package: active_package)
       |> assign(available_dates: available_dates)
       |> assign(selected_date: selected_date)
-      |> assign(available_slots: load_slots(selected_date))
+      |> assign(
+        available_slots: load_slots(selected_date, socket.assigns.current_scope.user.branch_id)
+      )
       |> assign(selected_slot: nil)
       |> assign(selected_trainer_id: nil)
       |> assign(notes: "")
@@ -82,7 +84,9 @@ defmodule GymStudioWeb.Client.BookSessionLive do
         socket =
           socket
           |> assign(selected_date: date)
-          |> assign(available_slots: load_slots(date))
+          |> assign(
+            available_slots: load_slots(date, socket.assigns.current_scope.user.branch_id)
+          )
           |> assign(selected_slot: nil)
           |> assign(selected_trainer_id: nil)
           |> assign(step: 2)
@@ -147,6 +151,7 @@ defmodule GymStudioWeb.Client.BookSessionLive do
           trainer_id: selected_trainer_id,
           scheduled_at: scheduled_at,
           duration_minutes: 60,
+          branch_id: user.branch_id,
           notes: if(socket.assigns.notes != "", do: socket.assigns.notes, else: nil)
         }
 
@@ -167,7 +172,11 @@ defmodule GymStudioWeb.Client.BookSessionLive do
               socket
               |> put_flash(:error, "This slot was just taken. Please choose another time.")
               |> assign(
-                available_slots: load_slots(socket.assigns.selected_date),
+                available_slots:
+                  load_slots(
+                    socket.assigns.selected_date,
+                    socket.assigns.current_scope.user.branch_id
+                  ),
                 selected_slot: nil,
                 selected_trainer_id: nil,
                 step: 2
@@ -191,10 +200,10 @@ defmodule GymStudioWeb.Client.BookSessionLive do
     {:noreply, assign(socket, step: 2)}
   end
 
-  defp load_slots(nil), do: []
+  defp load_slots(nil, _branch_id), do: []
 
-  defp load_slots(date) do
-    Scheduling.get_all_available_slots(date)
+  defp load_slots(date, branch_id) do
+    Scheduling.get_all_available_slots(date, branch_id: branch_id)
   end
 
   defp generate_available_dates do

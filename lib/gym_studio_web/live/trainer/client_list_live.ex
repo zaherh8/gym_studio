@@ -10,7 +10,7 @@ defmodule GymStudioWeb.Trainer.ClientListLive do
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.user
-    clients = Scheduling.list_trainer_clients(user.id)
+    clients = Scheduling.list_trainer_clients(user.id, branch_id: user.branch_id)
 
     socket =
       socket
@@ -24,7 +24,7 @@ defmodule GymStudioWeb.Trainer.ClientListLive do
   @impl true
   def handle_event("search", %{"search" => search}, socket) do
     user = socket.assigns.current_scope.user
-    clients = Scheduling.list_trainer_clients(user.id, search: search)
+    clients = Scheduling.list_trainer_clients(user.id, search: search, branch_id: user.branch_id)
     {:noreply, assign(socket, clients: clients, search: search)}
   end
 

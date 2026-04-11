@@ -84,14 +84,30 @@ defmodule GymStudio.Accounts do
   @doc """
   Gets a single user.
 
+  Returns nil if the User does not exist.
+
+  ## Examples
+
+      iex> get_user("01HXYZ123ABC")
+      %User{}
+
+      iex> get_user("nonexistent")
+      nil
+
+  """
+  def get_user(id), do: Repo.get(User, id)
+
+  @doc """
+  Gets a single user.
+
   Raises `Ecto.NoResultsError` if the User does not exist.
 
   ## Examples
 
-      iex> get_user!(123)
+      iex> get_user!("01HXYZ123ABC")
       %User{}
 
-      iex> get_user!(456)
+      iex> get_user!("nonexistent")
       ** (Ecto.NoResultsError)
 
   """
@@ -575,25 +591,37 @@ defmodule GymStudio.Accounts do
 
   ## Options
     * `:status` - Filter by status (pending, approved, suspended)
+    * `:branch_id` - Filter by branch ID
   """
   def list_trainers(opts \\ []) do
     Trainer
     |> filter_trainers_by_status(opts[:status])
+    |> filter_trainers_by_branch(opts[:branch_id])
     |> Repo.all()
     |> Repo.preload([:user])
   end
 
   @doc """
   Lists all approved trainers.
+
+  ## Options
+    * `:branch_id` - Filter by branch ID
   """
-  def list_approved_trainers do
-    list_trainers(status: "approved")
+  def list_approved_trainers(opts \\ []) do
+    opts = Keyword.put(opts, :status, "approved")
+    list_trainers(opts)
   end
 
   defp filter_trainers_by_status(query, nil), do: query
 
   defp filter_trainers_by_status(query, status) do
     from(t in query, where: t.status == ^status)
+  end
+
+  defp filter_trainers_by_branch(query, nil), do: query
+
+  defp filter_trainers_by_branch(query, branch_id) do
+    from(t in query, join: u in assoc(t, :user), where: u.branch_id == ^branch_id)
   end
 
   @doc """
@@ -641,11 +669,21 @@ defmodule GymStudio.Accounts do
 
   @doc """
   Lists all clients.
+
+  ## Options
+    * `:branch_id` - Filter by branch ID
   """
-  def list_clients do
+  def list_clients(opts \\ []) do
     Client
+    |> filter_clients_by_branch(opts[:branch_id])
     |> Repo.all()
     |> Repo.preload([:user])
+  end
+
+  defp filter_clients_by_branch(query, nil), do: query
+
+  defp filter_clients_by_branch(query, branch_id) do
+    from(c in query, join: u in assoc(c, :user), where: u.branch_id == ^branch_id)
   end
 
   @doc """
@@ -681,11 +719,13 @@ defmodule GymStudio.Accounts do
   ## Options
     * `:role` - Filter by role
     * `:active` - Filter by active status
+    * `:branch_id` - Filter by branch ID
   """
   def list_users(opts \\ []) do
     User
     |> filter_users_by_role(opts[:role])
     |> filter_users_by_active(opts[:active])
+    |> filter_users_by_branch(opts[:branch_id])
     |> Repo.all()
   end
 
@@ -701,11 +741,18 @@ defmodule GymStudio.Accounts do
     from(u in query, where: u.active == ^active)
   end
 
+  defp filter_users_by_branch(query, nil), do: query
+
+  defp filter_users_by_branch(query, branch_id) do
+    from(u in query, where: u.branch_id == ^branch_id)
+  end
+
   @doc """
   Searches users by name, email, or phone number.
 
   ## Options
     * `:role` - Filter by role
+    * `:branch_id` - Filter by branch ID
   """
   def search_users(query_string, opts \\ []) do
     pattern = "%#{query_string}%"
@@ -716,6 +763,7 @@ defmodule GymStudio.Accounts do
       ilike(u.name, ^pattern) or ilike(u.email, ^pattern) or ilike(u.phone_number, ^pattern)
     )
     |> filter_users_by_role(opts[:role])
+    |> filter_users_by_branch(opts[:branch_id])
     |> Repo.all()
   end
 
@@ -730,9 +778,13 @@ defmodule GymStudio.Accounts do
 
   @doc """
   Counts users grouped by role.
+
+  ## Options
+    * `:branch_id` - Filter by branch ID
   """
-  def count_users_by_role do
+  def count_users_by_role(opts \\ []) do
     User
+    |> filter_users_by_branch(opts[:branch_id])
     |> group_by([u], u.role)
     |> select([u], {u.role, count(u.id)})
     |> Repo.all()

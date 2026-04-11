@@ -27,8 +27,10 @@ defmodule GymStudioWeb.Client.DashboardLive do
   end
 
   defp assign_dashboard_data(socket, client) do
+    branch_id = socket.assigns.current_scope.user.branch_id
+
     active_package =
-      case Packages.get_active_package_for_client(client.user_id) do
+      case Packages.get_active_package_for_client(client.user_id, branch_id: branch_id) do
         {:ok, package} -> package
         {:error, :no_active_package} -> nil
       end
