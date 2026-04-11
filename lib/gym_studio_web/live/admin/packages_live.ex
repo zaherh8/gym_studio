@@ -4,8 +4,9 @@ defmodule GymStudioWeb.Admin.PackagesLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    packages = Packages.list_all_packages()
-    clients = Accounts.list_users(role: :client)
+    branch_id = socket.assigns.current_scope.user.branch_id
+    packages = Packages.list_all_packages(branch_id: branch_id)
+    clients = Accounts.list_users(role: :client, branch_id: branch_id)
     package_types = Packages.package_types()
 
     {:ok,
@@ -36,6 +37,7 @@ defmodule GymStudioWeb.Admin.PackagesLive do
       client_id: params["client_id"],
       package_type: params["package_type"],
       assigned_by_id: socket.assigns.current_scope.user.id,
+      branch_id: socket.assigns.current_scope.user.branch_id,
       expires_at: parse_expires_at(params["expires_at"])
     }
 
@@ -54,7 +56,12 @@ defmodule GymStudioWeb.Admin.PackagesLive do
   def handle_event("deactivate", %{"id" => id}, socket) do
     package = Packages.get_package!(id)
     {:ok, _} = Packages.deactivate_package(package)
-    {:noreply, assign(socket, packages: Packages.list_all_packages())}
+
+    {:noreply,
+     assign(socket,
+       packages:
+         Packages.list_all_packages(branch_id: socket.assigns.current_scope.user.branch_id)
+     )}
   end
 
   defp parse_expires_at(nil), do: nil

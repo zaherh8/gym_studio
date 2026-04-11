@@ -8,15 +8,22 @@ defmodule GymStudioWeb.Admin.DashboardLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    user_counts = Accounts.count_users_by_role()
-    pending_trainers = length(Accounts.list_trainers(status: "pending"))
-    pending_sessions = length(Scheduling.list_pending_sessions())
+    branch_id = socket.assigns.current_scope.user.branch_id
+    user_counts = Accounts.count_users_by_role(branch_id: branch_id)
+    pending_trainers = length(Accounts.list_trainers(status: "pending", branch_id: branch_id))
+    pending_sessions = length(Scheduling.list_pending_sessions(branch_id: branch_id))
 
     active_packages =
-      length(Packages.list_all_packages(active: true, has_available_sessions: true))
+      length(
+        Packages.list_all_packages(
+          active: true,
+          has_available_sessions: true,
+          branch_id: branch_id
+        )
+      )
 
-    sessions_today = Scheduling.count_sessions_today()
-    sessions_this_week = Scheduling.count_all_sessions_this_week()
+    sessions_today = Scheduling.count_sessions_today(branch_id: branch_id)
+    sessions_this_week = Scheduling.count_all_sessions_this_week(branch_id: branch_id)
 
     {:ok,
      assign(socket,

@@ -21,11 +21,21 @@ defmodule GymStudioWeb.Trainer.SessionsLive do
 
   defp load_sessions(%{assigns: %{trainer: nil}} = socket), do: assign(socket, sessions: [])
 
-  defp load_sessions(%{assigns: %{trainer: trainer, filter: filter}} = socket) do
+  defp load_sessions(
+         %{assigns: %{trainer: trainer, filter: filter, current_scope: scope}} = socket
+       ) do
+    branch_id = scope.user.branch_id
+
     sessions =
       case filter do
-        "all" -> Scheduling.list_sessions_for_trainer(trainer.user_id)
-        status -> Scheduling.list_sessions_for_trainer(trainer.user_id, status: status)
+        "all" ->
+          Scheduling.list_sessions_for_trainer(trainer.user_id, branch_id: branch_id)
+
+        status ->
+          Scheduling.list_sessions_for_trainer(trainer.user_id,
+            status: status,
+            branch_id: branch_id
+          )
       end
 
     assign(socket, sessions: sessions)

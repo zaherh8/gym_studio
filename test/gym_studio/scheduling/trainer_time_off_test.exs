@@ -5,6 +5,8 @@ defmodule GymStudio.Scheduling.TrainerTimeOffTest do
   alias GymStudio.Scheduling.TrainerTimeOff
 
   setup do
+    branch = GymStudio.BranchesFixtures.branch_fixture()
+
     user =
       %GymStudio.Accounts.User{}
       |> GymStudio.Accounts.User.registration_changeset(%{
@@ -13,43 +15,47 @@ defmodule GymStudio.Scheduling.TrainerTimeOffTest do
         email: "timeoff_test@test.com",
         password: "password123456",
         password_confirmation: "password123456",
-        role: :trainer
+        role: :trainer,
+        branch_id: branch.id
       })
       |> GymStudio.Accounts.User.confirm_changeset()
       |> GymStudio.Repo.insert!()
 
-    %{trainer: user}
+    %{trainer: user, branch: branch}
   end
 
   describe "TrainerTimeOff schema" do
-    test "valid all-day changeset", %{trainer: trainer} do
+    test "valid all-day changeset", %{trainer: trainer, branch: branch} do
       changeset =
         TrainerTimeOff.changeset(%TrainerTimeOff{}, %{
           trainer_id: trainer.id,
-          date: ~D[2026-04-01]
+          date: ~D[2026-04-01],
+          branch_id: branch.id
         })
 
       assert changeset.valid?
     end
 
-    test "valid partial-day changeset", %{trainer: trainer} do
+    test "valid partial-day changeset", %{trainer: trainer, branch: branch} do
       changeset =
         TrainerTimeOff.changeset(%TrainerTimeOff{}, %{
           trainer_id: trainer.id,
           date: ~D[2026-04-01],
           start_time: ~T[09:00:00],
-          end_time: ~T[12:00:00]
+          end_time: ~T[12:00:00],
+          branch_id: branch.id
         })
 
       assert changeset.valid?
     end
 
-    test "invalid when only start_time set", %{trainer: trainer} do
+    test "invalid when only start_time set", %{trainer: trainer, branch: branch} do
       changeset =
         TrainerTimeOff.changeset(%TrainerTimeOff{}, %{
           trainer_id: trainer.id,
           date: ~D[2026-04-01],
-          start_time: ~T[09:00:00]
+          start_time: ~T[09:00:00],
+          branch_id: branch.id
         })
 
       refute changeset.valid?

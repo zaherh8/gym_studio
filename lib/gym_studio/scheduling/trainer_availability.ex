@@ -12,6 +12,7 @@ defmodule GymStudio.Scheduling.TrainerAvailability do
 
   schema "trainer_availabilities" do
     belongs_to :trainer, User
+    belongs_to :branch, GymStudio.Branches.Branch, type: :integer
     field :day_of_week, :integer
     field :start_time, :time
     field :end_time, :time
@@ -34,11 +35,12 @@ defmodule GymStudio.Scheduling.TrainerAvailability do
 
   def changeset(availability, attrs) do
     availability
-    |> cast(attrs, [:trainer_id, :day_of_week, :start_time, :end_time, :active])
-    |> validate_required([:trainer_id, :day_of_week, :start_time, :end_time])
+    |> cast(attrs, [:trainer_id, :day_of_week, :start_time, :end_time, :active, :branch_id])
+    |> validate_required([:trainer_id, :day_of_week, :start_time, :end_time, :branch_id])
     |> validate_number(:day_of_week, greater_than_or_equal_to: 1, less_than_or_equal_to: 7)
     |> validate_time_range()
     |> unique_constraint([:trainer_id, :day_of_week])
+    |> foreign_key_constraint(:branch_id)
   end
 
   defp validate_time_range(changeset) do

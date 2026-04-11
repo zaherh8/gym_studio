@@ -33,13 +33,18 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
     assign(socket, week_sessions: %{}, availability_map: %{})
   end
 
-  defp load_week_data(%{assigns: %{trainer: trainer, current_week_start: week_start}} = socket) do
+  defp load_week_data(
+         %{assigns: %{trainer: trainer, current_week_start: week_start, current_scope: scope}} =
+           socket
+       ) do
     week_end = Date.add(week_start, 6)
+    branch_id = scope.user.branch_id
 
     sessions =
       Scheduling.list_sessions_for_trainer(trainer.user_id,
         from_date: week_start,
-        to_date: week_end
+        to_date: week_end,
+        branch_id: branch_id
       )
 
     week_sessions =

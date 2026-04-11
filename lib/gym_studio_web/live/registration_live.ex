@@ -390,6 +390,15 @@ defmodule GymStudioWeb.RegistrationLive do
       user_params
       |> Map.put("phone_number", socket.assigns.phone_number)
 
+    # Default to first active branch if not specified
+    user_params =
+      if Map.has_key?(user_params, "branch_id") do
+        user_params
+      else
+        default_branch = GymStudio.Branches.get_default_branch()
+        Map.put(user_params, "branch_id", default_branch && default_branch.id)
+      end
+
     case Accounts.register_user(user_params) do
       {:ok, user} ->
         # Mark the user as confirmed since phone was verified

@@ -5,10 +5,11 @@ defmodule GymStudioWeb.Admin.AnalyticsLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    status_counts = Scheduling.count_sessions_by_status()
-    weekly_sessions = Scheduling.sessions_per_week(4)
-    popular_slots = Scheduling.popular_time_slots()
-    trainer_counts = Scheduling.trainer_session_counts()
+    branch_id = socket.assigns.current_scope.user.branch_id
+    status_counts = Scheduling.count_sessions_by_status(branch_id: branch_id)
+    weekly_sessions = Scheduling.sessions_per_week(4, branch_id: branch_id)
+    popular_slots = Scheduling.popular_time_slots(branch_id: branch_id)
+    trainer_counts = Scheduling.trainer_session_counts(branch_id: branch_id)
 
     total_sessions = status_counts |> Map.values() |> Enum.sum()
 

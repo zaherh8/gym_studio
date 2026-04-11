@@ -30,6 +30,7 @@ defmodule GymStudio.Scheduling.TrainingSession do
     belongs_to :package, GymStudio.Packages.SessionPackage
     belongs_to :approved_by, User
     belongs_to :cancelled_by, User
+    belongs_to :branch, GymStudio.Branches.Branch, type: :integer
 
     field :scheduled_at, :utc_datetime
     field :duration_minutes, :integer, default: 60
@@ -70,14 +71,16 @@ defmodule GymStudio.Scheduling.TrainingSession do
       :package_id,
       :scheduled_at,
       :duration_minutes,
-      :notes
+      :notes,
+      :branch_id
     ])
-    |> validate_required([:client_id, :scheduled_at, :duration_minutes])
+    |> validate_required([:client_id, :scheduled_at, :duration_minutes, :branch_id])
     |> validate_number(:duration_minutes, greater_than: 0)
     |> validate_scheduled_at_in_future()
     |> foreign_key_constraint(:client_id)
     |> foreign_key_constraint(:trainer_id)
     |> foreign_key_constraint(:package_id)
+    |> foreign_key_constraint(:branch_id)
     |> unique_constraint(:trainer_id,
       name: :training_sessions_trainer_scheduled_at_active_index,
       message: "slot already taken"

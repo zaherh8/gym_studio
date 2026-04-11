@@ -19,7 +19,8 @@ defmodule GymStudioWeb.Admin.CalendarLive do
   @impl true
   def mount(_params, _session, socket) do
     today = Date.utc_today()
-    trainers = Accounts.list_trainers(status: "approved")
+    branch_id = socket.assigns.current_scope.user.branch_id
+    trainers = Accounts.list_trainers(status: "approved", branch_id: branch_id)
 
     # Build trainer_id -> color mapping
     color_map =
@@ -38,6 +39,7 @@ defmodule GymStudioWeb.Admin.CalendarLive do
       |> assign(current_week_start: Date.beginning_of_week(today, :monday))
       |> assign(selected_session: nil)
       |> assign(available_trainers: [])
+      |> assign(branch_id: branch_id)
       |> load_week_data()
 
     {:ok, socket}
@@ -48,7 +50,7 @@ defmodule GymStudioWeb.Admin.CalendarLive do
     week_end = Date.add(week_start, 6)
     filter = socket.assigns.filter_trainer_id
 
-    opts = [from_date: week_start, to_date: week_end]
+    opts = [from_date: week_start, to_date: week_end, branch_id: socket.assigns.branch_id]
     opts = if filter, do: Keyword.put(opts, :trainer_id, filter), else: opts
 
     sessions = Scheduling.list_all_sessions(opts)
@@ -129,7 +131,7 @@ defmodule GymStudioWeb.Admin.CalendarLive do
       session ->
         available_trainers =
           if is_nil(session.trainer_id) do
-            Accounts.list_approved_trainers()
+            Accounts.list_approved_trainers(branch_id: socket.assigns.branch_id)
           else
             []
           end

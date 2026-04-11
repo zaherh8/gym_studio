@@ -94,7 +94,8 @@ defmodule GymStudio.PackagesTest do
       attrs = %{
         client_id: Ecto.UUID.generate(),
         package_type: "standard_8",
-        assigned_by_id: admin.id
+        assigned_by_id: admin.id,
+        branch_id: admin.branch_id
       }
 
       assert {:error, %Ecto.Changeset{} = changeset} = Packages.assign_package(attrs)

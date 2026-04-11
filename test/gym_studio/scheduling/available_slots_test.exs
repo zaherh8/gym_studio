@@ -4,6 +4,8 @@ defmodule GymStudio.Scheduling.AvailableSlotsTest do
   alias GymStudio.Scheduling
 
   setup do
+    branch = GymStudio.BranchesFixtures.branch_fixture()
+
     trainer =
       %GymStudio.Accounts.User{}
       |> GymStudio.Accounts.User.registration_changeset(%{
@@ -12,7 +14,8 @@ defmodule GymStudio.Scheduling.AvailableSlotsTest do
         email: "slots_test@test.com",
         password: "password123456",
         password_confirmation: "password123456",
-        role: :trainer
+        role: :trainer,
+        branch_id: branch.id
       })
       |> GymStudio.Accounts.User.confirm_changeset()
       |> GymStudio.Repo.insert!()
@@ -25,7 +28,8 @@ defmodule GymStudio.Scheduling.AvailableSlotsTest do
         email: "slots_client@test.com",
         password: "password123456",
         password_confirmation: "password123456",
-        role: :client
+        role: :client,
+        branch_id: branch.id
       })
       |> GymStudio.Accounts.User.confirm_changeset()
       |> GymStudio.Repo.insert!()
@@ -73,7 +77,8 @@ defmodule GymStudio.Scheduling.AvailableSlotsTest do
         trainer_id: trainer.id,
         scheduled_at: scheduled_at,
         duration_minutes: 60,
-        status: "confirmed"
+        status: "confirmed",
+        branch_id: trainer.branch_id
       })
 
       slots = Scheduling.get_trainer_available_slots(trainer.id, monday)

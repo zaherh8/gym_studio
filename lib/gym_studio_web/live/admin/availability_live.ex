@@ -15,7 +15,8 @@ defmodule GymStudioWeb.Admin.AvailabilityLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    trainers = Scheduling.list_trainers_with_availability()
+    branch_id = socket.assigns.current_scope.user.branch_id
+    trainers = Scheduling.list_trainers_with_availability(branch_id: branch_id)
 
     # Build availability map: %{trainer_id => %{day => availability}}
     trainer_ids = Enum.map(trainers, & &1.trainer_id)
@@ -62,6 +63,7 @@ defmodule GymStudioWeb.Admin.AvailabilityLive do
       attrs = %{
         start_time: parse_time(params["start_time"]),
         end_time: parse_time(params["end_time"]),
+        branch_id: socket.assigns.current_scope.user.branch_id,
         active: true
       }
 

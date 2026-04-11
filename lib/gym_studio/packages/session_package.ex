@@ -39,6 +39,7 @@ defmodule GymStudio.Packages.SessionPackage do
 
     belongs_to :client, User
     belongs_to :assigned_by, User
+    belongs_to :branch, GymStudio.Branches.Branch, type: :integer
 
     timestamps(type: :utc_datetime)
   end
@@ -70,11 +71,20 @@ defmodule GymStudio.Packages.SessionPackage do
   """
   def changeset(session_package, attrs) do
     session_package
-    |> cast(attrs, [:client_id, :package_type, :assigned_by_id, :expires_at, :notes, :active])
-    |> validate_required([:client_id, :package_type, :assigned_by_id])
+    |> cast(attrs, [
+      :client_id,
+      :package_type,
+      :assigned_by_id,
+      :expires_at,
+      :notes,
+      :active,
+      :branch_id
+    ])
+    |> validate_required([:client_id, :package_type, :assigned_by_id, :branch_id])
     |> validate_inclusion(:package_type, valid_package_types())
     |> foreign_key_constraint(:client_id)
     |> foreign_key_constraint(:assigned_by_id)
+    |> foreign_key_constraint(:branch_id)
     |> set_total_sessions()
     |> validate_number(:total_sessions, greater_than: 0)
   end

@@ -82,6 +82,20 @@ defmodule GymStudio.Packages do
       {:error, %Ecto.Changeset{}}
   """
   def assign_package(attrs) do
+    # Auto-fill branch_id from client if not provided
+    attrs =
+      if is_nil(attrs[:branch_id]) && attrs[:client_id] do
+        case GymStudio.Accounts.get_user(attrs[:client_id]) do
+          %GymStudio.Accounts.User{branch_id: bid} when not is_nil(bid) ->
+            Map.put(attrs, :branch_id, bid)
+
+          _ ->
+            attrs
+        end
+      else
+        attrs
+      end
+
     %SessionPackage{}
     |> SessionPackage.changeset(attrs)
     |> Repo.insert()
@@ -135,7 +149,7 @@ defmodule GymStudio.Packages do
       iex> get_active_package_for_client("client-with-no-packages")
       {:error, :no_active_package}
   """
-  def get_active_package_for_client(client_id) do
+  def get_active_package_for_client(client_id, opts \\ []) do
     now = DateTime.utc_now()
 
     package =
@@ -147,6 +161,7 @@ defmodule GymStudio.Packages do
         [p],
         is_nil(p.expires_at) or p.expires_at > ^now
       )
+      |> filter_by_branch(Keyword.get(opts, :branch_id))
       |> order_by([p], asc_nulls_last: p.expires_at)
       |> limit(1)
       |> preload([:client, :assigned_by])
@@ -238,9 +253,10 @@ defmodule GymStudio.Packages do
       iex> list_packages_for_client("client-with-no-packages")
       []
   """
-  def list_packages_for_client(client_id) do
+  def list_packages_for_client(client_id, opts \\ []) do
     SessionPackage
     |> where([p], p.client_id == ^client_id)
+    |> filter_by_branch(opts[:branch_id])
     |> order_by([p], desc: p.inserted_at)
     |> preload([:client, :assigned_by])
     |> Repo.all()
@@ -310,6 +326,13 @@ defmodule GymStudio.Packages do
 
         nil ->
           query
+      end
+
+    query =
+      if branch_id = opts[:branch_id] do
+        where(query, [p], p.branch_id == ^branch_id)
+      else
+        query
       end
 
     preloads = Keyword.get(opts, :preload, [:client, :assigned_by])
@@ -435,6 +458,12 @@ defmodule GymStudio.Packages do
   end
 
   # Private functions
+
+  defp filter_by_branch(query, nil), do: query
+
+  defp filter_by_branch(query, branch_id) do
+    where(query, [p], p.branch_id == ^branch_id)
+  end
 
   defp put_remaining_sessions(%SessionPackage{} = package) do
     remaining = SessionPackage.calculate_remaining_sessions(package)

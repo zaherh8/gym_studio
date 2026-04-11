@@ -12,6 +12,7 @@ defmodule GymStudio.Scheduling.TrainerTimeOff do
 
   schema "trainer_time_offs" do
     belongs_to :trainer, User
+    belongs_to :branch, GymStudio.Branches.Branch, type: :integer
     field :date, :date
     field :start_time, :time
     field :end_time, :time
@@ -22,9 +23,10 @@ defmodule GymStudio.Scheduling.TrainerTimeOff do
 
   def changeset(time_off, attrs) do
     time_off
-    |> cast(attrs, [:trainer_id, :date, :start_time, :end_time, :reason])
-    |> validate_required([:trainer_id, :date])
+    |> cast(attrs, [:trainer_id, :date, :start_time, :end_time, :reason, :branch_id])
+    |> validate_required([:trainer_id, :date, :branch_id])
     |> validate_time_range()
+    |> foreign_key_constraint(:branch_id)
   end
 
   defp validate_time_range(changeset) do

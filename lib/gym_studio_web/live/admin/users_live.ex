@@ -5,14 +5,17 @@ defmodule GymStudioWeb.Admin.UsersLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    branch_id = socket.assigns.current_scope.user.branch_id
+
     {:ok,
      assign(socket,
        page_title: "Manage Users",
-       users: Accounts.list_users(),
+       users: Accounts.list_users(branch_id: branch_id),
        search: "",
        role_filter: "",
        confirm_action: nil,
-       confirm_user_id: nil
+       confirm_user_id: nil,
+       branch_id: branch_id
      )}
   end
 
@@ -28,7 +31,8 @@ defmodule GymStudioWeb.Admin.UsersLive do
 
   @impl true
   def handle_event("search", %{"search" => search, "role" => role}, socket) do
-    users = filter_users(search, role)
+    branch_id = socket.assigns.branch_id
+    users = filter_users(search, role, branch_id)
     {:noreply, assign(socket, users: users, search: search, role_filter: role)}
   end
 
@@ -41,7 +45,9 @@ defmodule GymStudioWeb.Admin.UsersLive do
       {:ok, _} = Accounts.activate_user(user)
     end
 
-    users = filter_users(socket.assigns.search, socket.assigns.role_filter)
+    users =
+      filter_users(socket.assigns.search, socket.assigns.role_filter, socket.assigns.branch_id)
+
     {:noreply, assign(socket, users: users)}
   end
 
@@ -58,7 +64,9 @@ defmodule GymStudioWeb.Admin.UsersLive do
     user = Accounts.get_user!(socket.assigns.confirm_user_id)
     {:ok, _} = Accounts.change_user_role(user, socket.assigns.confirm_role)
 
-    users = filter_users(socket.assigns.search, socket.assigns.role_filter)
+    users =
+      filter_users(socket.assigns.search, socket.assigns.role_filter, socket.assigns.branch_id)
+
     {:noreply, assign(socket, users: users, confirm_action: nil, confirm_user_id: nil)}
   end
 
@@ -66,12 +74,16 @@ defmodule GymStudioWeb.Admin.UsersLive do
     {:noreply, assign(socket, confirm_action: nil, confirm_user_id: nil)}
   end
 
-  defp filter_users("", ""), do: Accounts.list_users()
-  defp filter_users("", role), do: Accounts.list_users(role: String.to_existing_atom(role))
-  defp filter_users(search, ""), do: Accounts.search_users(search)
+  defp filter_users("", "", branch_id), do: Accounts.list_users(branch_id: branch_id)
 
-  defp filter_users(search, role),
-    do: Accounts.search_users(search, role: String.to_existing_atom(role))
+  defp filter_users("", role, branch_id),
+    do: Accounts.list_users(role: String.to_existing_atom(role), branch_id: branch_id)
+
+  defp filter_users(search, "", branch_id),
+    do: Accounts.search_users(search, branch_id: branch_id)
+
+  defp filter_users(search, role, branch_id),
+    do: Accounts.search_users(search, role: String.to_existing_atom(role), branch_id: branch_id)
 
   defp display_name(%{name: name}) when is_binary(name) and name != "", do: name
   defp display_name(%{email: email}) when is_binary(email), do: email

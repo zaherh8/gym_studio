@@ -4,7 +4,7 @@ defmodule GymStudioWeb.Admin.TrainersLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    trainers = Accounts.list_trainers()
+    trainers = Accounts.list_trainers(branch_id: socket.assigns.current_scope.user.branch_id)
     {:ok, assign(socket, page_title: "Manage Trainers", trainers: trainers)}
   end
 

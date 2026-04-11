@@ -25,6 +25,8 @@ defmodule GymStudio.Accounts.User do
     field :confirmed_at, :utc_datetime
     field :authenticated_at, :utc_datetime, virtual: true
 
+    belongs_to :branch, GymStudio.Branches.Branch, type: :integer
+
     timestamps(type: :utc_datetime)
   end
 
@@ -46,13 +48,14 @@ defmodule GymStudio.Accounts.User do
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:name, :email, :phone_number, :role, :password])
-    |> validate_required([:name])
+    |> cast(attrs, [:name, :email, :phone_number, :role, :password, :branch_id])
+    |> validate_required([:name, :branch_id])
     |> validate_length(:name, min: 2, max: 255)
     |> validate_phone_number(opts)
     |> maybe_validate_email(opts)
     |> validate_confirmation(:password, message: "does not match password")
     |> validate_password(opts)
+    |> foreign_key_constraint(:branch_id)
   end
 
   @doc """

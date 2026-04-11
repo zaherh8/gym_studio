@@ -28,9 +28,14 @@ defmodule GymStudioWeb.Trainer.DashboardLive do
 
   defp assign_dashboard_data(socket, trainer) do
     today = Date.utc_today()
+    branch_id = socket.assigns.current_scope.user.branch_id
 
     todays_sessions =
-      Scheduling.list_sessions_for_trainer(trainer.user_id, from_date: today, to_date: today)
+      Scheduling.list_sessions_for_trainer(trainer.user_id,
+        from_date: today,
+        to_date: today,
+        branch_id: branch_id
+      )
 
     pending_sessions = Scheduling.list_pending_sessions_for_trainer(trainer.user_id)
 
@@ -41,7 +46,8 @@ defmodule GymStudioWeb.Trainer.DashboardLive do
     upcoming_sessions =
       Scheduling.list_sessions_for_trainer(trainer.user_id,
         from_date: tomorrow,
-        to_date: week_end
+        to_date: week_end,
+        branch_id: branch_id
       )
       |> Enum.filter(&(&1.status in ["pending", "confirmed"]))
       |> Enum.sort_by(& &1.scheduled_at, DateTime)
