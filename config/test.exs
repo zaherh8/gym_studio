@@ -45,3 +45,6 @@ config :gym_studio, Oban, testing: :inline
 
 # Disable rate limiter in tests to avoid cross-test interference
 config :gym_studio, :rate_limiter_enabled, false
+
+# Force Telnyx mock mode in tests (nil = mock, env var won't leak in)
+config :gym_studio, :telnyx_api_key, nil
