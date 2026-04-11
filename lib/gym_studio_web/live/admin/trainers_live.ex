@@ -57,7 +57,10 @@ defmodule GymStudioWeb.Admin.TrainersLive do
                 </td>
                 <td>
                   <span :if={trainer.user.branch_id} class="badge badge-outline badge-sm">
-                    {branch_name(trainer.user.branch_id, @branches)}
+                    {BranchSelectorComponent.branch_label(
+                      to_string(trainer.user.branch_id),
+                      @branches
+                    )}
                   </span>
                   <span :if={is_nil(trainer.user.branch_id)} class="text-base-content/40 text-sm">
                     —
@@ -83,11 +86,4 @@ defmodule GymStudioWeb.Admin.TrainersLive do
   defp status_badge_class("approved"), do: "badge-success"
   defp status_badge_class("suspended"), do: "badge-error"
   defp status_badge_class(_), do: "badge-ghost"
-
-  defp branch_name(branch_id, branches) do
-    case Enum.find(branches, fn b -> b.id == branch_id end) do
-      nil -> "Unknown"
-      branch -> branch.name
-    end
-  end
 end

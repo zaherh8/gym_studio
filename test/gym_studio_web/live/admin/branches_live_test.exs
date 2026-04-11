@@ -116,7 +116,7 @@ defmodule GymStudioWeb.Admin.BranchesLiveTest do
   end
 
   describe "Toggle branch active status" do
-    test "deactivates an active branch", %{conn: conn} do
+    test "shows confirmation modal when deactivating an active branch", %{conn: conn} do
       branch = branch_fixture(%{name: "Toggle Branch", active: true})
       admin = user_fixture(%{role: :admin, branch_id: branch.id})
 
@@ -130,11 +130,36 @@ defmodule GymStudioWeb.Admin.BranchesLiveTest do
         |> element("button[phx-click='toggle_active'][phx-value-id='#{branch.id}']")
         |> render_click()
 
+      # Should show confirmation modal instead of directly deactivating
+      assert html =~ "Confirm Deactivation"
+      assert html =~ "Deactivate Branch"
+    end
+
+    test "deactivates branch after confirmation", %{conn: conn} do
+      branch = branch_fixture(%{name: "Toggle Branch", active: true})
+      admin = user_fixture(%{role: :admin, branch_id: branch.id})
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(admin)
+        |> live(~p"/admin/branches")
+
+      # First click shows confirmation
+      view
+      |> element("button[phx-click='toggle_active'][phx-value-id='#{branch.id}']")
+      |> render_click()
+
+      # Confirm deactivation
+      html =
+        view
+        |> element("button[phx-click='confirm_deactivate'][phx-value-id='#{branch.id}']")
+        |> render_click()
+
       # After deactivation, the branch should show "Activate" button
       assert html =~ "Activate"
     end
 
-    test "activates an inactive branch", %{conn: conn} do
+    test "activates an inactive branch without confirmation", %{conn: conn} do
       branch = branch_fixture(%{name: "Inactive Branch", active: false})
       other_branch = branch_fixture()
       admin = user_fixture(%{role: :admin, branch_id: other_branch.id})

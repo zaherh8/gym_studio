@@ -4,9 +4,11 @@ defmodule GymStudioWeb.Admin.BranchesLive do
 
   Supports listing, creating, editing, and toggling branch active status.
   """
+
   use GymStudioWeb, :live_view
 
   alias GymStudio.Branches
+  import GymStudioWeb.Helpers.BranchHelpers, only: [day_label: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -15,7 +17,8 @@ defmodule GymStudioWeb.Admin.BranchesLive do
     {:ok,
      assign(socket,
        page_title: "Manage Branches",
-       branches: branches
+       branches: branches,
+       confirm_deactivate_id: nil
      )}
   end
 
@@ -47,18 +50,40 @@ defmodule GymStudioWeb.Admin.BranchesLive do
   def handle_event("toggle_active", %{"id" => id}, socket) do
     branch = Branches.get_branch!(id)
 
+    if branch.active do
+      # Show confirmation modal before deactivating
+      {:noreply, assign(socket, confirm_deactivate_id: id)}
+    else
+      # Reactivating is safe — no confirmation needed
+      socket = do_toggle_active(socket, id)
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("confirm_deactivate", %{"id" => id}, socket) do
+    socket = assign(socket, confirm_deactivate_id: nil)
+    socket = do_toggle_active(socket, id)
+    {:noreply, socket}
+  end
+
+  def handle_event("cancel_deactivate", _params, socket) do
+    {:noreply, assign(socket, confirm_deactivate_id: nil)}
+  end
+
+  defp do_toggle_active(socket, id) do
+    branch = Branches.get_branch!(id)
+
     case Branches.toggle_branch_active(branch) do
       {:ok, _branch} ->
-        {:noreply,
-         socket
-         |> put_flash(
-           :info,
-           "Branch #{if !branch.active, do: "activated", else: "deactivated"} successfully"
-         )
-         |> assign(branches: Branches.list_branches())}
+        socket
+        |> put_flash(
+          :info,
+          "Branch #{if !branch.active, do: "activated", else: "deactivated"} successfully"
+        )
+        |> assign(branches: Branches.list_branches())
 
       {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to update branch status")}
+        put_flash(socket, :error, "Failed to update branch status")
     end
   end
 
@@ -86,6 +111,29 @@ defmodule GymStudioWeb.Admin.BranchesLive do
         <% :index -> %>
           <.branch_index branches={@branches} />
       <% end %>
+
+      <%!-- Deactivation confirmation modal --%>
+      <div :if={@confirm_deactivate_id} class="modal modal-open">
+        <div class="modal-box">
+          <h3 class="font-bold text-lg text-warning">⚠️ Confirm Deactivation</h3>
+          <p class="py-4">
+            Deactivating a branch will prevent new sessions from being booked there. Existing sessions and users will remain assigned.
+          </p>
+          <p class="text-sm text-base-content/60 mb-4">
+            Are you sure you want to deactivate this branch?
+          </p>
+          <div class="modal-action">
+            <button phx-click="cancel_deactivate" class="btn">Cancel</button>
+            <button
+              phx-click="confirm_deactivate"
+              phx-value-id={@confirm_deactivate_id}
+              class="btn btn-warning"
+            >
+              Deactivate Branch
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
     """
   end
@@ -248,13 +296,4 @@ defmodule GymStudioWeb.Admin.BranchesLive do
     day_order = ~w(mon tue wed thu fri sat sun)
     hours |> Enum.sort_by(fn {day, _hours} -> Enum.find_index(day_order, &(&1 == day)) end)
   end
-
-  defp day_label("mon"), do: "Monday"
-  defp day_label("tue"), do: "Tuesday"
-  defp day_label("wed"), do: "Wednesday"
-  defp day_label("thu"), do: "Thursday"
-  defp day_label("fri"), do: "Friday"
-  defp day_label("sat"), do: "Saturday"
-  defp day_label("sun"), do: "Sunday"
-  defp day_label(other), do: other
 end

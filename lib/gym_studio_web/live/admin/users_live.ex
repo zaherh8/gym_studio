@@ -1,8 +1,15 @@
 defmodule GymStudioWeb.Admin.UsersLive do
+  @moduledoc """
+  Admin LiveView for managing users.
+
+  Supports listing, searching, filtering, creating, toggling active status,
+  and changing roles. Branch filtering via BranchSelectorComponent.
+  """
   use GymStudioWeb, :live_view
 
   alias GymStudio.{Accounts, Branches}
   alias GymStudioWeb.Admin.BranchSelectorComponent
+  import GymStudioWeb.Helpers.BranchHelpers, only: [parse_role: 1, safe_string_to_integer: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -20,13 +27,13 @@ defmodule GymStudioWeb.Admin.UsersLive do
        role_filter: "",
        confirm_action: nil,
        confirm_user_id: nil,
-       show_create_user: false
+       show_create_user: false,
+       create_user_changeset: nil
      )}
   end
 
   @impl true
   def handle_params(%{"id" => _id}, _uri, socket) do
-    # Show action handled in render
     {:noreply, socket}
   end
 
@@ -37,10 +44,7 @@ defmodule GymStudioWeb.Admin.UsersLive do
   @impl true
   def handle_event("select_branch", %{"branch_id" => branch_id}, socket) do
     effective_id = BranchSelectorComponent.effective_branch_id(branch_id)
-
-    users =
-      filter_users(socket.assigns.search, socket.assigns.role_filter, effective_id)
-
+    users = filter_users(socket.assigns.search, socket.assigns.role_filter, effective_id)
     {:noreply, assign(socket, selected_branch_id: branch_id, users: users)}
   end
 
@@ -61,7 +65,6 @@ defmodule GymStudioWeb.Admin.UsersLive do
 
     branch_id = BranchSelectorComponent.effective_branch_id(socket.assigns.selected_branch_id)
     users = filter_users(socket.assigns.search, socket.assigns.role_filter, branch_id)
-
     {:noreply, assign(socket, users: users)}
   end
 
@@ -70,7 +73,7 @@ defmodule GymStudioWeb.Admin.UsersLive do
      assign(socket,
        confirm_action: :change_role,
        confirm_user_id: id,
-       confirm_role: String.to_existing_atom(role)
+       confirm_role: parse_role(role)
      )}
   end
 
@@ -80,7 +83,6 @@ defmodule GymStudioWeb.Admin.UsersLive do
 
     branch_id = BranchSelectorComponent.effective_branch_id(socket.assigns.selected_branch_id)
     users = filter_users(socket.assigns.search, socket.assigns.role_filter, branch_id)
-
     {:noreply, assign(socket, users: users, confirm_action: nil, confirm_user_id: nil)}
   end
 
@@ -89,32 +91,41 @@ defmodule GymStudioWeb.Admin.UsersLive do
   end
 
   def handle_event("show_create_user", _params, socket) do
-    {:noreply, assign(socket, show_create_user: true)}
+    changeset = Accounts.change_user_registration(%GymStudio.Accounts.User{})
+    {:noreply, assign(socket, show_create_user: true, create_user_changeset: changeset)}
   end
 
   def handle_event("hide_create_user", _params, socket) do
-    {:noreply, assign(socket, show_create_user: false)}
+    {:noreply, assign(socket, show_create_user: false, create_user_changeset: nil)}
   end
 
-  def handle_event("create_user", params, socket) do
-    role = String.to_existing_atom(params["role"] || "client")
+  def handle_event("validate_create_user", %{"user" => user_params}, socket) do
+    changeset =
+      %GymStudio.Accounts.User{}
+      |> Accounts.User.registration_changeset(user_params, hash_password: false)
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign(socket, create_user_changeset: changeset)}
+  end
+
+  def handle_event("create_user", %{"user" => user_params}, socket) do
+    role = parse_role(user_params["role"])
+    branch_id = safe_string_to_integer(user_params["branch_id"])
 
     attrs = %{
-      name: params["name"],
-      phone_number: params["phone_number"],
-      email: if(params["email"] != "", do: params["email"], else: nil),
-      password: params["password"],
-      password_confirmation: params["password"],
+      name: user_params["name"],
+      phone_number: user_params["phone_number"],
+      email: if(user_params["email"] != "", do: user_params["email"], else: nil),
+      password: user_params["password"],
+      password_confirmation: user_params["password"],
       role: role,
-      branch_id: String.to_integer(params["branch_id"])
+      branch_id: branch_id
     }
 
     case Accounts.register_user(attrs) do
       {:ok, user} ->
-        # Auto-confirm the user
         Accounts.confirm_user(user)
 
-        # Create profile if client or trainer
         case role do
           :client ->
             Accounts.create_client_profile(user)
@@ -129,32 +140,33 @@ defmodule GymStudioWeb.Admin.UsersLive do
             :ok
         end
 
-        branch_id = BranchSelectorComponent.effective_branch_id(socket.assigns.selected_branch_id)
-        users = filter_users(socket.assigns.search, socket.assigns.role_filter, branch_id)
+        effective_branch_id =
+          BranchSelectorComponent.effective_branch_id(socket.assigns.selected_branch_id)
+
+        users =
+          filter_users(socket.assigns.search, socket.assigns.role_filter, effective_branch_id)
 
         {:noreply,
          socket
          |> put_flash(:info, "User created successfully")
-         |> assign(users: users, show_create_user: false)}
+         |> assign(users: users, show_create_user: false, create_user_changeset: nil)}
 
-      {:error, _changeset} ->
-        {:noreply,
-         put_flash(socket, :error, "Failed to create user. Check the form and try again.")}
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, create_user_changeset: changeset)}
     end
   end
 
   defp filter_users("", "", nil), do: Accounts.list_users(branch_id: nil)
-
   defp filter_users("", "", branch_id), do: Accounts.list_users(branch_id: branch_id)
 
   defp filter_users("", role, branch_id),
-    do: Accounts.list_users(role: String.to_existing_atom(role), branch_id: branch_id)
+    do: Accounts.list_users(role: parse_role(role), branch_id: branch_id)
 
   defp filter_users(search, "", branch_id),
     do: Accounts.search_users(search, branch_id: branch_id)
 
   defp filter_users(search, role, branch_id),
-    do: Accounts.search_users(search, role: String.to_existing_atom(role), branch_id: branch_id)
+    do: Accounts.search_users(search, role: parse_role(role), branch_id: branch_id)
 
   defp display_name(%{name: name}) when is_binary(name) and name != "", do: name
   defp display_name(%{email: email}) when is_binary(email), do: email
@@ -197,71 +209,105 @@ defmodule GymStudioWeb.Admin.UsersLive do
 
       <%!-- Create User modal --%>
       <div :if={@show_create_user} class="modal modal-open">
-        <div class="modal-box">
+        <div class="modal-box max-w-lg">
           <h3 class="font-bold text-lg mb-4">Create New User</h3>
-          <form phx-submit="create_user" class="space-y-4">
+          <.form
+            :let={f}
+            for={@create_user_changeset}
+            phx-submit="create_user"
+            phx-change="validate_create_user"
+          >
             <div class="form-control">
               <label class="label"><span class="label-text">Name</span></label>
               <input
                 type="text"
-                name="name"
-                class="input input-bordered"
+                name={Phoenix.HTML.Form.input_name(f, :name)}
+                value={Phoenix.HTML.Form.input_value(f, :name)}
+                class={"input input-bordered #{if has_errors?(f, :name), do: "input-error"}"}
                 required
                 placeholder="Full name"
               />
+              <p :for={msg <- get_field_errors(f, :name)} class="mt-1 text-sm text-error">
+                {msg}
+              </p>
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text">Phone Number</span></label>
               <input
                 type="tel"
-                name="phone_number"
-                class="input input-bordered"
+                name={Phoenix.HTML.Form.input_name(f, :phone_number)}
+                value={Phoenix.HTML.Form.input_value(f, :phone_number)}
+                class={"input input-bordered #{if has_errors?(f, :phone_number), do: "input-error"}"}
                 required
                 placeholder="+961..."
               />
+              <p :for={msg <- get_field_errors(f, :phone_number)} class="mt-1 text-sm text-error">
+                {msg}
+              </p>
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text">Email (optional)</span></label>
               <input
                 type="email"
-                name="email"
-                class="input input-bordered"
+                name={Phoenix.HTML.Form.input_name(f, :email)}
+                value={Phoenix.HTML.Form.input_value(f, :email)}
+                class={"input input-bordered #{if has_errors?(f, :email), do: "input-error"}"}
                 placeholder="user@example.com"
               />
+              <p :for={msg <- get_field_errors(f, :email)} class="mt-1 text-sm text-error">
+                {msg}
+              </p>
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text">Role</span></label>
-              <select name="role" class="select select-bordered" required>
+              <select
+                name={Phoenix.HTML.Form.input_name(f, :role)}
+                class="select select-bordered"
+                required
+              >
                 <option value="client">Client</option>
                 <option value="trainer">Trainer</option>
                 <option value="admin">Admin</option>
               </select>
+              <p :for={msg <- get_field_errors(f, :role)} class="mt-1 text-sm text-error">
+                {msg}
+              </p>
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text">Branch</span></label>
-              <select name="branch_id" class="select select-bordered" required>
+              <select
+                name={Phoenix.HTML.Form.input_name(f, :branch_id)}
+                class="select select-bordered"
+                required
+              >
                 <option value="">Select Branch</option>
                 <%= for branch <- @branches do %>
                   <option value={branch.id}>{branch.name}</option>
                 <% end %>
               </select>
+              <p :for={msg <- get_field_errors(f, :branch_id)} class="mt-1 text-sm text-error">
+                {msg}
+              </p>
             </div>
             <div class="form-control">
               <label class="label"><span class="label-text">Password</span></label>
               <input
                 type="password"
-                name="password"
-                class="input input-bordered"
+                name={Phoenix.HTML.Form.input_name(f, :password)}
+                class={"input input-bordered #{if has_errors?(f, :password), do: "input-error"}"}
                 required
                 minlength="8"
-                placeholder="Min 8 characters"
+                placeholder="Min 12 characters"
               />
+              <p :for={msg <- get_field_errors(f, :password)} class="mt-1 text-sm text-error">
+                {msg}
+              </p>
             </div>
             <div class="modal-action">
               <button type="button" phx-click="hide_create_user" class="btn">Cancel</button>
               <button type="submit" class="btn btn-primary">Create User</button>
             </div>
-          </form>
+          </.form>
         </div>
       </div>
 
@@ -305,7 +351,7 @@ defmodule GymStudioWeb.Admin.UsersLive do
               </td>
               <td>
                 <span :if={user.branch_id} class="badge badge-outline badge-sm">
-                  {branch_name(user.branch_id, @branches)}
+                  {BranchSelectorComponent.branch_label(to_string(user.branch_id), @branches)}
                 </span>
                 <span :if={is_nil(user.branch_id)} class="text-base-content/40 text-sm">—</span>
               </td>
@@ -361,10 +407,15 @@ defmodule GymStudioWeb.Admin.UsersLive do
   defp role_badge_class(:client), do: "badge-primary"
   defp role_badge_class(_), do: "badge-ghost"
 
-  defp branch_name(branch_id, branches) do
-    case Enum.find(branches, fn b -> b.id == branch_id end) do
-      nil -> "Unknown"
-      branch -> branch.name
-    end
+  defp get_field_errors(form, field) do
+    form.source.errors
+    |> Enum.filter(fn {f, _} -> f == field end)
+    |> Enum.map(fn {_f, {msg, opts}} ->
+      String.replace(msg, "%{count}", to_string(opts[:count] || ""))
+    end)
+  end
+
+  defp has_errors?(form, field) do
+    get_field_errors(form, field) != []
   end
 end

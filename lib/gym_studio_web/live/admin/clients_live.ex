@@ -57,7 +57,7 @@ defmodule GymStudioWeb.Admin.ClientsLive do
                 <td>{client.user.phone_number}</td>
                 <td>
                   <span :if={client.user.branch_id} class="badge badge-outline badge-sm">
-                    {branch_name(client.user.branch_id, @branches)}
+                    {BranchSelectorComponent.branch_label(to_string(client.user.branch_id), @branches)}
                   </span>
                   <span :if={is_nil(client.user.branch_id)} class="text-base-content/40 text-sm">
                     —
@@ -77,12 +77,5 @@ defmodule GymStudioWeb.Admin.ClientsLive do
       <p :if={@clients == []} class="text-base-content/60 text-center py-8">No clients found.</p>
     </div>
     """
-  end
-
-  defp branch_name(branch_id, branches) do
-    case Enum.find(branches, fn b -> b.id == branch_id end) do
-      nil -> "Unknown"
-      branch -> branch.name
-    end
   end
 end

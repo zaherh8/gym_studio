@@ -7,6 +7,7 @@ defmodule GymStudioWeb.Admin.BranchFormComponent do
   use GymStudioWeb, :live_component
 
   import Phoenix.Component
+  import GymStudioWeb.Helpers.BranchHelpers, only: [day_label: 1]
   alias GymStudio.Branches
 
   @impl true
@@ -83,7 +84,9 @@ defmodule GymStudioWeb.Admin.BranchFormComponent do
 
         <div class="fieldset">
           <label class="label"><span class="label-text">Operating Hours</span></label>
-          <p class="text-sm text-base-content/60 mb-2">Leave blank for days the branch is closed.</p>
+          <p class="text-sm text-base-content/60 mb-2">
+            Format: HH:MM-HH:MM (e.g. 06:00-22:00). Leave blank for days the branch is closed.
+          </p>
           <div class="space-y-2">
             <div :for={day <- ~w(mon tue wed thu fri sat sun)} class="flex items-center gap-3">
               <span class="w-20 text-sm text-base-content/60">{day_label(day)}</span>
@@ -96,6 +99,9 @@ defmodule GymStudioWeb.Admin.BranchFormComponent do
               />
             </div>
           </div>
+          <p :for={msg <- get_operating_hours_errors(@form)} class="mt-1 text-sm text-error">
+            {msg}
+          </p>
         </div>
 
         <.input field={@form[:active]} type="checkbox" label="Active" />
@@ -188,12 +194,11 @@ defmodule GymStudioWeb.Admin.BranchFormComponent do
     end
   end
 
-  defp day_label("mon"), do: "Monday"
-  defp day_label("tue"), do: "Tuesday"
-  defp day_label("wed"), do: "Wednesday"
-  defp day_label("thu"), do: "Thursday"
-  defp day_label("fri"), do: "Friday"
-  defp day_label("sat"), do: "Saturday"
-  defp day_label("sun"), do: "Sunday"
-  defp day_label(other), do: other
+  defp get_operating_hours_errors(form) do
+    errors = form[:operating_hours].errors || []
+
+    for {msg, _opts} <- errors do
+      msg
+    end
+  end
 end

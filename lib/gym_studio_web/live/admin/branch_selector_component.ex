@@ -3,7 +3,8 @@ defmodule GymStudioWeb.Admin.BranchSelectorComponent do
   Branch selector component for admin pages.
 
   Renders a dropdown/tabs to filter admin views by branch.
-  Persists the selected branch in the LiveView session.
+  The selected branch is stored in the LiveView's assigns (not persisted
+  across page navigations or in the session).
   """
   use Phoenix.Component
 
@@ -40,9 +41,17 @@ defmodule GymStudioWeb.Admin.BranchSelectorComponent do
   @doc """
   Gets the effective branch_id for queries.
   Returns `nil` for "all branches" (unfiltered), or the integer branch_id.
+  Returns `nil` for invalid/empty strings.
   """
   def effective_branch_id("all"), do: nil
-  def effective_branch_id(branch_id) when is_binary(branch_id), do: String.to_integer(branch_id)
+
+  def effective_branch_id(branch_id) when is_binary(branch_id) do
+    case Integer.parse(branch_id) do
+      {int, ""} -> int
+      _ -> nil
+    end
+  end
+
   def effective_branch_id(branch_id) when is_integer(branch_id), do: branch_id
   def effective_branch_id(nil), do: nil
 

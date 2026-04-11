@@ -39,18 +39,23 @@ defmodule GymStudioWeb.Admin.AnalyticsLive do
 
     total_sessions = status_counts |> Map.values() |> Enum.sum()
 
-    # Pre-compute per-branch stats when showing all branches
+    # Pre-compute per-branch stats using batch queries (not N+1)
     per_branch_stats =
       if is_nil(branch_id) do
-        socket.assigns.branches
-        |> Enum.map(fn b ->
-          {b.id,
+        branch_ids = Enum.map(socket.assigns.branches, & &1.id)
+
+        sessions_by_branch =
+          Scheduling.count_sessions_this_week_by_branch(branch_ids: branch_ids)
+
+        clients_by_branch = Accounts.count_clients_by_branch(branch_ids: branch_ids)
+
+        Map.new(branch_ids, fn bid ->
+          {bid,
            %{
-             sessions_this_week: Scheduling.count_all_sessions_this_week(branch_id: b.id),
-             client_count: Map.get(Accounts.count_users_by_role(branch_id: b.id), :client, 0)
+             sessions_this_week: Map.get(sessions_by_branch, bid, 0),
+             client_count: Map.get(clients_by_branch, bid, 0)
            }}
         end)
-        |> Map.new()
       else
         %{}
       end

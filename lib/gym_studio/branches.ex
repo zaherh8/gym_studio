@@ -192,7 +192,13 @@ defmodule GymStudio.Branches do
   end
 
   @doc """
-  Toggles a branch's active status.
+  Toggles a branch's active status atomically.
+
+  Uses `update_all` to avoid the read-then-write race condition that occurs
+  when loading the branch into Elixir memory before toggling.
+
+  Returns `{:ok, %Branch{}}` on success or `{:error, :not_found}` if the
+  branch no longer exists.
 
   ## Examples
 
@@ -200,9 +206,17 @@ defmodule GymStudio.Branches do
       {:ok, %Branch{}}
   """
   def toggle_branch_active(%Branch{} = branch) do
-    branch
-    |> Branch.update_changeset(%{active: !branch.active})
-    |> Repo.update()
+    new_active = !branch.active
+
+    from(b in Branch, where: b.id == ^branch.id, update: [set: [active: ^new_active]])
+    |> Repo.update_all([])
+    |> case do
+      {1, _} ->
+        {:ok, Repo.get!(Branch, branch.id)}
+
+      {0, _} ->
+        {:error, :not_found}
+    end
   end
 
   @doc """
