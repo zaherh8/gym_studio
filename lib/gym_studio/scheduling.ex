@@ -464,7 +464,7 @@ defmodule GymStudio.Scheduling do
 
     query =
       if opts[:branch_id] do
-        where(query, [_s, c], c.branch_id == ^opts[:branch_id])
+        where(query, [s, _c], s.branch_id == ^opts[:branch_id])
       else
         query
       end
