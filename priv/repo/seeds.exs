@@ -92,7 +92,8 @@ admin =
     email: "admin@reactgym.com",
     password: "password123456",
     password_confirmation: "password123456",
-    role: :admin
+    role: :admin,
+    branch_id: 1
   })
 
 IO.puts("  Admin created: #{admin.phone_number}")
@@ -109,7 +110,8 @@ trainer1_user =
     email: "john.trainer@reactgym.com",
     password: "password123456",
     password_confirmation: "password123456",
-    role: :trainer
+    role: :trainer,
+    branch_id: 1
   })
 
 trainer1 =
@@ -133,7 +135,8 @@ trainer2_user =
     email: "sarah.trainer@reactgym.com",
     password: "password123456",
     password_confirmation: "password123456",
-    role: :trainer
+    role: :trainer,
+    branch_id: 1
   })
 
 trainer2 =
@@ -157,7 +160,8 @@ trainer3_user =
     email: "mike.trainer@reactgym.com",
     password: "password123456",
     password_confirmation: "password123456",
-    role: :trainer
+    role: :trainer,
+    branch_id: 1
   })
 
 trainer3 =
@@ -183,7 +187,8 @@ client1_user =
     email: "alice@example.com",
     password: "password123456",
     password_confirmation: "password123456",
-    role: :client
+    role: :client,
+    branch_id: 1
   })
 
 client1 =
@@ -205,7 +210,8 @@ client2_user =
     email: "bob@example.com",
     password: "password123456",
     password_confirmation: "password123456",
-    role: :client
+    role: :client,
+    branch_id: 1
   })
 
 client2 =
@@ -227,7 +233,8 @@ client3_user =
     email: "carol@example.com",
     password: "password123456",
     password_confirmation: "password123456",
-    role: :client
+    role: :client,
+    branch_id: 1
   })
 
 client3 =
@@ -254,6 +261,7 @@ package1 =
     client_id: client1_user.id,
     assigned_by_id: admin.id,
     package_type: "standard_12",
+    branch_id: 1,
     expires_at: DateTime.utc_now() |> DateTime.add(60, :day)
   })
   |> Repo.insert!()
@@ -273,6 +281,7 @@ package2 =
     client_id: client2_user.id,
     assigned_by_id: admin.id,
     package_type: "premium_20",
+    branch_id: 1,
     expires_at: DateTime.utc_now() |> DateTime.add(90, :day)
   })
   |> Repo.insert!()
@@ -292,6 +301,7 @@ _package3 =
     client_id: client3_user.id,
     assigned_by_id: admin.id,
     package_type: "standard_8",
+    branch_id: 1,
     expires_at: DateTime.utc_now() |> DateTime.add(-30, :day),
     active: false
   })
@@ -311,6 +321,7 @@ package4 =
     client_id: client3_user.id,
     assigned_by_id: admin.id,
     package_type: "standard_12",
+    branch_id: 1,
     expires_at: DateTime.utc_now() |> DateTime.add(90, :day)
   })
   |> Repo.insert!()
@@ -386,6 +397,7 @@ _session1 =
     scheduled_at: DateTime.utc_now() |> DateTime.add(-7, :day) |> DateTime.truncate(:second),
     duration_minutes: 60,
     status: "completed",
+    branch_id: 1,
     trainer_notes: "Great progress on deadlifts. Increased weight by 10lbs.",
     approved_by_id: admin.id,
     approved_at: DateTime.utc_now() |> DateTime.add(-8, :day) |> DateTime.truncate(:second)
@@ -404,6 +416,7 @@ _session2 =
     scheduled_at: tomorrow,
     duration_minutes: 60,
     status: "confirmed",
+    branch_id: 1,
     approved_by_id: admin.id,
     approved_at: DateTime.utc_now() |> DateTime.truncate(:second)
   })
@@ -419,7 +432,9 @@ _session3 =
     package_id: package2.id,
     scheduled_at: in_3_days,
     duration_minutes: 60,
-    status: "pending"
+    status: "pending",
+    branch_id: 1,
+    branch_id: 1
   })
 
 IO.puts("  Session 3: Bob (pending - in 3 days)")
@@ -435,6 +450,7 @@ _session4 =
     scheduled_at: next_week,
     duration_minutes: 60,
     status: "confirmed",
+    branch_id: 1,
     approved_by_id: admin.id,
     approved_at: DateTime.utc_now() |> DateTime.truncate(:second)
   })
@@ -450,7 +466,9 @@ _session5 =
     package_id: package4.id,
     scheduled_at: in_2_days,
     duration_minutes: 60,
-    status: "pending"
+    status: "pending",
+    branch_id: 1,
+    branch_id: 1
   })
 
 IO.puts("  Session 5: Carol (pending - in 2 days)")
@@ -471,6 +489,7 @@ for trainer_user <- [trainer1_user, trainer2_user] do
       day_of_week: day,
       start_time: ~T[07:00:00],
       end_time: ~T[22:00:00],
+      branch_id: 1,
       active: true
     })
   end
@@ -481,6 +500,7 @@ for trainer_user <- [trainer1_user, trainer2_user] do
     day_of_week: 6,
     start_time: ~T[08:00:00],
     end_time: ~T[13:00:00],
+    branch_id: 1,
     active: true
   })
 
