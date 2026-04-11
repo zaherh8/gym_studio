@@ -23,15 +23,22 @@ defmodule GymStudio.Repo.Migrations.AddBranchIdToTables do
       add :branch_id, references(:branches, on_delete: :restrict), null: true
     end
 
-    # 2. Backfill all existing records to Branch 1 (Sin El Fil)
-    # Using execute to run raw SQL for backfill
-    execute "UPDATE users SET branch_id = 1 WHERE branch_id IS NULL"
-    execute "UPDATE session_packages SET branch_id = 1 WHERE branch_id IS NULL"
-    execute "UPDATE training_sessions SET branch_id = 1 WHERE branch_id IS NULL"
-    execute "UPDATE trainer_availabilities SET branch_id = 1 WHERE branch_id IS NULL"
-    execute "UPDATE trainer_time_offs SET branch_id = 1 WHERE branch_id IS NULL"
+    # 2. Ensure the default branch exists (seeds run AFTER migrations, so we must create it here)
+    execute """
+    INSERT INTO branches (name, slug, address, capacity, phone, active, inserted_at, updated_at)
+    VALUES ('React — Sin El Fil', 'sin-el-fil', 'Plot 274, Sin El Fil', 4, '+961 1 234 567', true, now(), now())
+    ON CONFLICT (slug) DO NOTHING
+    """
 
-    # 3. Make branch_id NOT NULL
+    # 3. Backfill all existing records to the default branch
+    # Use subquery instead of hardcoding ID 1 (production may have different IDs)
+    execute "UPDATE users SET branch_id = (SELECT id FROM branches WHERE slug = 'sin-el-fil') WHERE branch_id IS NULL"
+    execute "UPDATE session_packages SET branch_id = (SELECT id FROM branches WHERE slug = 'sin-el-fil') WHERE branch_id IS NULL"
+    execute "UPDATE training_sessions SET branch_id = (SELECT id FROM branches WHERE slug = 'sin-el-fil') WHERE branch_id IS NULL"
+    execute "UPDATE trainer_availabilities SET branch_id = (SELECT id FROM branches WHERE slug = 'sin-el-fil') WHERE branch_id IS NULL"
+    execute "UPDATE trainer_time_offs SET branch_id = (SELECT id FROM branches WHERE slug = 'sin-el-fil') WHERE branch_id IS NULL"
+
+    # 4. Make branch_id NOT NULL
     alter table(:users) do
       modify :branch_id, :bigint, null: false
     end
