@@ -117,6 +117,7 @@ defmodule GymStudioWeb.RegistrationLiveTest do
       _branch = GymStudio.BranchesFixtures.branch_fixture()
       :ok
     end
+
     test "completes registration with valid data", %{conn: conn} do
       phone =
         "71#{System.unique_integer([:positive]) |> rem(10_000_000) |> Integer.to_string() |> String.pad_leading(7, "0")}"
