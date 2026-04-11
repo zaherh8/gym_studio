@@ -103,7 +103,7 @@ defmodule GymStudio.Branches do
   """
   def update_branch(%Branch{} = branch, attrs) do
     branch
-    |> Branch.changeset(attrs)
+    |> Branch.update_changeset(attrs)
     |> Repo.update()
   end
 

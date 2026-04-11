@@ -23,7 +23,9 @@ defmodule GymStudio.Branches.Branch do
   end
 
   @doc """
-  Changeset for creating and updating branches.
+  Changeset for creating branches.
+
+  Slug is immutable once set — use `update_changeset/2` for updates.
   """
   def changeset(branch, attrs) do
     branch
@@ -44,5 +46,26 @@ defmodule GymStudio.Branches.Branch do
     )
     |> validate_number(:capacity, greater_than: 0)
     |> unique_constraint(:slug)
+  end
+
+  @doc """
+  Changeset for updating branches.
+
+  Slug is excluded — it cannot be changed after creation.
+  """
+  def update_changeset(branch, attrs) do
+    branch
+    |> cast(attrs, [
+      :name,
+      :address,
+      :capacity,
+      :phone,
+      :latitude,
+      :longitude,
+      :operating_hours,
+      :active
+    ])
+    |> validate_required([:name, :capacity])
+    |> validate_number(:capacity, greater_than: 0)
   end
 end

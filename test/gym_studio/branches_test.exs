@@ -164,12 +164,13 @@ defmodule GymStudio.BranchesTest do
       assert "must be greater than 0" in errors_on(changeset).capacity
     end
 
-    test "returns error when updating slug to existing one" do
+    test "ignores slug changes — slug is immutable after creation" do
       {:ok, _b1} = create_branch_fixture(%{name: "Branch A", slug: "slug-a"})
       {:ok, b2} = create_branch_fixture(%{name: "Branch B", slug: "slug-b"})
 
-      assert {:error, changeset} = Branches.update_branch(b2, %{slug: "slug-a"})
-      assert "has already been taken" in errors_on(changeset).slug
+      # Attempting to update slug is silently ignored
+      assert {:ok, updated} = Branches.update_branch(b2, %{slug: "slug-a"})
+      assert updated.slug == "slug-b"
     end
   end
 
