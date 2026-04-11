@@ -103,5 +103,15 @@ defmodule GymStudioWeb.PageHTMLTest do
       hours = %{"mon" => "14:00-20:00"}
       assert PageHTML.format_operating_hours(hours) == ["Mon: 2:00 PM - 8:00 PM"]
     end
+
+    test "handles malformed time input gracefully" do
+      hours = %{"mon" => "abc:00-22:00"}
+      assert PageHTML.format_operating_hours(hours) == ["Mon: abc:00 - 10:00 PM"]
+    end
+
+    test "handles out-of-range hour gracefully" do
+      hours = %{"mon" => "25:00-22:00"}
+      assert PageHTML.format_operating_hours(hours) == ["Mon: 25:00 - 10:00 PM"]
+    end
   end
 end

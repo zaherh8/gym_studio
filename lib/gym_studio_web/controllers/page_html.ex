@@ -83,13 +83,17 @@ defmodule GymStudioWeb.PageHTML do
   defp format_time(time_str) when is_binary(time_str) do
     case String.split(time_str, ":") do
       [h, m] ->
-        {hour, ""} = Integer.parse(h)
+        case Integer.parse(h) do
+          {hour, ""} when hour >= 0 and hour <= 23 ->
+            cond do
+              hour == 0 -> "12:#{m} AM"
+              hour < 12 -> "#{hour}:#{m} AM"
+              hour == 12 -> "12:#{m} PM"
+              true -> "#{hour - 12}:#{m} PM"
+            end
 
-        cond do
-          hour == 0 -> "12:#{m} AM"
-          hour < 12 -> "#{hour}:#{m} AM"
-          hour == 12 -> "12:#{m} PM"
-          true -> "#{hour - 12}:#{m} PM"
+          _ ->
+            time_str
         end
 
       _ ->
