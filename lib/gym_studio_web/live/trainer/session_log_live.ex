@@ -13,6 +13,12 @@ defmodule GymStudioWeb.Trainer.SessionLogLive do
         {:ok,
          socket |> put_flash(:error, "Not authorized") |> redirect(to: ~p"/trainer/sessions")}
 
+      session.branch_id != user.branch_id ->
+        {:ok,
+         socket
+         |> put_flash(:error, "This session belongs to a different branch")
+         |> redirect(to: ~p"/trainer/sessions")}
+
       session.status not in ["confirmed", "completed"] ->
         {:ok,
          socket

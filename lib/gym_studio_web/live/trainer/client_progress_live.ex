@@ -12,7 +12,7 @@ defmodule GymStudioWeb.Trainer.ClientProgressLive do
   def mount(%{"client_id" => client_id}, _session, socket) do
     trainer = socket.assigns.current_scope.user
 
-    if Scheduling.trainer_has_client?(trainer.id, client_id) do
+    if Scheduling.trainer_has_client?(trainer.id, client_id, branch_id: trainer.branch_id) do
       client = Accounts.get_user!(client_id)
       categories = Progress.list_categories()
       exercises = Progress.list_client_exercises(client_id)

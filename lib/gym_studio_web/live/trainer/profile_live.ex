@@ -1,6 +1,6 @@
 defmodule GymStudioWeb.Trainer.ProfileLive do
   use GymStudioWeb, :live_view
-  alias GymStudio.Accounts
+  alias GymStudio.{Accounts, Branches}
 
   @impl true
   def mount(_params, _session, socket) do
@@ -12,6 +12,7 @@ defmodule GymStudioWeb.Trainer.ProfileLive do
       |> assign(page_title: "My Profile")
       |> assign(trainer: trainer)
       |> assign(user: user)
+      |> assign(branch: Branches.get_branch!(user.branch_id))
 
     {:ok, socket}
   end
@@ -28,6 +29,12 @@ defmodule GymStudioWeb.Trainer.ProfileLive do
           <div class="card-body">
             <h2 class="card-title">Account Information</h2>
             <div class="space-y-4">
+              <div>
+                <label class="text-sm text-base-content/70">My Branch</label>
+                <p class="font-medium flex items-center gap-2">
+                  <span class="badge badge-primary badge-lg">{@branch.name}</span>
+                </p>
+              </div>
               <div>
                 <label class="text-sm text-base-content/70">Email</label>
                 <p class="font-medium">{@user.email}</p>

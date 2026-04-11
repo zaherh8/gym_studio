@@ -13,6 +13,7 @@ defmodule GymStudioWeb.RegistrationLive do
 
   alias GymStudio.Accounts
   alias GymStudio.Accounts.User
+  alias GymStudio.Branches
   alias GymStudio.PhoneUtils
   alias GymStudio.RateLimiter
 
@@ -20,6 +21,7 @@ defmodule GymStudioWeb.RegistrationLive do
 
   def mount(_params, _session, socket) do
     client_ip = get_client_ip(socket)
+    active_branches = Branches.list_branches(active: true)
 
     {:ok,
      socket
@@ -33,6 +35,7 @@ defmodule GymStudioWeb.RegistrationLive do
      |> assign(:otp_error, nil)
      |> assign(:phone_error, nil)
      |> assign(:client_ip, client_ip)
+     |> assign(:active_branches, active_branches)
      |> assign(
        :form,
        to_form(%{"name" => "", "password" => "", "password_confirmation" => "", "email" => ""},
@@ -81,7 +84,11 @@ defmodule GymStudioWeb.RegistrationLive do
             resend_countdown={@resend_countdown}
           />
         <% :password -> %>
-          <.password_step form={@form} check_errors={@check_errors} />
+          <.password_step
+            form={@form}
+            check_errors={@check_errors}
+            active_branches={@active_branches}
+          />
       <% end %>
 
       <p class="text-center text-sm mt-8">
@@ -204,6 +211,7 @@ defmodule GymStudioWeb.RegistrationLive do
   # Password Step Component
   attr :form, :any, required: true
   attr :check_errors, :boolean, required: true
+  attr :active_branches, :list, required: true
 
   defp password_step(assigns) do
     ~H"""
@@ -220,6 +228,16 @@ defmodule GymStudioWeb.RegistrationLive do
         placeholder="Enter your full name"
         required
       />
+
+      <div class="fieldset">
+        <label class="label mb-1">Select Branch</label>
+        <select name="user[branch_id]" class="select select-bordered w-full" required>
+          <option value="" disabled selected>Choose your branch</option>
+          <%= for branch <- @active_branches do %>
+            <option value={branch.id}>{branch.name}</option>
+          <% end %>
+        </select>
+      </div>
 
       <.input
         field={@form[:password]}
@@ -392,9 +410,9 @@ defmodule GymStudioWeb.RegistrationLive do
       user_params
       |> Map.put("phone_number", socket.assigns.phone_number)
 
-    # Default to first active branch if not specified
+    # Ensure branch_id is set — client selects from dropdown, fallback to default
     user_params =
-      if Map.has_key?(user_params, "branch_id") do
+      if Map.has_key?(user_params, "branch_id") && user_params["branch_id"] != "" do
         user_params
       else
         case GymStudio.Branches.get_default_branch() do
