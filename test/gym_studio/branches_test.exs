@@ -116,8 +116,8 @@ defmodule GymStudio.BranchesTest do
 
   describe "get_branch_by_slug/1" do
     test "returns the branch with given slug" do
-      branch = branch_fixture(%{slug: "sin-el-fil"})
-      assert Branches.get_branch_by_slug("sin-el-fil").id == branch.id
+      branch = branch_fixture(%{slug: "test-branch-slug"})
+      assert Branches.get_branch_by_slug("test-branch-slug").id == branch.id
     end
 
     test "returns nil for non-existent slug" do
