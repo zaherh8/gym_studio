@@ -8,6 +8,9 @@ Lessons learned from code reviews. Read this before every task.
 - **Form-based saves > auto-save.** Users need explicit Save buttons with visual feedback (flash messages).
 - Use `phx-change` on forms for live search/filter. Use `phx-submit` for saves.
 - `phx-debounce="300"` on search inputs to avoid excessive server calls.
+- **LiveComponent forms with `phx-target={@myself}`** submit params under the form's `as` key (e.g., `"branch"`). Handle events with `%{"branch" => params}` pattern.
+- **`input_value/2` is NOT available in LiveComponents by default.** Use `Phoenix.HTML.Form.input_value/2` instead.
+- **CoreComponents `<.input>` does NOT support arbitrary attrs like `hint`.** Only use documented attributes.
 
 ## Ecto / Database
 
@@ -15,6 +18,7 @@ Lessons learned from code reviews. Read this before every task.
 - `training_sessions.client_id` references `users.id`, NOT `clients.id`.
 - Always add indexes on foreign key columns in migrations.
 - Use `Repo.transaction` for multi-step operations (e.g., reorder).
+- **Date vs DateTime in queries:** When comparing against `:utc_datetime` columns, use `DateTime`, not `Date`. Use `DateTime.new!/3` to convert.
 
 ## Authorization
 
@@ -30,6 +34,7 @@ Lessons learned from code reviews. Read this before every task.
 - **N+1 pattern to avoid:** Never `Enum.map` over results to fire individual queries. Use window functions (`ROW_NUMBER() OVER (PARTITION BY ...)`) or lateral joins to batch. When multiple entities need the same data, use `where(field in ^ids)` + `Enum.group_by` in Elixir.
 - **Batch query pattern:** Fetch all records with `where([x], x.foreign_key in ^ids)`, then `Enum.group_by(&1.foreign_key)` to build a lookup map. Avoids N+1 while keeping logic simple.
 - **Always filter in SQL, not Elixir.** Push WHERE clauses into the query — don't fetch all rows then `Enum.filter` in memory. This is especially bad when combined with N+1 (queries run for rows that get discarded).
+- **Never call context functions from templates.** Pre-compute all data in mount/handle_event and pass as assigns. Template-side context calls cause N+1.
 
 ## Security
 
@@ -38,6 +43,12 @@ Lessons learned from code reviews. Read this before every task.
 ## Concurrency / Race Conditions
 
 - **Never read-then-write in Ecto for counters.** Reading a value into Elixir memory then updating creates race conditions under concurrent requests. Use atomic SQL: `update_all` with `set: [col: p.col + 1]` and a WHERE guard, or `lock("FOR UPDATE")` inside a transaction.
+
+## Branch Filtering Pattern
+
+- All context functions that accept `branch_id: nil` should return unfiltered results (all branches).
+- The `BranchSelectorComponent.effective_branch_id/1` helper converts `"all"` to `nil` for query filtering.
+- Branch selector is a reusable function component — use `BranchSelectorComponent.branch_selector/1` in any admin LiveView.
 - **Dead code from defensive clamping:** If you `max(value, 0)` before `validate_number >= 0`, the validation is dead code. Pick one approach: clamp OR validate, not both.
 - **Always test boundary conditions:** exhausted packages, zero balances, max capacity — don't just test the happy path.
 
