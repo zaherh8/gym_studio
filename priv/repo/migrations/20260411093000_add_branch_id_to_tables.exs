@@ -58,9 +58,19 @@ defmodule GymStudio.Repo.Migrations.AddBranchIdToTables do
     create index(:training_sessions, [:branch_id])
     create index(:trainer_availabilities, [:branch_id])
     create index(:trainer_time_offs, [:branch_id])
+
+    # 5. Composite indexes for common query patterns
+    create index(:training_sessions, [:branch_id, :status])
+    create index(:training_sessions, [:branch_id, :trainer_id])
+    create index(:session_packages, [:branch_id, :active])
+    create index(:trainer_availabilities, [:branch_id, :trainer_id])
   end
 
   def down do
+    drop index(:trainer_availabilities, [:branch_id, :trainer_id])
+    drop index(:session_packages, [:branch_id, :active])
+    drop index(:training_sessions, [:branch_id, :trainer_id])
+    drop index(:training_sessions, [:branch_id, :status])
     drop index(:trainer_time_offs, [:branch_id])
     drop index(:trainer_availabilities, [:branch_id])
     drop index(:training_sessions, [:branch_id])

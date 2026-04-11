@@ -9,6 +9,8 @@ defmodule GymStudioWeb.RegistrationLive do
   """
   use GymStudioWeb, :live_view
 
+  require Logger
+
   alias GymStudio.Accounts
   alias GymStudio.Accounts.User
   alias GymStudio.PhoneUtils
@@ -395,8 +397,14 @@ defmodule GymStudioWeb.RegistrationLive do
       if Map.has_key?(user_params, "branch_id") do
         user_params
       else
-        default_branch = GymStudio.Branches.get_default_branch()
-        Map.put(user_params, "branch_id", default_branch && default_branch.id)
+        case GymStudio.Branches.get_default_branch() do
+          nil ->
+            Logger.warning("No active branch found during registration; branch_id will be nil")
+            user_params
+
+          default_branch ->
+            Map.put(user_params, "branch_id", default_branch.id)
+        end
       end
 
     case Accounts.register_user(user_params) do

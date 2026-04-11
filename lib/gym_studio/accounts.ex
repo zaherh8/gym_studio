@@ -88,10 +88,10 @@ defmodule GymStudio.Accounts do
 
   ## Examples
 
-      iex> get_user(123)
+      iex> get_user("01HXYZ123ABC")
       %User{}
 
-      iex> get_user(456)
+      iex> get_user("nonexistent")
       nil
 
   """
@@ -104,10 +104,10 @@ defmodule GymStudio.Accounts do
 
   ## Examples
 
-      iex> get_user!(123)
+      iex> get_user!("01HXYZ123ABC")
       %User{}
 
-      iex> get_user!(456)
+      iex> get_user!("nonexistent")
       ** (Ecto.NoResultsError)
 
   """

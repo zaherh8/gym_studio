@@ -39,6 +39,7 @@ defmodule GymStudio.Packages do
   """
 
   import Ecto.Query, warn: false
+  require Logger
   alias GymStudio.Repo
   alias GymStudio.Packages.SessionPackage
 
@@ -89,7 +90,12 @@ defmodule GymStudio.Packages do
           %GymStudio.Accounts.User{branch_id: bid} when not is_nil(bid) ->
             Map.put(attrs, :branch_id, bid)
 
-          _ ->
+          %GymStudio.Accounts.User{} ->
+            Logger.warning("Auto-fill branch_id: client #{attrs[:client_id]} has nil branch_id")
+            attrs
+
+          nil ->
+            Logger.warning("Auto-fill branch_id: client #{attrs[:client_id]} not found")
             attrs
         end
       else

@@ -154,7 +154,7 @@ defmodule GymStudioWeb.Admin.CalendarLive do
         do: Map.put(attrs, :status, "confirmed"),
         else: attrs
 
-    case Scheduling.admin_update_session(session, attrs) do
+    case Scheduling.admin_update_session(session, attrs, branch_id: socket.assigns.branch_id) do
       {:ok, _} ->
         socket =
           socket

@@ -37,7 +37,12 @@ defmodule GymStudioWeb.Admin.SessionsLive do
 
   def handle_event("set_status", %{"id" => id, "status" => new_status}, socket) do
     session = Scheduling.get_session!(id)
-    {:ok, _} = Scheduling.admin_update_session(session, %{status: new_status})
+
+    {:ok, _} =
+      Scheduling.admin_update_session(session, %{status: new_status},
+        branch_id: socket.assigns.branch_id
+      )
+
     {:noreply, reload_sessions(socket)}
   end
 
@@ -50,7 +55,9 @@ defmodule GymStudioWeb.Admin.SessionsLive do
         do: Map.put(attrs, :status, "confirmed"),
         else: attrs
 
-    {:ok, _} = Scheduling.admin_update_session(session, attrs)
+    {:ok, _} =
+      Scheduling.admin_update_session(session, attrs, branch_id: socket.assigns.branch_id)
+
     {:noreply, reload_sessions(socket)}
   end
 

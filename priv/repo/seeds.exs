@@ -433,7 +433,6 @@ _session3 =
     scheduled_at: in_3_days,
     duration_minutes: 60,
     status: "pending",
-    branch_id: 1,
     branch_id: 1
   })
 
@@ -467,7 +466,6 @@ _session5 =
     scheduled_at: in_2_days,
     duration_minutes: 60,
     status: "pending",
-    branch_id: 1,
     branch_id: 1
   })
 

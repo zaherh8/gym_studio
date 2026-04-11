@@ -38,7 +38,9 @@ defmodule GymStudioWeb.Client.SessionsLive do
 
   @impl true
   def handle_event("cancel_session", %{"session_id" => session_id}, socket) do
-    case Scheduling.cancel_session(session_id) do
+    user = socket.assigns.user
+
+    case Scheduling.cancel_session(session_id, branch_id: user.branch_id) do
       {:ok, _session} ->
         user = socket.assigns.user
         sessions = Scheduling.list_sessions_for_client(user.id, branch_id: user.branch_id)

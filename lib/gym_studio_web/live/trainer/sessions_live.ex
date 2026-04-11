@@ -52,7 +52,9 @@ defmodule GymStudioWeb.Trainer.SessionsLive do
   end
 
   def handle_event("confirm_session", %{"session_id" => session_id}, socket) do
-    case Scheduling.confirm_session(session_id) do
+    branch_id = socket.assigns.current_scope.user.branch_id
+
+    case Scheduling.confirm_session(session_id, branch_id: branch_id) do
       {:ok, _session} ->
         {:noreply, socket |> load_sessions() |> put_flash(:info, "Session confirmed.")}
 
@@ -81,7 +83,9 @@ defmodule GymStudioWeb.Trainer.SessionsLive do
         r -> r
       end
 
-    case Scheduling.cancel_session_by_id(session_id, user.id, reason) do
+    case Scheduling.cancel_session_by_id(session_id, user.id, reason,
+           branch_id: socket.assigns.current_scope.user.branch_id
+         ) do
       {:ok, _session} ->
         socket =
           socket
@@ -111,7 +115,9 @@ defmodule GymStudioWeb.Trainer.SessionsLive do
     notes = Map.get(params, "trainer_notes", "")
     attrs = if notes != "", do: %{trainer_notes: notes}, else: %{}
 
-    case Scheduling.complete_session_by_id(session_id, attrs) do
+    case Scheduling.complete_session_by_id(session_id, attrs,
+           branch_id: socket.assigns.current_scope.user.branch_id
+         ) do
       {:ok, _session} ->
         socket =
           socket
