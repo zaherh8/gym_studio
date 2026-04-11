@@ -43,6 +43,23 @@ Lessons learned from code reviews. Read this before every task.
 ## Concurrency / Race Conditions
 
 - **Never read-then-write in Ecto for counters.** Reading a value into Elixir memory then updating creates race conditions under concurrent requests. Use atomic SQL: `update_all` with `set: [col: p.col + 1]` and a WHERE guard, or `lock("FOR UPDATE")` inside a transaction.
+- **`toggle_branch_active` must use atomic `update_all`.** The old read-then-toggle pattern (`branch |> change(%{active: !branch.active}) |> update`) was a race condition. Use `from(b in Branch, where: b.id == ^branch.id, update: [set: [active: ^new_active]]) |> Repo.update_all([])` instead. Note: pinned variables in `update_all` keyword lists only work inside `from` macro's `update:` option, NOT in `Repo.update_all(query, set: [...])`.
+
+## String Safety
+
+- **Never use `String.to_existing_atom/1` on user input.** Use a whitelist approach: `if role in ~w(client trainer admin), do: String.to_existing_atom(role), else: :default`. Extracted as `BranchHelpers.parse_role/1`.
+- **Never use `String.to_integer/1` on untrusted input.** Always guard against empty strings and invalid format. Extracted as `BranchHelpers.safe_string_to_integer/1`.
+
+## Confirmation Modals
+
+- **Dangerous actions must have confirmation.** Deactivating a branch strands users/trainers/sessions — always show a confirmation modal before executing. Reactivating is safe and doesn't need confirmation.
+
+## Form Validation with Ecto
+
+- **Always use Ecto changesets for forms.** Raw HTML forms bypass validation. Use `<.form for={@changeset}>` with `phx-change="validate"` for live feedback and `phx-submit="save"` for persistence.
+- **Access field errors from form:** Use `form.source.errors |> Enum.filter(fn {f, _} -> f == field end)` to get per-field error messages. `Phoenix.HTML.Form.input_errors/2` may not be available in all versions.
+- **The `<.error>` component in CoreComponents is PRIVATE** — it can only be used inside `<.input>`. For standalone error display, use `<p class="text-sm text-error">` instead.
+- **`as:` attribute not supported in `<.form>` component.** The form's `as` name is derived from the changeset's data struct. Use `Phoenix.HTML.Form.input_name/2` for input name attributes.
 
 ## Branch Filtering Pattern
 
