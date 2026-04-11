@@ -105,6 +105,23 @@ defmodule GymStudioWeb.PageControllerTest do
       assert response =~ "Location details coming soon"
     end
 
+    test "GET / handles branch with nil operating_hours", %{conn: conn} do
+      _branch =
+        branch_fixture(%{
+          name: "No Hours Branch",
+          slug: "no-hours-branch",
+          operating_hours: nil
+        })
+
+      conn = get(conn, ~p"/")
+      response = html_response(conn, 200)
+
+      # Branch should still render without error
+      assert response =~ "No Hours Branch"
+      # Operating hours section should be omitted entirely
+      refute response =~ "Mon:"
+    end
+
     test "GET / shows branch badge on trainer cards", %{conn: conn} do
       admin = user_fixture(%{role: :admin})
 
@@ -121,6 +138,7 @@ defmodule GymStudioWeb.PageControllerTest do
 
       # The trainer card should show the branch name as a badge
       trainer_user = GymStudio.Repo.preload(trainer, user: [:branch])
+      assert trainer_user.user.branch, "Trainer fixture should have a branch assigned"
       assert response =~ trainer_user.user.branch.name
     end
   end
