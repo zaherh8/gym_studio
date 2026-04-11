@@ -13,12 +13,62 @@
 alias GymStudio.Repo
 alias GymStudio.Accounts
 alias GymStudio.Accounts.{User, Trainer, Client}
+alias GymStudio.Branches
+alias GymStudio.Branches.Branch
 alias GymStudio.Packages
 alias GymStudio.Packages.SessionPackage
 alias GymStudio.Scheduling
 alias GymStudio.Scheduling.TrainingSession
 
 IO.puts("Seeding database...")
+
+# =============================================================================
+# BRANCHES
+# =============================================================================
+IO.puts("Creating branches...")
+
+now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+branch_seeds = [
+  %{
+    name: "React — Sin El Fil",
+    slug: "sin-el-fil",
+    address: "Plot 274, Sin El Fil",
+    capacity: 4,
+    phone: "+961 1 234 567",
+    latitude: 33.8713,
+    longitude: 35.5297,
+    operating_hours: %{
+      "mon" => "06:00-22:00",
+      "tue" => "06:00-22:00",
+      "wed" => "06:00-22:00",
+      "thu" => "06:00-22:00",
+      "fri" => "06:00-22:00",
+      "sat" => "08:00-18:00",
+      "sun" => "10:00-16:00"
+    },
+    active: true,
+    inserted_at: now,
+    updated_at: now
+  },
+  %{
+    name: "React — Other Branch",
+    slug: "other",
+    address: "TBD",
+    capacity: 6,
+    active: true,
+    inserted_at: now,
+    updated_at: now
+  }
+]
+
+{count, _} = Repo.insert_all(Branch, branch_seeds, on_conflict: :nothing)
+
+if count > 0 do
+  IO.puts("  #{count} branch(es) created")
+else
+  IO.puts("  Branches already exist, skipping")
+end
 
 # Helper function to create user with password
 defmodule SeedHelpers do

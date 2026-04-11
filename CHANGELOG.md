@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Branches system — multi-location gym support (#65)
+  - `branches` table with name, slug, address, capacity, phone, coordinates, operating hours
+  - CRUD context (`GymStudio.Branches`) with slug-based lookups
+  - Slug is immutable after creation (prevents broken URLs)
+  - Unique index on slug for fast lookups
+  - Active/inactive branch filtering
+  - Seed data: React — Sin El Fil branch
+- Admin calendar: nil guard for sessions outside current week view
+- Calendar tests: navigate to correct week dynamically
+
+### Added
 - Initial Phoenix 1.8 application setup
 - User authentication system with email/password and magic links (phx.gen.auth)
 - User roles: client, trainer, admin
