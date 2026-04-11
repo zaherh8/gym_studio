@@ -47,7 +47,7 @@ defmodule GymStudioWeb.Admin.CalendarLiveTest do
       {:ok, view, _html} = live(conn, ~p"/admin/calendar")
 
       # Navigate to the week containing the session
-      render_click(view, "next_week")
+      navigate_to_week(view, tomorrow)
 
       # Open session modal — should show Unassigned badge
       html = render_click(view, "show_session", %{"session-id" => session.id})
@@ -76,8 +76,8 @@ defmodule GymStudioWeb.Admin.CalendarLiveTest do
       conn = log_in_user(conn, admin)
       {:ok, view, _html} = live(conn, ~p"/admin/calendar")
 
-      # Navigate to the week containing tomorrow
-      render_click(view, "next_week")
+      # Navigate to the week containing the session
+      navigate_to_week(view, tomorrow)
 
       # Open session modal
       render_click(view, "show_session", %{"session-id" => session.id})
@@ -95,6 +95,25 @@ defmodule GymStudioWeb.Admin.CalendarLiveTest do
       # Verify the session now has the trainer assigned
       updated = Scheduling.get_session!(session.id)
       assert updated.trainer_id == trainer.id
+    end
+  end
+
+  # Navigate the calendar to the week containing the target date
+  defp navigate_to_week(view, target_date) do
+    current_week_start = Date.beginning_of_week(Date.utc_today(), :monday)
+    target_week_start = Date.beginning_of_week(target_date, :monday)
+    diff_days = Date.diff(target_week_start, current_week_start)
+    weeks = div(diff_days, 7)
+
+    cond do
+      weeks > 0 ->
+        for _ <- 1..weeks, do: render_click(view, "next_week")
+
+      weeks < 0 ->
+        for _ <- 1..abs(weeks), do: render_click(view, "previous_week")
+
+      true ->
+        :ok
     end
   end
 end

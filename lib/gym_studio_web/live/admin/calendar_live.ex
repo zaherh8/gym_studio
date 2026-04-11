@@ -122,16 +122,21 @@ defmodule GymStudioWeb.Admin.CalendarLive do
   end
 
   def handle_event("show_session", %{"session-id" => session_id}, socket) do
-    session = find_session(socket.assigns.week_sessions, session_id)
+    case find_session(socket.assigns.week_sessions, session_id) do
+      nil ->
+        {:noreply, socket}
 
-    available_trainers =
-      if is_nil(session.trainer_id) do
-        Accounts.list_approved_trainers()
-      else
-        []
-      end
+      session ->
+        available_trainers =
+          if is_nil(session.trainer_id) do
+            Accounts.list_approved_trainers()
+          else
+            []
+          end
 
-    {:noreply, assign(socket, selected_session: session, available_trainers: available_trainers)}
+        {:noreply,
+         assign(socket, selected_session: session, available_trainers: available_trainers)}
+    end
   end
 
   def handle_event("close_modal", _params, socket) do
