@@ -67,7 +67,6 @@ defmodule GymStudioWeb.PageControllerTest do
       _branch =
         branch_fixture(%{
           name: "React — Sin El Fil",
-          slug: "sin-el-fil",
           address: "Horsh Tabet, Clover Park Bldg., 4th Floor",
           phone: "+961 71 104 483",
           latitude: 33.8723,
