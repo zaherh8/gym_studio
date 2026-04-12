@@ -78,6 +78,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Extract version from mix.exs
+        id: version
+        run: |
+          VERSION=$(grep 'version:' mix.exs | head -1 | sed 's/.*version: "\(.*\)".*/\1/')
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$VERSION-$SHORT_SHA" >> "$GITHUB_OUTPUT"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -86,6 +94,8 @@ jobs:
         with:
           context: .
           push: false
-          tags: gym-studio:${{ github.sha }}
+          tags: |
+            gym-studio:${{ steps.version.outputs.tag }}
+            gym-studio:${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

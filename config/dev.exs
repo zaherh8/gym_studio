@@ -90,3 +90,7 @@ config :phoenix_live_view,
 
 # Configure Swoosh to preview emails in development
 config :swoosh, :api_client, false
+
+# Telnyx API — reads from env var; nil triggers mock mode
+config :gym_studio, :telnyx_api_key, System.get_env("TELNYX_API_KEY")
+config :gym_studio, :telnyx_verify_profile_id, System.get_env("TELNYX_VERIFY_PROFILE_ID")

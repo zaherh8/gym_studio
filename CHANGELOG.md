@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Landing page "Our Locations" section — dynamic branch cards with address, phone, hours, and Google Maps directions (#69)
+  - Replaces hardcoded Contact section with DB-driven branch display
+  - `format_operating_hours/1` helper groups consecutive days with identical hours
+  - Trainer cards show branch badge (red pill)
+  - Footer branch names link to #locations section
+- Admin branch management + dashboard branch selector (#67)
+- Client & trainer views scoped to branch (#68)
 - Branches system — multi-location gym support (#65)
   - `branches` table with name, slug, address, capacity, phone, coordinates, operating hours
   - CRUD context (`GymStudio.Branches`) with slug-based lookups

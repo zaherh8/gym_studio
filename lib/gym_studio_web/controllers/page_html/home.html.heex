@@ -296,6 +296,11 @@
             <h3 class="text-xl font-bold mb-1 text-gray-900">
               {trainer.user.name || trainer.user.email}
             </h3>
+            <%= if trainer.user.branch do %>
+              <span class="inline-block badge badge-primary badge-sm text-xs font-medium mb-1">
+                {trainer.user.branch.name}
+              </span>
+            <% end %>
             <%= if trainer.specializations != [] do %>
               <p class="text-primary font-medium text-sm mb-2">
                 {Enum.join(trainer.specializations, " & ")}
@@ -623,151 +628,150 @@
   </div>
 </section>
 
-<%!-- Contact & Location Section --%>
-<section id="contact" class="py-16 sm:py-20 md:py-24 bg-gray-100">
+<%!-- Our Locations Section --%>
+<section id="locations" class="py-16 sm:py-20 md:py-24 bg-gray-100">
   <div class="container mx-auto px-4">
     <div class="text-center mb-12 sm:mb-16">
       <span class="inline-block text-primary font-semibold text-sm uppercase tracking-wider mb-3">
-        Contact Us
+        Our Locations
       </span>
       <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-gray-900">
-        Get In <span class="text-primary">Touch</span>
+        Find a Studio <span class="text-primary">Near You</span>
       </h2>
       <p class="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
-        Visit us or reach out — we'd love to hear from you
+        Visit any of our branches for a private, personal training experience
       </p>
     </div>
 
-    <div class="grid lg:grid-cols-2 gap-8 sm:gap-12 max-w-6xl mx-auto">
-      <%!-- Contact Cards --%>
-      <div class="space-y-4">
-        <div class="flex items-start gap-4 p-5 rounded-xl bg-white border border-gray-200 hover:border-primary/30 transition-all">
-          <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6 text-primary"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-              />
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-          </div>
-          <div>
-            <h3 class="font-bold text-lg mb-1 text-gray-900">Location</h3>
-            <p class="text-gray-600 text-sm leading-relaxed">
-              Horsh Tabet, Clover Park Bldg.<br /> 4th Floor, Sin El Fil, Lebanon
-            </p>
-          </div>
-        </div>
+    <%= if @branches != [] do %>
+      <div class="grid sm:grid-cols-2 gap-6 sm:gap-8 max-w-6xl mx-auto">
+        <%= for branch <- @branches do %>
+          <div class="p-6 sm:p-8 rounded-2xl bg-white border border-gray-200 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all">
+            <%!-- Branch Name --%>
+            <h3 class="text-xl font-bold mb-4 text-gray-900">{branch.name}</h3>
 
-        <div class="flex items-start gap-4 p-5 rounded-xl bg-white border border-gray-200 hover:border-primary/30 transition-all">
-          <div class="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center flex-shrink-0">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6 text-secondary"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-              />
-            </svg>
-          </div>
-          <div>
-            <h3 class="font-bold text-lg mb-1 text-gray-900">Phone</h3>
-            <p class="text-gray-600 text-sm">+961 71 104 483</p>
-          </div>
-        </div>
+            <%!-- Details --%>
+            <div class="space-y-3">
+              <%= if branch.address do %>
+                <div class="flex items-start gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5 text-primary"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                  </div>
+                  <p class="text-gray-600 text-sm leading-relaxed">{branch.address}</p>
+                </div>
+              <% end %>
 
-        <div class="flex items-start gap-4 p-5 rounded-xl bg-white border border-gray-200 hover:border-primary/30 transition-all">
-          <div class="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6 text-accent"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-          <div>
-            <h3 class="font-bold text-lg mb-1 text-gray-900">Hours</h3>
-            <p class="text-gray-600 text-sm leading-relaxed">
-              Mon - Fri: 6:00 AM - 10:00 PM<br /> Sat - Sun: 8:00 AM - 6:00 PM
-            </p>
-          </div>
-        </div>
+              <%= if branch.phone do %>
+                <div class="flex items-start gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5 text-secondary"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                      />
+                    </svg>
+                  </div>
+                  <p class="text-gray-600 text-sm">{branch.phone}</p>
+                </div>
+              <% end %>
 
-        <div class="flex items-start gap-4 p-5 rounded-xl bg-white border border-gray-200 hover:border-primary/30 transition-all">
-          <div class="w-12 h-12 rounded-xl bg-info/10 flex items-center justify-center flex-shrink-0">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6 text-info"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-              />
-            </svg>
+              <%= if branch.operating_hours && map_size(branch.operating_hours) > 0 do %>
+                <div class="flex items-start gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5 text-accent"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div class="text-gray-600 text-sm leading-relaxed">
+                    <%= for line <- GymStudioWeb.PageHTML.format_operating_hours(branch.operating_hours) do %>
+                      <p>{line}</p>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+
+            <%!-- Get Directions Link --%>
+            <%= if branch.latitude && branch.longitude do %>
+              <div class="mt-5 pt-4 border-t border-gray-100">
+                <a
+                  href={"https://www.google.com/maps/search/?api=1&query=#{URI.encode_query(%{query: "#{branch.latitude},#{branch.longitude}"})}"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-2 text-primary font-medium text-sm hover:underline"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                  Get Directions
+                </a>
+              </div>
+            <% end %>
           </div>
-          <div>
-            <h3 class="font-bold text-lg mb-1 text-gray-900">Email</h3>
-            <p class="text-gray-600 text-sm">Coming soon</p>
-          </div>
-        </div>
+        <% end %>
       </div>
-
-      <%!-- Map Placeholder --%>
-      <div class="rounded-2xl overflow-hidden border border-gray-200 h-full min-h-[400px]">
-        <div class="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-          <div class="text-center p-8">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-16 w-16 mx-auto text-gray-300 mb-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-              />
-            </svg>
-            <p class="text-gray-500 font-medium mb-2">Interactive Map</p>
-            <p class="text-gray-400 text-sm">Coming Soon</p>
-          </div>
-        </div>
+    <% else %>
+      <div class="text-center py-12">
+        <p class="text-gray-500 text-lg">
+          Location details coming soon!
+        </p>
       </div>
-    </div>
+    <% end %>
   </div>
 </section>
 
@@ -839,10 +843,10 @@
           </li>
           <li>
             <a
-              href="#contact"
+              href="#locations"
               class="text-neutral-content/70 hover:text-primary transition-colors"
             >
-              Contact
+              Locations
             </a>
           </li>
         </ul>
@@ -850,10 +854,13 @@
 
       <%!-- Contact Info --%>
       <div>
-        <h4 class="font-bold mb-4">Contact</h4>
+        <h4 class="font-bold mb-4">Locations</h4>
         <ul class="space-y-2 text-sm text-neutral-content/70">
-          <li>Sin El Fil, Lebanon</li>
-          <li>+961 71 104 483</li>
+          <%= for branch <- @branches do %>
+            <li>
+              <a href="#locations" class="hover:text-primary transition-colors">{branch.name}</a>
+            </li>
+          <% end %>
         </ul>
       </div>
 

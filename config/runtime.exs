@@ -71,6 +71,10 @@ if config_env() == :prod do
     ],
     secret_key_base: secret_key_base
 
+  # Telnyx API — production credentials from env vars
+  config :gym_studio, :telnyx_api_key, System.get_env("TELNYX_API_KEY")
+  config :gym_studio, :telnyx_verify_profile_id, System.get_env("TELNYX_VERIFY_PROFILE_ID")
+
   # ## SSL Support
   #
   # To get SSL working, you will need to add the `https` key

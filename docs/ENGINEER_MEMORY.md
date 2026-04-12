@@ -71,6 +71,9 @@ Lessons learned from code reviews. Read this before every task.
 
 ## Testing
 
+- **All tests must pass before pushing.** Run `mix test` as part of the standard pre-push checks. No exceptions.
+- **Never skip, tag with @tag :skip, or delete a failing test.** If a test fails, fix the code or the test to satisfy the requirement it was testing. Removing or skipping a test means the requirement is no longer verified — that's a regression waiting to happen.
+- **Fixtures must not hardcode values that clash with seeds.** Use unique suffixes (e.g., `System.unique_integer`) for slugs, emails, and other unique fields. Never override fixture uniqueness in test code.
 - Test that form values actually persist (save → reload → verify).
 - Test authorization on mutations, not just mount.
 - Use `render_submit` for form tests, not `render_click` on individual events.
@@ -125,6 +128,7 @@ Lessons learned from code reviews. Read this before every task.
 - Phone numbers: Lebanese format `+961...`
 - Brand color: Red
 - GitHub account: `zaherh8` (switch with `gh auth switch -u zaherh8`)
+- **Verify git identity before committing.** Repo-level config should be `user.name="Zaher Hassan"` and `user.email="zaherh8@users.noreply.github.com"`. If `git config user.email` shows a work email, fix it with `git config user.email "zaherh8@users.noreply.github.com"` before any commits.
 - PATH: `export PATH="/opt/homebrew/opt/postgresql@17/bin:/Users/zaherhassan/.fly/bin:$PATH"`
 - Checks before push: `mix format --check-formatted && mix compile --warnings-as-errors && mix test`
 - Feature branches: `feat/<issue-number>-<short-name>`
