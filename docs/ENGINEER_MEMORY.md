@@ -128,6 +128,7 @@ Lessons learned from code reviews. Read this before every task.
 - Phone numbers: Lebanese format `+961...`
 - Brand color: Red
 - GitHub account: `zaherh8` (switch with `gh auth switch -u zaherh8`)
+- **Verify git identity before committing.** Repo-level config should be `user.name="Zaher Hassan"` and `user.email="zaherh8@users.noreply.github.com"`. If `git config user.email` shows a work email, fix it with `git config user.email "zaherh8@users.noreply.github.com"` before any commits.
 - PATH: `export PATH="/opt/homebrew/opt/postgresql@17/bin:/Users/zaherhassan/.fly/bin:$PATH"`
 - Checks before push: `mix format --check-formatted && mix compile --warnings-as-errors && mix test`
 - Feature branches: `feat/<issue-number>-<short-name>`

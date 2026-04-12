@@ -121,7 +121,6 @@ defmodule GymStudio.SMS.Telnyx do
   end
 
   defp verify_profile_id do
-    Application.get_env(:gym_studio, :telnyx_verify_profile_id) ||
-      "4900017e-24a6-c82b-0b96-69fc7c905b53"
+    Application.get_env(:gym_studio, :telnyx_verify_profile_id)
   end
 end
