@@ -177,6 +177,7 @@ defmodule GymStudioWeb.LayoutsTest do
       # No tab should be primary — exact root paths won't match
       # and /client/sessions-archive doesn't start with /client/sessions/
       [before_book, _after] = String.split(html, ~s(href="/client/book"), parts: 2)
+
       [_before_schedule, schedule_section] =
         String.split(before_book, ~s(href="/client/sessions"), parts: 2)
 
