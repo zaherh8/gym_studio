@@ -24,7 +24,7 @@ defmodule GymStudioWeb.Layouts do
     assigns = assign(assigns, :tabs, tabs_for_role(assigns.current_scope.user.role))
 
     ~H"""
-    <nav class="fixed bottom-0 inset-x-0 z-50 bg-base-100 border-t border-base-300 md:hidden">
+    <nav class="fixed bottom-0 inset-x-0 z-50 bg-base-100 border-t border-base-300 pb-[env(safe-area-inset-bottom)] md:hidden">
       <div class="flex items-end justify-around h-16 px-2">
         <%= for tab <- @tabs do %>
           <%= if tab.fab do %>
@@ -33,7 +33,7 @@ defmodule GymStudioWeb.Layouts do
               class="flex flex-col items-center justify-center -mt-6"
               aria-label={tab.label}
             >
-              <span class="flex items-center justify-center w-14 h-14 rounded-full bg-primary text-white shadow-lg transition-transform duration-200 hover:scale-110 active:scale-95">
+              <span class="flex items-center justify-center w-14 h-14 rounded-full bg-primary text-white shadow-lg transition-transform duration-200 hover:scale-110 active:scale-95 focus-within:ring-2 focus-within:ring-primary/50 focus-within:ring-offset-2">
                 <.icon name={tab.icon} class="size-7" />
               </span>
             </.link>
@@ -97,17 +97,13 @@ defmodule GymStudioWeb.Layouts do
     tab_str = to_string(tab_path)
 
     cond do
-      # Exact match for root dashboard paths
-      tab_str in ~w(/client /trainer /admin) ->
+      # Exact match for root dashboard paths and settings
+      tab_str in ~w(/client /trainer /admin /users/settings) ->
         current_path == tab_str
 
-      # Settings page exact match
-      tab_str == "/users/settings" ->
-        current_path == tab_str
-
-      # Prefix match for other paths
+      # Prefix match for other paths — must match /path or /path/...
       true ->
-        String.starts_with?(current_path, tab_str)
+        current_path == tab_str or String.starts_with?(current_path, tab_str <> "/")
     end
   end
 

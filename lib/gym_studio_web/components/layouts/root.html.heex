@@ -102,7 +102,7 @@
           <a href={~p"/"} class="flex items-center gap-2 group">
             <img
               src={~p"/images/logo/react-icon-red.png"}
-              alt="React"
+              alt="React Gym"
               class="h-8 sm:h-10 w-auto group-hover:opacity-80 transition-opacity"
             />
             <span class="text-xl sm:text-2xl font-black text-gray-900 group-hover:text-gray-700 transition-colors">
@@ -175,9 +175,9 @@
                   </span>
                 <% end %>
               </.link>
-              <%!-- User menu (log out) --%>
+              <%!-- User menu (settings + log out) --%>
               <div class="dropdown dropdown-end">
-                <label tabindex="0" class="btn btn-ghost btn-sm btn-circle text-gray-700">
+                <label tabindex="0" class="btn btn-ghost btn-sm btn-circle text-gray-700" aria-label="User menu">
                   <.icon name="hero-ellipsis-vertical" class="size-5" />
                 </label>
                 <ul
@@ -186,6 +186,14 @@
                 >
                   <li class="menu-title text-xs text-gray-400 px-2 py-1">
                     {@current_scope.user.name || @current_scope.user.email}
+                  </li>
+                  <li>
+                    <.link
+                      href={~p"/users/settings"}
+                      class="flex items-center gap-2"
+                    >
+                      <.icon name="hero-cog-6-tooth" class="size-4" /> Settings
+                    </.link>
                   </li>
                   <li>
                     <.link

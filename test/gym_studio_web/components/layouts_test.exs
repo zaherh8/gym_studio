@@ -162,5 +162,39 @@ defmodule GymStudioWeb.LayoutsTest do
       assert html =~ "shadow-lg"
       assert html =~ "-mt-6"
     end
+
+    test "prefix match does not false-positive on similar paths" do
+      user = user_fixture(%{role: :client})
+      scope = user_scope_fixture(user)
+
+      # /client/sessions-archive should NOT highlight /client/sessions tab
+      html =
+        render_component(&Layouts.mobile_bottom_nav/1,
+          current_scope: scope,
+          current_path: "/client/sessions-archive"
+        )
+
+      # No tab should be primary — exact root paths won't match
+      # and /client/sessions-archive doesn't start with /client/sessions/
+      [before_book, _after] = String.split(html, ~s(href="/client/book"), parts: 2)
+      [_before_schedule, schedule_section] =
+        String.split(before_book, ~s(href="/client/sessions"), parts: 2)
+
+      # Schedule tab should NOT be active (no text-primary in its section)
+      assert schedule_section =~ "text-gray-500"
+    end
+
+    test "iOS safe area padding is applied" do
+      user = user_fixture(%{role: :client})
+      scope = user_scope_fixture(user)
+
+      html =
+        render_component(&Layouts.mobile_bottom_nav/1,
+          current_scope: scope,
+          current_path: "/client"
+        )
+
+      assert html =~ "safe-area-inset-bottom"
+    end
   end
 end
