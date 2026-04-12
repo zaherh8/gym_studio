@@ -93,7 +93,7 @@
       })();
     </script>
   </head>
-  <body class="bg-base-100">
+  <body class={["bg-base-100", @current_scope && "pb-20 md:pb-0"]}>
     <%!-- Modern Navigation Header --%>
     <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-base-300/50 shadow-sm">
       <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -160,16 +160,8 @@
                 Log out
               </.link>
             </div>
-            <%!-- Mobile Nav --%>
+            <%!-- Mobile Nav (simplified — bottom nav handles navigation) --%>
             <div class="flex md:hidden items-center gap-1">
-              <%!-- Dashboard (primary action on mobile) --%>
-              <.link
-                href={dashboard_path}
-                class="btn btn-primary btn-sm rounded-full"
-              >
-                Dashboard
-              </.link>
-              <%!-- Notification Bell --%>
               <.link
                 href={notifications_path}
                 class="btn btn-ghost btn-sm btn-circle relative text-gray-700"
@@ -181,29 +173,18 @@
                   </span>
                 <% end %>
               </.link>
-              <%!-- Hamburger Menu --%>
+              <%!-- User menu (log out) --%>
               <div class="dropdown dropdown-end">
                 <label tabindex="0" class="btn btn-ghost btn-sm btn-circle text-gray-700">
-                  <.icon name="hero-bars-3" class="size-5" />
+                  <.icon name="hero-ellipsis-vertical" class="size-5" />
                 </label>
                 <ul
                   tabindex="0"
-                  class="dropdown-content menu bg-base-100 rounded-box z-[100] w-56 p-2 shadow-lg border border-base-300 mt-2"
+                  class="dropdown-content menu bg-base-100 rounded-box z-[100] w-48 p-2 shadow-lg border border-base-300 mt-2"
                 >
                   <li class="menu-title text-xs text-gray-400 px-2 py-1">
                     {@current_scope.user.name || @current_scope.user.email}
                   </li>
-                  <li>
-                    <.link href={dashboard_path} class="flex items-center gap-2">
-                      <.icon name="hero-home" class="size-4" /> Dashboard
-                    </.link>
-                  </li>
-                  <li>
-                    <.link href={~p"/users/settings"} class="flex items-center gap-2">
-                      <.icon name="hero-cog-6-tooth" class="size-4" /> Settings
-                    </.link>
-                  </li>
-                  <div class="divider my-1"></div>
                   <li>
                     <.link
                       href={~p"/users/log-out"}
@@ -238,6 +219,14 @@
     </header>
 
     {@inner_content}
+
+    <%= if @current_scope do %>
+      <GymStudioWeb.Layouts.mobile_bottom_nav
+        current_scope={@current_scope}
+        current_path={@conn.request_path}
+      />
+    <% end %>
+
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
