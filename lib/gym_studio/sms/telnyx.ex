@@ -117,14 +117,11 @@ defmodule GymStudio.SMS.Telnyx do
   end
 
   defp api_key do
-    case Application.get_env(:gym_studio, :telnyx_api_key, :not_set) do
-      :not_set -> System.get_env("TELNYX_API_KEY")
-      nil -> nil
-      key -> key
-    end
+    Application.get_env(:gym_studio, :telnyx_api_key)
   end
 
   defp verify_profile_id do
-    System.get_env("TELNYX_VERIFY_PROFILE_ID") || "4900017e-24a6-c82b-0b96-69fc7c905b53"
+    Application.get_env(:gym_studio, :telnyx_verify_profile_id) ||
+      "4900017e-24a6-c82b-0b96-69fc7c905b53"
   end
 end
