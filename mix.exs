@@ -4,7 +4,7 @@ defmodule GymStudio.MixProject do
   def project do
     [
       app: :gym_studio,
-      version: "0.3.0",
+      version: "0.4.0",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -83,6 +83,9 @@ defmodule GymStudio.MixProject do
 
       # JSON
       {:jason, "~> 1.2"},
+
+      # Timezone support
+      {:tzdata, "~> 1.1"},
 
       # Clustering
       {:dns_cluster, "~> 0.2.0"},

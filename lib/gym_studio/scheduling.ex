@@ -943,6 +943,43 @@ defmodule GymStudio.Scheduling do
   end
 
   @doc """
+  Counts sessions per day for a trainer within a date range.
+  Returns a map of `%Date{} => count` (only days with sessions).
+  Excludes cancelled sessions.
+  """
+  def count_sessions_per_day_for_trainer(trainer_id, from_date, to_date, opts \\ []) do
+    from_dt = DateTime.new!(from_date, ~T[00:00:00], "Etc/UTC")
+    to_dt = DateTime.new!(to_date, ~T[23:59:59], "Etc/UTC")
+
+    query =
+      TrainingSession
+      |> where([s], s.trainer_id == ^trainer_id)
+      |> where([s], s.scheduled_at >= ^from_dt)
+      |> where([s], s.scheduled_at <= ^to_dt)
+      |> where([s], s.status != "cancelled")
+      |> group_by([s], fragment("DATE(?)", s.scheduled_at))
+      |> select([s], {fragment("DATE(?)", s.scheduled_at), count(s.id)})
+
+    query =
+      if branch_id = opts[:branch_id] do
+        where(query, [s], s.branch_id == ^branch_id)
+      else
+        query
+      end
+
+    Repo.all(query)
+    |> Map.new(fn {date_val, count} ->
+      date =
+        case date_val do
+          %Date{} -> date_val
+          s when is_binary(s) -> elem(Date.from_iso8601(s), 1)
+        end
+
+      {date, count}
+    end)
+  end
+
+  @doc """
   Lists all availability records for the given trainer IDs in a single query.
   Returns `%{trainer_id => %{day_of_week => availability}}`.
   """

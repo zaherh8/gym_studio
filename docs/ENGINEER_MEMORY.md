@@ -115,6 +115,11 @@ Lessons learned from code reviews. Read this before every task.
 - **Use `Enum.group_by` not `Enum.into` for hour grouping** — `Enum.into` overwrites when multiple sessions share the same hour. Always use list-based grouping for calendar data.
 - **Modal click-through:** Never put `phx-click="close_modal"` on the outer `.modal` div — click events bubble up from content. Use only `phx-click-away` on `.modal-box`.
 - **Type consistency in filters:** Form params arrive as strings. Compare with `to_string(uuid)` when matching against Ecto UUID fields in templates.
+- **Heat-map data requires a dedicated query** — `count_sessions_per_day_for_trainer/4` groups by `DATE(scheduled_at)` and returns `%Date{} => count`. PostgreSQL's `DATE()` returns an Ecto Date struct, not a string — handle both types with pattern matching.
+- **No `elseif` in HEEX templates** — Elixir doesn't have `elseif`. Use `cond do` in helper functions instead of inline multi-branch `if` in class/style attributes.
+- **Scroll-triggered collapse** — Use a sentinel element + IntersectionObserver in a `phx-hook`. The hook pushes an event to the LiveView to toggle state. Works without full-page reload.
+- **Flash messages need a container** — `put_flash/3` in LiveView handle_event only works if there's a flash container in the rendered template or layout. Root layout didn't have one, so added inline flash display in the LiveView itself.
+- **Trainer availability vs time slots** — The schedule `is_available?` check uses `TrainerAvailability` records (set via `set_trainer_availability/3`), NOT `TimeSlot` records. Tests that need available slots must create trainer availability, not time slots.
 
 ## Label / Display Conventions
 
@@ -145,3 +150,42 @@ Lessons learned from code reviews. Read this before every task.
 - **Branch filter consistency:** When joining sessions + users, always filter on `s.branch_id` (session's branch), not `c.branch_id` (client's current branch). If a client moves branches, filtering on `c.branch_id` leaks old sessions into the wrong branch's client list.
 - **`get_branch/1` doesn't exist** — only `get_branch!/1` (raises) and `get_branch_by_slug/1`. For validation in changesets, use `get_branch!` with `rescue Ecto.NoResultsError`.
 - **Registration must validate branch is active**, not just that it exists. `foreign_key_constraint` only checks FK integrity — it doesn't validate business rules like `active == true`. Use a custom `validate_branch_active` changeset helper.
+
+## Timezone Awareness
+
+- **Never use `Time.utc_now()` or `Date.utc_today()` for display logic.** The app is configured for Asia/Beirut timezone. Use `DateTime.now("Asia/Beirut")` for any time calculations shown to users (now-lines, date comparisons in templates, etc.).
+- **`DateTime.now/1` requires tzdata.** Without the `tzdata` dependency and `config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase`, named timezone lookups fail with `{:error, :utc_only_time_zone_database}`. Always add `tzdata` to deps when using named timezones.
+- **Graceful fallback:** When `DateTime.now("Asia/Beirut")` fails (e.g., test env without tzdata), fall back to `Time.utc_now()` rather than crashing.
+
+## IntersectionObserver / Scroll Hooks
+
+- **Never use boolean toggle events from IntersectionObserver.** An observer that fires `toggle_calendar` when an element leaves viewport creates an infinite loop: collapse → scroll → re-expand → scroll → collapse. Use one-directional events (e.g., `collapse_calendar` that only sets `false`, with a separate `expand_calendar` that only sets `true`).
+
+## Cross-View Session Lookup
+
+- **When session data exists in multiple assigns (day_sessions, week_sessions), lookup must search all of them.** A click handler that only searches one map will silently fail for sessions in the other. Use a unified `find_session_by_id` that handles both flat (`%{hour => [sessions]}`) and nested (`%{date => %{hour => [sessions]}}`) map structures.
+
+## Elixir Pattern Matching
+
+- **`Date.from_iso8601/1` returns `{:error, reason}`, not `:error`.** Pattern matching on `:error` will never match. Always use `{:error, _}`.
+
+## Socket Assigns vs Module Attributes
+
+- **Compile-time constants (color maps, ranges) should be module attributes, not socket assigns.** Socket assigns are for runtime data that changes per request. Moving static maps to `@module_attr` avoids unnecessary assigns and template `@` references. Use helper functions (e.g., `heat_color_for_level/1`) for template access to module attributes.
+
+## Dead Code in Date Calculations
+
+- **`Date.beginning_of_week` on a value that's already the beginning of the week is a no-op.** Same for `Date.end_of_week` on a value computed from `beginning_of_week + 6`. Remove unnecessary recalculations.
+
+## Schedule Redesign — Month Grid + Day Rail (PR #87)
+
+- **`select_date` must sync `current_month`** when clicking a padding day from another month. Without this, the month grid doesn't navigate to show the selected date. Check `date.month != current_month.month or date.year != current_month.year` and update `current_month` accordingly.
+- **`compute_day_stats` available hours must intersect with display range (6..21).** If a trainer's availability starts at 5 AM, counting `end_h - start_h` inflates the open count. Use `MapSet.intersection` with the display range to only count visible hours.
+- **Never use `Date.utc_today()` for display logic** — use `DateTime.now("Asia/Beirut")` with fallback. Store as `local_today` assign for template access. This prevents the now-line and today-highlight from being 3 hours off between midnight and 3 AM Beirut time.
+- **Now-line position should use percentage, not hardcoded pixel row height.** Use `(minutes_from_6am / 960) * 100%` instead of `minutes / 60 * 58px`. This is robust regardless of row height changes.
+- **Move hardcoded inline styles to CSS classes.** Hex colors in inline styles are hard to maintain and override. Use semantic CSS classes (e.g., `schedule-accent-bar-confirmed`, `schedule-now-line-dot`) and keep inline styles only for truly dynamic values (heat-map background colors from data).
+- **Flash messages need auto-dismiss** — use a `phx-hook` (`FlashAutoDismiss`) that hides the element after 5 seconds. The hook requires an `id` attribute on the element.
+- **`phx-hook` requires an `id` attribute** on the element. Without it, Phoenix LiveView raises a parse error.
+- **Remove unused helper functions** — `status_badge_styles`, `session_accent_color`, `day_text_style` etc. became dead code after moving to CSS classes. `mix compile --warnings-as-errors` catches these.
+- **Test for cross-month date selection** — verify that clicking a padding day from another month updates the month navigation header.
+- **Test for availability intersection with display range** — verify that hours outside 6..21 don't inflate the open count.

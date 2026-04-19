@@ -69,7 +69,23 @@ const ProgressChart = {
   }
 }
 
-const Hooks = { ProgressChart }
+/**
+ * FlashAutoDismiss hook — auto-hides flash messages after 5 seconds.
+ * Uses phx-click="clear_flash" to let the LiveView clear the flash,
+ * which prevents stale messages on reconnect.
+ */
+const FlashAutoDismiss = {
+  mounted() {
+    this.timer = setTimeout(() => {
+      this.el.style.display = "none"
+    }, 5000)
+  },
+  destroyed() {
+    if (this.timer) clearTimeout(this.timer)
+  }
+}
+
+const Hooks = { ProgressChart, FlashAutoDismiss }
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
