@@ -84,6 +84,9 @@ defmodule GymStudio.MixProject do
       # JSON
       {:jason, "~> 1.2"},
 
+      # Timezone support
+      {:tzdata, "~> 1.1"},
+
       # Clustering
       {:dns_cluster, "~> 0.2.0"},
 

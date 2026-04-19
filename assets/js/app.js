@@ -90,8 +90,8 @@ const ScheduleCollapse = {
     this._observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) {
-          // Grid has scrolled out of view → collapse
-          this.pushEvent("toggle_calendar", {})
+          // Grid has scrolled out of view → collapse (one-directional, never auto-expands)
+          this.pushEvent("collapse_calendar", {})
         }
       },
       { threshold: 0, rootMargin: "0px 0px -50% 0px" }

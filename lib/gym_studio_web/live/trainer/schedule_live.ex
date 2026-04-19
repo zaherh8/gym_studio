@@ -1,6 +1,7 @@
 defmodule GymStudioWeb.Trainer.ScheduleLive do
   use GymStudioWeb, :live_view
   alias GymStudio.{Accounts, Scheduling}
+  import GymStudioWeb.Helpers.BranchHelpers, only: [safe_string_to_integer: 1]
 
   @hours_range 6..21
   @heat_colors %{
@@ -28,7 +29,6 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
       |> assign(calendar_expanded: true)
       |> assign(selected_session: nil)
       |> assign(current_week_start: Date.beginning_of_week(today, :monday))
-      |> assign(heat_colors: @heat_colors)
       |> load_schedule_data()
 
     {:ok, socket}
@@ -205,7 +205,7 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
 
         {:noreply, socket}
 
-      :error ->
+      {:error, _} ->
         {:noreply, socket}
     end
   end
@@ -238,12 +238,19 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
     {:noreply, assign(socket, calendar_expanded: !socket.assigns.calendar_expanded)}
   end
 
+  def handle_event("collapse_calendar", _params, socket) do
+    {:noreply, assign(socket, calendar_expanded: false)}
+  end
+
   def handle_event("expand_calendar", _params, socket) do
     {:noreply, assign(socket, calendar_expanded: true)}
   end
 
   def handle_event("show_session", %{"session-id" => session_id}, socket) do
-    session = find_session_by_id(socket.assigns.day_sessions, session_id)
+    session =
+      find_session_by_id(socket.assigns.day_sessions, session_id) ||
+        find_session_by_id(socket.assigns.week_sessions, session_id)
+
     {:noreply, assign(socket, selected_session: session)}
   end
 
@@ -252,22 +259,31 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
   end
 
   def handle_event("open_slot_click", %{"hour" => hour_str}, socket) do
-    hour = String.to_integer(hour_str)
-    date = socket.assigns.selected_date
+    case safe_string_to_integer(hour_str) do
+      nil ->
+        {:noreply, socket}
 
-    {:noreply,
-     socket
-     |> put_flash(
-       :info,
-       "Session creation for #{format_hour(hour)} on #{Calendar.strftime(date, "%b %d")} — coming soon!"
-     )}
+      hour ->
+        date = socket.assigns.selected_date
+
+        {:noreply,
+         socket
+         |> put_flash(
+           :info,
+           "Session creation for #{format_hour(hour)} on #{Calendar.strftime(date, "%b %d")} — coming soon!"
+         )}
+    end
   end
 
   # --- Helpers ---
 
   defp find_session_by_id(day_sessions, session_id) do
-    Enum.find_value(day_sessions, fn {_hour, sessions} ->
-      Enum.find(sessions, fn s -> s.id == session_id end)
+    Enum.find_value(day_sessions, fn
+      {_hour, sessions} when is_list(sessions) ->
+        Enum.find(sessions, fn s -> s.id == session_id end)
+
+      {_date, hour_map} when is_map(hour_map) ->
+        find_session_by_id(hour_map, session_id)
     end)
   end
 
@@ -289,6 +305,10 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
     Map.get(@heat_colors, heat_level(count), "")
   end
 
+  defp heat_color_for_level(level) do
+    Map.get(@heat_colors, level, "")
+  end
+
   defp calendar_weeks(month) do
     month_start = Date.beginning_of_month(month)
     month_end = Date.end_of_month(month)
@@ -303,15 +323,11 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
 
   defp week_days_for_date(date) do
     week_start = Date.beginning_of_week(date, :monday)
-    week_end = Date.add(week_start, 6)
-    cal_start = Date.beginning_of_week(week_start, :monday)
-    cal_end = Date.end_of_week(week_end, :sunday)
 
-    cal_start
+    week_start
     |> Stream.iterate(&Date.add(&1, 1))
-    |> Stream.take_while(&(&1 <= cal_end))
-    |> Enum.chunk_every(7)
-    |> List.first()
+    |> Stream.take(7)
+    |> Enum.to_list()
   end
 
   defp session_accent_color("confirmed"), do: "#E63946"
@@ -374,7 +390,11 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
   defp format_hour(h), do: "#{h - 12} PM"
 
   defp now_minutes_offset do
-    now = Time.utc_now()
+    now =
+      case DateTime.now("Asia/Beirut") do
+        {:ok, datetime} -> DateTime.to_time(datetime)
+        {:error, :utc_only_time_zone_database} -> Time.utc_now()
+      end
 
     if now.hour >= 6 and now.hour <= 22 do
       (now.hour - 6) * 60 + now.minute
@@ -624,7 +644,7 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
                   <%= for level <- 1..5 do %>
                     <div
                       class="rounded-sm"
-                      style={"width: 14px; height: 14px; background-color: #{Map.get(@heat_colors, level)}"}
+                      style={"width: 14px; height: 14px; background-color: #{heat_color_for_level(level)}"}
                     >
                     </div>
                   <% end %>

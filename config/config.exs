@@ -24,6 +24,9 @@ config :gym_studio,
   ecto_repos: [GymStudio.Repo],
   generators: [timestamp_type: :utc_datetime]
 
+# Configure timezone database for DateTime.now/1 with named timezones
+config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
+
 # Configure the endpoint
 config :gym_studio, GymStudioWeb.Endpoint,
   url: [host: "localhost"],
