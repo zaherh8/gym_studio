@@ -366,17 +366,36 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
   defp format_hour(12), do: "12 PM"
   defp format_hour(h), do: "#{h - 12} PM"
 
-  defp now_minutes_offset do
-    now =
-      case DateTime.now("Asia/Beirut") do
-        {:ok, datetime} -> DateTime.to_time(datetime)
-        {:error, :utc_only_time_zone_database} -> Time.utc_now()
-      end
+  defp now_minutes_offset(selected_date) do
+    if selected_date == Date.utc_today() do
+      now =
+        case DateTime.now("Asia/Beirut") do
+          {:ok, datetime} -> DateTime.to_time(datetime)
+          {:error, :utc_only_time_zone_database} -> Time.utc_now()
+        end
 
-    if now.hour >= 6 and now.hour <= 22 do
-      (now.hour - 6) * 60 + now.minute
+      if now.hour >= 6 and now.hour <= 22 do
+        (now.hour - 6) * 60 + now.minute
+      else
+        nil
+      end
     else
       nil
+    end
+  end
+
+  defp is_past_hour?(selected_date, hour) do
+    if selected_date == Date.utc_today() do
+      now =
+        case DateTime.now("Asia/Beirut") do
+          {:ok, datetime} -> DateTime.to_time(datetime)
+          {:error, :utc_only_time_zone_database} -> Time.utc_now()
+        end
+
+      hour < now.hour
+    else
+      # For past dates (before today), all hours are past
+      Date.compare(selected_date, Date.utc_today()) == :lt
     end
   end
 
@@ -729,8 +748,8 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
                       </button>
                     <% end %>
                   <% else %>
-                    <%= if available do %>
-                      <!-- Open Slot Card -->
+                    <%= if available and !is_past_hour?(@selected_date, hour) do %>
+                      <!-- Open Slot Card (future only) -->
                       <div
                         class="flex items-center justify-between rounded-xl px-3 py-3 border border-dashed"
                         style="border-color: #E8E8E8; border-radius: 12px; background: white;"
@@ -752,8 +771,8 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
               </div>
             <% end %>
             
-    <!-- Now-line -->
-            <% now_offset = now_minutes_offset() %>
+    <!-- Now-line (today only) -->
+            <% now_offset = now_minutes_offset(@selected_date) %>
             <%= if now_offset do %>
               <div
                 class="absolute left-16 right-0 pointer-events-none"
