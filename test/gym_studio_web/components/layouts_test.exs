@@ -174,8 +174,9 @@ defmodule GymStudioWeb.LayoutsTest do
         )
 
       # Schedule tab should NOT be active — uses outline icon, not solid
-      assert html =~ "hero-calendar"
-      refute html =~ "hero-calendar-days-solid"
+      # (activeIcon may appear in data-tabs JSON; check the actual <span> class instead)
+      assert html =~ ~s(<span class="hero-calendar size-6">)
+      refute html =~ ~s(hero-calendar-days-solid size-6)
     end
 
     test "iOS safe area padding is applied" do
