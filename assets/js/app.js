@@ -64,7 +64,7 @@ const ProgressChart = {
       }
     })
   },
-  destroyed() {
+  disconnected() {
     if (this.chart) this.chart.destroy()
   }
 }
@@ -80,7 +80,7 @@ const FlashAutoDismiss = {
       this.el.style.display = "none"
     }, 5000)
   },
-  destroyed() {
+  disconnected() {
     if (this.timer) clearTimeout(this.timer)
   }
 }
@@ -96,12 +96,13 @@ const FlashAutoDismiss = {
 const MobileBottomNav = {
   mounted() {
     this._updateActive()
+    this._applyFabTransform()
     this._unsub = [
       listen("phx:navigated", () => this._updateActive()),
       listen("popstate", () => this._updateActive()),
     ]
   },
-  destroyed() {
+  disconnected() {
     (this._unsub || []).forEach(fn => fn())
   },
   _updateActive() {
@@ -150,6 +151,10 @@ const MobileBottomNav = {
         if (dot) dot.remove()
       }
     })
+  },
+  _applyFabTransform() {
+    const fab = this.el.querySelector(".fab-button")
+    if (fab) fab.style.transform = "translateY(-28px)"
   }
 }
 

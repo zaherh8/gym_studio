@@ -158,7 +158,7 @@ defmodule GymStudioWeb.LayoutsTest do
       assert html =~ "rounded-full"
       assert html =~ "w-[62px]"
       assert html =~ "h-[62px]"
-      assert html =~ "translateY(-28px)"
+      assert html =~ "fab-button"
       assert html =~ "linear-gradient"
     end
 

@@ -25,7 +25,7 @@ defmodule GymStudioWeb.Layouts do
 
     ~H"""
     <nav
-      id="mobile-bottom-nav"
+      id="mobile-bottom-nav-client"
       phx-hook="MobileBottomNav"
       data-tabs={
         Jason.encode!(
@@ -50,9 +50,8 @@ defmodule GymStudioWeb.Layouts do
           <%= if tab.fab do %>
             <.link
               navigate={tab.path}
-              class="flex items-center justify-center"
+              class="flex items-center justify-center fab-button"
               aria-label={tab.label}
-              style="transform: translateY(-28px);"
             >
               <span
                 class="flex items-center justify-center w-[62px] h-[62px] rounded-full text-white animate-booking-pulse transition-transform duration-200 hover:scale-110 active:scale-95"
@@ -93,7 +92,7 @@ defmodule GymStudioWeb.Layouts do
 
     ~H"""
     <nav
-      id="mobile-bottom-nav"
+      id="mobile-bottom-nav-trainer"
       phx-hook="MobileBottomNav"
       data-tabs={
         Jason.encode!(
