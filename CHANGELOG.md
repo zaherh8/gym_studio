@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-04-19
+
+### Fixed
+- Mobile bottom nav active tab not updating on LiveView navigation (#90)
+  - Changed JS hook to listen for `phx:page-loading-stop` instead of `phx:navigated`
+  - `phx:navigated` only fires for `<.link navigate>` links, but bottom nav uses `<.link href>` (redirect-style)
+  - Now active state correctly updates on every navigation, including browser back/forward
+
 ## [0.4.0] - 2026-04-19
 
 ### Added

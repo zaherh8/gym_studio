@@ -88,7 +88,7 @@ const FlashAutoDismiss = {
 /**
  * MobileBottomNav hook — keeps the active tab in sync with the current URL.
  * The root layout only renders once per live_session, so @conn.request_path
- * goes stale on live navigation. This hook listens for phx:navigated and
+ * goes stale on live navigation. This hook listens for phx:page-loading-stop and
  * updates the active classes / icons client-side.
  *
  * Expects the <nav> to have data-tabs='[{"path":"/client","icon":"hero-home","activeIcon":"hero-home-solid","label":"Home","fab":false}, ...]'
@@ -98,7 +98,7 @@ const MobileBottomNav = {
     this._updateActive()
     this._applyFabTransform()
     this._unsub = [
-      listen("phx:navigated", () => this._updateActive()),
+      listen("phx:page-loading-stop", () => this._updateActive()),
       listen("popstate", () => this._updateActive()),
     ]
   },
