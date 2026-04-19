@@ -25,6 +25,22 @@ defmodule GymStudioWeb.Layouts do
 
     ~H"""
     <nav
+      id="mobile-bottom-nav-client"
+      phx-hook="MobileBottomNav"
+      data-tabs={
+        Jason.encode!(
+          Enum.map(
+            @tabs,
+            &%{
+              path: to_string(&1.path),
+              icon: &1[:icon],
+              activeIcon: &1[:active_icon],
+              label: &1.label,
+              fab: &1[:fab] || false
+            }
+          )
+        )
+      }
       class="fixed bottom-0 inset-x-0 z-50 md:hidden"
       style="backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%); background: rgba(255, 255, 255, 0.75); padding-bottom: env(safe-area-inset-bottom);"
     >
@@ -34,9 +50,8 @@ defmodule GymStudioWeb.Layouts do
           <%= if tab.fab do %>
             <.link
               navigate={tab.path}
-              class="flex items-center justify-center"
+              class="flex items-center justify-center fab-button"
               aria-label={tab.label}
-              style="transform: translateY(-28px);"
             >
               <span
                 class="flex items-center justify-center w-[62px] h-[62px] rounded-full text-white animate-booking-pulse transition-transform duration-200 hover:scale-110 active:scale-95"
@@ -77,6 +92,22 @@ defmodule GymStudioWeb.Layouts do
 
     ~H"""
     <nav
+      id="mobile-bottom-nav-trainer"
+      phx-hook="MobileBottomNav"
+      data-tabs={
+        Jason.encode!(
+          Enum.map(
+            @tabs,
+            &%{
+              path: to_string(&1.path),
+              icon: &1[:icon],
+              activeIcon: &1[:active_icon],
+              label: &1.label,
+              fab: &1[:fab] || false
+            }
+          )
+        )
+      }
       class="fixed bottom-0 inset-x-0 z-50 bg-base-100 border-t border-base-300 md:hidden"
       style="padding-bottom: env(safe-area-inset-bottom);"
     >

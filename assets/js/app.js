@@ -64,7 +64,7 @@ const ProgressChart = {
       }
     })
   },
-  destroyed() {
+  disconnected() {
     if (this.chart) this.chart.destroy()
   }
 }
@@ -80,12 +80,97 @@ const FlashAutoDismiss = {
       this.el.style.display = "none"
     }, 5000)
   },
-  destroyed() {
+  disconnected() {
     if (this.timer) clearTimeout(this.timer)
   }
 }
 
-const Hooks = { ProgressChart, FlashAutoDismiss }
+/**
+ * MobileBottomNav hook — keeps the active tab in sync with the current URL.
+ * The root layout only renders once per live_session, so @conn.request_path
+ * goes stale on live navigation. This hook listens for phx:navigated and
+ * updates the active classes / icons client-side.
+ *
+ * Expects the <nav> to have data-tabs='[{"path":"/client","icon":"hero-home","activeIcon":"hero-home-solid","label":"Home","fab":false}, ...]'
+ */
+const MobileBottomNav = {
+  mounted() {
+    this._updateActive()
+    this._applyFabTransform()
+    this._unsub = [
+      listen("phx:navigated", () => this._updateActive()),
+      listen("popstate", () => this._updateActive()),
+    ]
+  },
+  disconnected() {
+    (this._unsub || []).forEach(fn => fn())
+  },
+  _updateActive() {
+    const path = window.location.pathname
+    const tabs = JSON.parse(this.el.dataset.tabs || "[]")
+
+    // Build the list of link elements inside the nav
+    const links = this.el.querySelectorAll("a[href]")
+
+    links.forEach((link) => {
+      const href = link.getAttribute("href")
+      const tab = tabs.find(t => t.path === href)
+      if (!tab) return
+
+      const isActive = tabActive(path, tab.path)
+      // Update icon: swap between solid and outline
+      const icon = link.querySelector("svg, .hero-icon")
+      if (icon && tab.activeIcon && tab.icon) {
+        const current = icon.getAttribute("class") || ""
+        // Heroicon class names follow the pattern hero-<name>
+        const newName = isActive ? tab.activeIcon : tab.icon
+        const replaced = current.replace(/hero-[a-z-]+(-solid)?/i, newName)
+        if (replaced !== current) icon.setAttribute("class", replaced)
+      }
+
+      // Update link styling
+      if (tab.fab) return // FAB buttons don't have active state
+
+      if (isActive) {
+        link.classList.remove("text-base-content/40", "text-gray-500")
+        link.classList.add("text-base-content", "text-primary")
+        link.style.transform = "scale(1.08)"
+        // Add active dot if not present
+        const dot = link.querySelector(".nav-active-dot")
+        if (!dot) {
+          const d = document.createElement("span")
+          d.className = "w-1 h-1 rounded-full bg-primary mt-0.5 nav-active-dot"
+          link.appendChild(d)
+        }
+      } else {
+        link.classList.remove("text-base-content", "text-primary")
+        link.classList.add("text-base-content/40", "text-gray-500")
+        link.style.transform = ""
+        // Remove active dot
+        const dot = link.querySelector(".nav-active-dot")
+        if (dot) dot.remove()
+      }
+    })
+  },
+  _applyFabTransform() {
+    const fab = this.el.querySelector(".fab-button")
+    if (fab) fab.style.transform = "translateY(-28px)"
+  }
+}
+
+function tabActive(currentPath, tabPath) {
+  if (["/client", "/trainer", "/admin", "/users/settings"].includes(tabPath)) {
+    return currentPath === tabPath
+  }
+  return currentPath === tabPath || currentPath.startsWith(tabPath + "/")
+}
+
+function listen(event, fn) {
+  window.addEventListener(event, fn)
+  return () => window.removeEventListener(event, fn)
+}
+
+const Hooks = { ProgressChart, FlashAutoDismiss, MobileBottomNav }
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
