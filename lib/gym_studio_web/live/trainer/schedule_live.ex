@@ -317,7 +317,7 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
 
     cal_start
     |> Stream.iterate(&Date.add(&1, 1))
-    |> Stream.take_while(&(&1 <= cal_end))
+    |> Stream.take_while(&(Date.compare(&1, cal_end) != :gt))
     |> Enum.chunk_every(7)
   end
 
