@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-04-19
+
+### Added
+- Glass bottom navigation bar for mobile clients — frosted glass effect, 5-tab layout with pulse FAB for booking (#79, #80, #84)
+- Horizontal wordmark logos for navbar, hero, and footer sections (#82)
+- Trainer/admin bottom navigation bar with role-specific tabs
+- `aria-label` on all navigation tabs for accessibility
+- LiveView `navigate` links for SPA-style page transitions (no full reloads)
+- Role-specific body padding: `pb-24` for client, `pb-20` for trainer/admin
+- iOS safe area support via `env(safe-area-inset-bottom)` on mobile nav
+- Pulse animation on booking FAB (plays 3 times then stops)
+
+### Changed
+- Replaced old R-icon + "REACT" text with horizontal wordmark SVGs across all layouts
+- Removed unused logo assets (20 → 8 files kept)
+- Tab label font size increased to 11px for better mobile readability
+
+### Fixed
+- Bottom content no longer hidden behind fixed mobile nav bar
+- Active tab indicator now uses DaisyUI `text-primary` / `text-base-content` tokens (theme-aware)
+
 ## [0.2.1] - 2026-04-12
 
 ### Fixed
