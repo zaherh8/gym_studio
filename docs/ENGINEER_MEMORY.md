@@ -150,3 +150,29 @@ Lessons learned from code reviews. Read this before every task.
 - **Branch filter consistency:** When joining sessions + users, always filter on `s.branch_id` (session's branch), not `c.branch_id` (client's current branch). If a client moves branches, filtering on `c.branch_id` leaks old sessions into the wrong branch's client list.
 - **`get_branch/1` doesn't exist** — only `get_branch!/1` (raises) and `get_branch_by_slug/1`. For validation in changesets, use `get_branch!` with `rescue Ecto.NoResultsError`.
 - **Registration must validate branch is active**, not just that it exists. `foreign_key_constraint` only checks FK integrity — it doesn't validate business rules like `active == true`. Use a custom `validate_branch_active` changeset helper.
+
+## Timezone Awareness
+
+- **Never use `Time.utc_now()` or `Date.utc_today()` for display logic.** The app is configured for Asia/Beirut timezone. Use `DateTime.now("Asia/Beirut")` for any time calculations shown to users (now-lines, date comparisons in templates, etc.).
+- **`DateTime.now/1` requires tzdata.** Without the `tzdata` dependency and `config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase`, named timezone lookups fail with `{:error, :utc_only_time_zone_database}`. Always add `tzdata` to deps when using named timezones.
+- **Graceful fallback:** When `DateTime.now("Asia/Beirut")` fails (e.g., test env without tzdata), fall back to `Time.utc_now()` rather than crashing.
+
+## IntersectionObserver / Scroll Hooks
+
+- **Never use boolean toggle events from IntersectionObserver.** An observer that fires `toggle_calendar` when an element leaves viewport creates an infinite loop: collapse → scroll → re-expand → scroll → collapse. Use one-directional events (e.g., `collapse_calendar` that only sets `false`, with a separate `expand_calendar` that only sets `true`).
+
+## Cross-View Session Lookup
+
+- **When session data exists in multiple assigns (day_sessions, week_sessions), lookup must search all of them.** A click handler that only searches one map will silently fail for sessions in the other. Use a unified `find_session_by_id` that handles both flat (`%{hour => [sessions]}`) and nested (`%{date => %{hour => [sessions]}}`) map structures.
+
+## Elixir Pattern Matching
+
+- **`Date.from_iso8601/1` returns `{:error, reason}`, not `:error`.** Pattern matching on `:error` will never match. Always use `{:error, _}`.
+
+## Socket Assigns vs Module Attributes
+
+- **Compile-time constants (color maps, ranges) should be module attributes, not socket assigns.** Socket assigns are for runtime data that changes per request. Moving static maps to `@module_attr` avoids unnecessary assigns and template `@` references. Use helper functions (e.g., `heat_color_for_level/1`) for template access to module attributes.
+
+## Dead Code in Date Calculations
+
+- **`Date.beginning_of_week` on a value that's already the beginning of the week is a no-op.** Same for `Date.end_of_week` on a value computed from `beginning_of_week + 6`. Remove unnecessary recalculations.
