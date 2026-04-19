@@ -93,7 +93,11 @@
       })();
     </script>
   </head>
-  <body class={["bg-base-100", @current_scope && "pb-24 md:pb-0"]}>
+  <body class={[
+    "bg-base-100",
+    @current_scope &&
+      if(@current_scope.user.role == :client, do: "pb-24 md:pb-0", else: "pb-20 md:pb-0")
+  ]}>
     <%!-- Modern Navigation Header --%>
     <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-base-300/50 shadow-sm">
       <nav class="container mx-auto px-4 sm:px-6 lg:px-8">

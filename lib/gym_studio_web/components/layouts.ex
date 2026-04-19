@@ -42,7 +42,7 @@ defmodule GymStudioWeb.Layouts do
                 class="flex items-center justify-center w-[62px] h-[62px] rounded-full text-white animate-booking-pulse transition-transform duration-200 hover:scale-110 active:scale-95"
                 style="background: linear-gradient(135deg, #E63946, #C72F3C); box-shadow: 0 4px 16px rgba(230, 57, 70, 0.35);"
               >
-                <.icon name="hero-plus" class="size-7" />
+                <span aria-hidden="true"><.icon name="hero-plus" class="size-7" /></span>
               </span>
             </.link>
           <% else %>
@@ -52,8 +52,8 @@ defmodule GymStudioWeb.Layouts do
               class={[
                 "flex items-center justify-center p-3 transition-all duration-200",
                 if(tab_active?(@current_path, tab.path),
-                  do: "text-[#1a1a1a]",
-                  else: "text-[#9ca3af]"
+                  do: "text-base-content",
+                  else: "text-base-content/40"
                 )
               ]}
               style={
@@ -76,12 +76,15 @@ defmodule GymStudioWeb.Layouts do
     assigns = assign(assigns, :tabs, tabs_for_role(assigns.current_scope.user.role))
 
     ~H"""
-    <nav class="fixed bottom-0 inset-x-0 z-50 bg-base-100 border-t border-base-300 pb-[env(safe-area-inset-bottom)] md:hidden">
-      <div class="flex items-end justify-around h-16 px-2">
+    <nav
+      class="fixed bottom-0 inset-x-0 z-50 bg-base-100 border-t border-base-300 md:hidden"
+      style="padding-bottom: env(safe-area-inset-bottom);"
+    >
+      <div class="flex items-center justify-around h-18 px-2">
         <%= for tab <- @tabs do %>
           <%= if tab.fab do %>
             <.link
-              href={tab.path}
+              navigate={tab.path}
               class="flex flex-col items-center justify-center -mt-6"
               aria-label={tab.label}
             >
@@ -91,9 +94,10 @@ defmodule GymStudioWeb.Layouts do
             </.link>
           <% else %>
             <.link
-              href={tab.path}
+              navigate={tab.path}
+              aria-label={tab.label}
               class={[
-                "flex flex-col items-center justify-center gap-0.5 py-2 px-3 rounded-lg transition-colors duration-200 min-w-[4rem]",
+                "flex flex-col items-center justify-center gap-1 py-2 px-3 rounded-lg transition-colors duration-200 min-w-[4rem]",
                 if(tab_active?(@current_path, tab.path),
                   do: "text-primary",
                   else: "text-gray-500 hover:text-gray-700"
@@ -101,7 +105,7 @@ defmodule GymStudioWeb.Layouts do
               ]}
             >
               <.icon name={tab.icon} class="size-6" />
-              <span class="text-[10px] font-medium leading-tight">{tab.label}</span>
+              <span class="text-[11px] font-medium leading-tight">{tab.label}</span>
               <%= if tab_active?(@current_path, tab.path) do %>
                 <span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>
               <% end %>
@@ -131,7 +135,6 @@ defmodule GymStudioWeb.Layouts do
       },
       %{
         icon: "hero-plus",
-        active_icon: "hero-plus",
         label: "Book",
         path: ~p"/client/book",
         fab: true

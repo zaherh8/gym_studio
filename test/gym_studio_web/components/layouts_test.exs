@@ -80,9 +80,9 @@ defmodule GymStudioWeb.LayoutsTest do
           current_path: "/client"
         )
 
-      # Home tab should be active — uses solid icon and near-black color
+      # Home tab should be active — uses solid icon and base-content color
       assert html =~ "hero-home-solid"
-      assert html =~ "text-[#1a1a1a]"
+      assert html =~ "text-base-content"
     end
 
     test "highlights active tab for client on sessions" do
@@ -128,8 +128,8 @@ defmodule GymStudioWeb.LayoutsTest do
       [before_progress, _after] = String.split(html, ~s(href="/client/progress"), parts: 2)
       [_before_home, home_section] = String.split(before_progress, ~s(href="/client"), parts: 2)
 
-      # Home tab section should have inactive gray color
-      assert home_section =~ "text-[#9ca3af]"
+      # Home tab section should have inactive color
+      assert home_section =~ "text-base-content/40"
     end
 
     test "nav is hidden on md breakpoint and above" do
@@ -188,6 +188,109 @@ defmodule GymStudioWeb.LayoutsTest do
           current_path: "/client"
         )
 
+      assert html =~ "safe-area-inset-bottom"
+    end
+
+    test "nav landmark element is present" do
+      for role <- [:client, :trainer, :admin] do
+        user = user_fixture(%{role: role})
+        scope = user_scope_fixture(user)
+
+        html =
+          render_component(&Layouts.mobile_bottom_nav/1,
+            current_scope: scope,
+            current_path: "/"
+          )
+
+        assert html =~ ~s(<nav)
+      end
+    end
+
+    test "aria-label attributes exist on all tab links for client" do
+      user = user_fixture(%{role: :client})
+      scope = user_scope_fixture(user)
+
+      html =
+        render_component(&Layouts.mobile_bottom_nav/1,
+          current_scope: scope,
+          current_path: "/client"
+        )
+
+      for label <- ["Home", "Progress", "Book", "Schedule", "Profile"] do
+        assert html =~ ~s(aria-label="#{label}")
+      end
+    end
+
+    test "aria-label attributes exist on all tab links for trainer" do
+      user = user_fixture(%{role: :trainer})
+      scope = user_scope_fixture(user)
+
+      html =
+        render_component(&Layouts.mobile_bottom_nav/1,
+          current_scope: scope,
+          current_path: "/trainer"
+        )
+
+      for label <- ["Home", "Clients", "Session", "Schedule", "Profile"] do
+        assert html =~ ~s(aria-label="#{label}")
+      end
+    end
+
+    test "client nav uses SPA-style navigation (data-phx-link)" do
+      user = user_fixture(%{role: :client})
+      scope = user_scope_fixture(user)
+
+      html =
+        render_component(&Layouts.mobile_bottom_nav/1,
+          current_scope: scope,
+          current_path: "/client"
+        )
+
+      # navigate links render with data-phx-link="redirect"
+      assert html =~ ~s(data-phx-link="redirect")
+    end
+
+    test "trainer nav uses SPA-style navigation (data-phx-link)" do
+      user = user_fixture(%{role: :trainer})
+      scope = user_scope_fixture(user)
+
+      html =
+        render_component(&Layouts.mobile_bottom_nav/1,
+          current_scope: scope,
+          current_path: "/trainer"
+        )
+
+      assert html =~ ~s(data-phx-link="redirect")
+    end
+
+    test "FAB icon has aria-hidden" do
+      user = user_fixture(%{role: :client})
+      scope = user_scope_fixture(user)
+
+      html =
+        render_component(&Layouts.mobile_bottom_nav/1,
+          current_scope: scope,
+          current_path: "/client"
+        )
+
+      # The hero-plus icon inside the FAB should be aria-hidden
+      assert html =~ ~s(aria-hidden="true")
+    end
+
+    test "trainer nav has centered items and safe area" do
+      user = user_fixture(%{role: :trainer})
+      scope = user_scope_fixture(user)
+
+      html =
+        render_component(&Layouts.mobile_bottom_nav/1,
+          current_scope: scope,
+          current_path: "/trainer"
+        )
+
+      # Items should be centered vertically, not bottom-aligned
+      assert html =~ "items-center"
+      refute html =~ "items-end"
+      # Safe area padding via style attribute
       assert html =~ "safe-area-inset-bottom"
     end
   end

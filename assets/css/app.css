@@ -156,6 +156,8 @@
   100% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0), 0 4px 16px rgba(230, 57, 70, 0.35); }
 }
 
-.animate-booking-pulse {
-  animation: booking-pulse 2.2s ease-out 3;
+@media (prefers-reduced-motion: no-preference) {
+  .animate-booking-pulse {
+    animation: booking-pulse 2.2s ease-out 3;
+  }
 }
