@@ -17,17 +17,16 @@ defmodule GymStudioWeb.LayoutsTest do
           current_path: "/client"
         )
 
-      assert html =~ "Home"
-      assert html =~ "Schedule"
-      assert html =~ "Progress"
-      assert html =~ "Profile"
+      # Client glass nav is icon-only (no labels), verify routes exist
       assert html =~ ~s(href="/client/book")
       assert html =~ ~s(href="/client/sessions")
       assert html =~ ~s(href="/client/progress")
       assert html =~ ~s(href="/users/settings")
-      # FAB button for book
-      assert html =~ "bg-primary"
+      # FAB button with gradient background
       assert html =~ "hero-plus"
+      assert html =~ "animate-booking-pulse"
+      # Glass effect
+      assert html =~ "backdrop-filter"
     end
 
     test "renders correct tabs for trainer role" do
@@ -81,9 +80,9 @@ defmodule GymStudioWeb.LayoutsTest do
           current_path: "/client"
         )
 
-      # Home tab should be active (text-primary)
-      # The active indicator dot should be present
-      assert html =~ "text-primary"
+      # Home tab should be active — uses solid icon and near-black color
+      assert html =~ "hero-home-solid"
+      assert html =~ "text-[#1a1a1a]"
     end
 
     test "highlights active tab for client on sessions" do
@@ -96,8 +95,8 @@ defmodule GymStudioWeb.LayoutsTest do
           current_path: "/client/sessions"
         )
 
-      # Sessions prefix should match Schedule tab
-      assert html =~ "text-primary"
+      # Sessions prefix should match Schedule tab — uses solid icon
+      assert html =~ "hero-calendar-days-solid"
     end
 
     test "highlights active tab for nested path" do
@@ -111,7 +110,7 @@ defmodule GymStudioWeb.LayoutsTest do
         )
 
       # Nested session path should still match Schedule tab
-      assert html =~ "text-primary"
+      assert html =~ "hero-calendar-days-solid"
     end
 
     test "does not highlight home tab when on sub-path" do
@@ -124,14 +123,13 @@ defmodule GymStudioWeb.LayoutsTest do
           current_path: "/client/progress"
         )
 
-      # Parse the HTML to check that the Home link doesn't have text-primary
-      # while the Progress link does
-      # We check by splitting on the href to isolate each tab's classes
+      # Parse the HTML to check that the Home link uses outline icon (inactive)
+      # while the Progress link uses solid icon (active)
       [before_progress, _after] = String.split(html, ~s(href="/client/progress"), parts: 2)
       [_before_home, home_section] = String.split(before_progress, ~s(href="/client"), parts: 2)
 
-      # Home tab section should have text-gray-500 (inactive)
-      assert home_section =~ "text-gray-500"
+      # Home tab section should have inactive gray color
+      assert home_section =~ "text-[#9ca3af]"
     end
 
     test "nav is hidden on md breakpoint and above" do
@@ -158,9 +156,10 @@ defmodule GymStudioWeb.LayoutsTest do
         )
 
       assert html =~ "rounded-full"
-      assert html =~ "bg-primary"
-      assert html =~ "shadow-lg"
-      assert html =~ "-mt-6"
+      assert html =~ "w-[62px]"
+      assert html =~ "h-[62px]"
+      assert html =~ "translateY(-28px)"
+      assert html =~ "linear-gradient"
     end
 
     test "prefix match does not false-positive on similar paths" do
@@ -174,15 +173,9 @@ defmodule GymStudioWeb.LayoutsTest do
           current_path: "/client/sessions-archive"
         )
 
-      # No tab should be primary — exact root paths won't match
-      # and /client/sessions-archive doesn't start with /client/sessions/
-      [before_book, _after] = String.split(html, ~s(href="/client/book"), parts: 2)
-
-      [_before_schedule, schedule_section] =
-        String.split(before_book, ~s(href="/client/sessions"), parts: 2)
-
-      # Schedule tab should NOT be active (no text-primary in its section)
-      assert schedule_section =~ "text-gray-500"
+      # Schedule tab should NOT be active — uses outline icon, not solid
+      assert html =~ "hero-calendar"
+      refute html =~ "hero-calendar-days-solid"
     end
 
     test "iOS safe area padding is applied" do
