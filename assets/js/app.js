@@ -77,8 +77,8 @@ const ProgressChart = {
 const ScheduleCollapse = {
   mounted() {
     this._observer = null
-    this._seenOnce = false
-    this._setupObserver()
+    // Delay observer setup to avoid triggering on initial render/layout
+    setTimeout(() => this._setupObserver(), 1000)
   },
   destroyed() {
     if (this._observer) this._observer.disconnect()
@@ -89,11 +89,6 @@ const ScheduleCollapse = {
 
     this._observer = new IntersectionObserver(
       ([entry]) => {
-        // Skip the very first observation (initial state, not a scroll event)
-        if (!this._seenOnce) {
-          this._seenOnce = true
-          return
-        }
         // Only collapse when the sentinel scrolls out of the viewport
         // (one-directional: never auto-expands)
         if (!entry.isIntersecting) {
