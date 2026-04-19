@@ -77,6 +77,7 @@ const ProgressChart = {
 const ScheduleCollapse = {
   mounted() {
     this._observer = null
+    this._seenOnce = false
     this._setupObserver()
   },
   destroyed() {
@@ -84,17 +85,22 @@ const ScheduleCollapse = {
   },
   _setupObserver() {
     const sentinel = this.el.querySelector("#calendar-sentinel")
-    const grid = this.el.querySelector("#month-grid")
-    if (!sentinel || !grid) return
+    if (!sentinel) return
 
     this._observer = new IntersectionObserver(
       ([entry]) => {
+        // Skip the very first observation (initial state, not a scroll event)
+        if (!this._seenOnce) {
+          this._seenOnce = true
+          return
+        }
+        // Only collapse when the sentinel scrolls out of the viewport
+        // (one-directional: never auto-expands)
         if (!entry.isIntersecting) {
-          // Grid has scrolled out of view → collapse (one-directional, never auto-expands)
           this.pushEvent("collapse_calendar", {})
         }
       },
-      { threshold: 0, rootMargin: "0px 0px -50% 0px" }
+      { threshold: 0 }
     )
     this._observer.observe(sentinel)
   },

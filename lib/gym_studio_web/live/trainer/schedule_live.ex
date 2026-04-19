@@ -548,7 +548,7 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
     <!-- ==================== MOBILE VIEW (new month grid + hourly rail) ==================== -->
         <div class="lg:hidden" id="mobile-schedule" phx-hook="ScheduleCollapse">
           <!-- Sentinel for IntersectionObserver (scroll-triggered collapse) -->
-          <div id="calendar-sentinel" class="h-0"></div>
+          <div id="calendar-sentinel" class="h-1"></div>
           
     <!-- Month Navigation -->
           <div class="flex justify-between items-center mb-3">
