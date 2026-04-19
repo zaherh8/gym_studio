@@ -69,7 +69,38 @@ const ProgressChart = {
   }
 }
 
-const Hooks = { ProgressChart }
+/**
+ * ScheduleCollapse hook — collapses the month grid into a week strip
+ * when the user scrolls the hourly rail. Uses an IntersectionObserver
+ * on a sentinel element at the top of the rail.
+ */
+const ScheduleCollapse = {
+  mounted() {
+    this._observer = null
+    this._setupObserver()
+  },
+  destroyed() {
+    if (this._observer) this._observer.disconnect()
+  },
+  _setupObserver() {
+    const sentinel = this.el.querySelector("#calendar-sentinel")
+    const grid = this.el.querySelector("#month-grid")
+    if (!sentinel || !grid) return
+
+    this._observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) {
+          // Grid has scrolled out of view → collapse
+          this.pushEvent("toggle_calendar", {})
+        }
+      },
+      { threshold: 0, rootMargin: "0px 0px -50% 0px" }
+    )
+    this._observer.observe(sentinel)
+  },
+}
+
+const Hooks = { ProgressChart, ScheduleCollapse }
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {

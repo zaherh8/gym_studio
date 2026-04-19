@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-04-19
+
+### Added
+- Trainer schedule redesign with month grid + hourly day rail for mobile (#86)
+- Heat-map density circles on month grid (5 levels, busier = redder)
+- Scroll-triggered collapse: month grid collapses into week strip with "Expand ∨" link
+- Hourly day rail (6 AM–10 PM) with session cards and open slot cards
+- Session cards with 4px left accent bar (red confirmed, amber pending, gray cancelled)
+- Status badge pills: CONFIRMED, PENDING, CANCELLED with color-coded styles
+- Open slot cards with dashed border and red `+` button (placeholder for #85)
+- Stats row: booked · pending · open counts
+- Now-line indicator at current time
+- Heat-map legend with gradient indicator
+- Month navigation with `<` `>` chevrons
+- Day selection on month grid loads hourly rail for that day
+- `ScheduleCollapse` JS hook with IntersectionObserver for scroll-triggered collapse
+- `count_sessions_per_day_for_trainer/4` in Scheduling context for heat-map data
+- Flash message container in schedule LiveView
+
+### Changed
+- Mobile schedule view completely redesigned from single-day list to month grid + hourly rail
+- Desktop 7-day weekly grid unchanged
+- Calendar navigation uses month-based instead of week-based on mobile
+- Tests updated to use `set_trainer_availability` instead of `time_slot_fixture`
+
 ## [0.3.0] - 2026-04-19
 
 ### Added

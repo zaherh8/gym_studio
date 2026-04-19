@@ -115,6 +115,11 @@ Lessons learned from code reviews. Read this before every task.
 - **Use `Enum.group_by` not `Enum.into` for hour grouping** — `Enum.into` overwrites when multiple sessions share the same hour. Always use list-based grouping for calendar data.
 - **Modal click-through:** Never put `phx-click="close_modal"` on the outer `.modal` div — click events bubble up from content. Use only `phx-click-away` on `.modal-box`.
 - **Type consistency in filters:** Form params arrive as strings. Compare with `to_string(uuid)` when matching against Ecto UUID fields in templates.
+- **Heat-map data requires a dedicated query** — `count_sessions_per_day_for_trainer/4` groups by `DATE(scheduled_at)` and returns `%Date{} => count`. PostgreSQL's `DATE()` returns an Ecto Date struct, not a string — handle both types with pattern matching.
+- **No `elseif` in HEEX templates** — Elixir doesn't have `elseif`. Use `cond do` in helper functions instead of inline multi-branch `if` in class/style attributes.
+- **Scroll-triggered collapse** — Use a sentinel element + IntersectionObserver in a `phx-hook`. The hook pushes an event to the LiveView to toggle state. Works without full-page reload.
+- **Flash messages need a container** — `put_flash/3` in LiveView handle_event only works if there's a flash container in the rendered template or layout. Root layout didn't have one, so added inline flash display in the LiveView itself.
+- **Trainer availability vs time slots** — The schedule `is_available?` check uses `TrainerAvailability` records (set via `set_trainer_availability/3`), NOT `TimeSlot` records. Tests that need available slots must create trainer availability, not time slots.
 
 ## Label / Display Conventions
 
