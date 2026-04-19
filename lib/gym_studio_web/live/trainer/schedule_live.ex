@@ -209,8 +209,8 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
   end
 
   def handle_event("previous_month", _params, socket) do
-    new_month = Date.add(socket.assigns.current_month, -1)
-    new_month_start = Date.beginning_of_month(new_month)
+    prev_month = Date.add(socket.assigns.current_month, -32)
+    new_month_start = Date.beginning_of_month(prev_month)
 
     socket =
       socket
@@ -221,8 +221,8 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
   end
 
   def handle_event("next_month", _params, socket) do
-    next = Date.add(socket.assigns.current_month, 1)
-    new_month_start = Date.beginning_of_month(next)
+    next_month = Date.add(socket.assigns.current_month, 32)
+    new_month_start = Date.beginning_of_month(next_month)
 
     socket =
       socket
