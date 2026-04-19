@@ -133,13 +133,13 @@
                 {@current_scope.user.name || @current_scope.user.email}
               </span>
               <.link
-                href={dashboard_path}
+                navigate={dashboard_path}
                 class="btn btn-ghost btn-sm rounded-full text-gray-700 hover:text-white hover:bg-primary"
               >
                 Dashboard
               </.link>
               <.link
-                href={notifications_path}
+                navigate={notifications_path}
                 class="btn btn-ghost btn-sm btn-circle relative text-gray-700 hover:text-primary"
               >
                 <.icon name="hero-bell" class="size-5" />
@@ -166,7 +166,7 @@
             <%!-- Mobile Nav (simplified — bottom nav handles navigation) --%>
             <div class="flex md:hidden items-center gap-1">
               <.link
-                href={notifications_path}
+                navigate={notifications_path}
                 class="btn btn-ghost btn-sm btn-circle relative text-gray-700"
               >
                 <.icon name="hero-bell" class="size-5" />
