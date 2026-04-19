@@ -20,6 +20,57 @@ defmodule GymStudioWeb.Layouts do
   attr :current_scope, :map, required: true
   attr :current_path, :string, required: true
 
+  def mobile_bottom_nav(%{current_scope: %{user: %{role: :client}}} = assigns) do
+    assigns = assign(assigns, :tabs, tabs_for_role(:client))
+
+    ~H"""
+    <nav
+      class="fixed bottom-0 inset-x-0 z-50 md:hidden"
+      style="backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%); background: rgba(255, 255, 255, 0.75); padding-bottom: env(safe-area-inset-bottom);"
+    >
+      <div class="border-t border-gray-200/50" style="border-top-width: 0.5px;"></div>
+      <div class="flex items-center justify-around h-16 px-2 relative">
+        <%= for tab <- @tabs do %>
+          <%= if tab.fab do %>
+            <.link
+              href={tab.path}
+              class="flex items-center justify-center"
+              aria-label={tab.label}
+              style="transform: translateY(-28px);"
+            >
+              <span
+                class="flex items-center justify-center w-[62px] h-[62px] rounded-full text-white animate-booking-pulse transition-transform duration-200 hover:scale-110 active:scale-95"
+                style="background: linear-gradient(135deg, #E63946, #C72F3C); box-shadow: 0 4px 16px rgba(230, 57, 70, 0.35);"
+              >
+                <.icon name="hero-plus" class="size-7" />
+              </span>
+            </.link>
+          <% else %>
+            <.link
+              href={tab.path}
+              class={[
+                "flex items-center justify-center p-3 transition-all duration-200",
+                if(tab_active?(@current_path, tab.path),
+                  do: "text-[#1a1a1a]",
+                  else: "text-[#9ca3af]"
+                )
+              ]}
+              style={
+                if(tab_active?(@current_path, tab.path), do: "transform: scale(1.08);", else: "")
+              }
+            >
+              <.icon
+                name={if(tab_active?(@current_path, tab.path), do: tab.active_icon, else: tab.icon)}
+                class="size-6"
+              />
+            </.link>
+          <% end %>
+        <% end %>
+      </div>
+    </nav>
+    """
+  end
+
   def mobile_bottom_nav(assigns) do
     assigns = assign(assigns, :tabs, tabs_for_role(assigns.current_scope.user.role))
 
@@ -63,11 +114,41 @@ defmodule GymStudioWeb.Layouts do
 
   defp tabs_for_role(:client) do
     [
-      %{icon: "hero-home", label: "Home", path: ~p"/client", fab: false},
-      %{icon: "hero-calendar", label: "Schedule", path: ~p"/client/sessions", fab: false},
-      %{icon: "hero-plus", label: "Book", path: ~p"/client/book", fab: true},
-      %{icon: "hero-chart-bar", label: "Progress", path: ~p"/client/progress", fab: false},
-      %{icon: "hero-user", label: "Profile", path: ~p"/users/settings", fab: false}
+      %{
+        icon: "hero-home",
+        active_icon: "hero-home-solid",
+        label: "Home",
+        path: ~p"/client",
+        fab: false
+      },
+      %{
+        icon: "hero-chart-bar",
+        active_icon: "hero-chart-bar-solid",
+        label: "Progress",
+        path: ~p"/client/progress",
+        fab: false
+      },
+      %{
+        icon: "hero-plus",
+        active_icon: "hero-plus",
+        label: "Book",
+        path: ~p"/client/book",
+        fab: true
+      },
+      %{
+        icon: "hero-calendar",
+        active_icon: "hero-calendar-days-solid",
+        label: "Schedule",
+        path: ~p"/client/sessions",
+        fab: false
+      },
+      %{
+        icon: "hero-user",
+        active_icon: "hero-user-solid",
+        label: "Profile",
+        path: ~p"/users/settings",
+        fab: false
+      }
     ]
   end
 
