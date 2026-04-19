@@ -33,7 +33,7 @@ defmodule GymStudioWeb.Layouts do
         <%= for tab <- @tabs do %>
           <%= if tab.fab do %>
             <.link
-              href={tab.path}
+              navigate={tab.path}
               class="flex items-center justify-center"
               aria-label={tab.label}
               style="transform: translateY(-28px);"
@@ -47,7 +47,8 @@ defmodule GymStudioWeb.Layouts do
             </.link>
           <% else %>
             <.link
-              href={tab.path}
+              navigate={tab.path}
+              aria-label={tab.label}
               class={[
                 "flex items-center justify-center p-3 transition-all duration-200",
                 if(tab_active?(@current_path, tab.path),
