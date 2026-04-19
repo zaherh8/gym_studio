@@ -161,3 +161,126 @@
     animation: booking-pulse 2.2s ease-out 3;
   }
 }
+
+/* ==========================================================================
+   Trainer Schedule — Mobile Day Rail
+   ========================================================================== */
+
+.schedule-rail-row {
+  min-height: 58px;
+}
+
+.schedule-rail-time-label {
+  color: #AAAAAA;
+}
+
+.schedule-rail-slot-border {
+  border-color: #E8E8E8;
+}
+
+.schedule-day-header-label {
+  color: #888;
+  letter-spacing: 0.1em;
+}
+
+.schedule-stat-dot-booked {
+  background-color: #E63946;
+}
+
+.schedule-stat-dot-pending {
+  background-color: #F5A623;
+}
+
+.schedule-stat-dot-open {
+  background-color: white;
+}
+
+.schedule-open-slot-btn {
+  border-color: #E63946;
+  color: #E63946;
+}
+
+.schedule-open-slot-btn:hover {
+  background-color: #fef2f2;
+}
+
+.schedule-session-card {
+  border-color: #E8E8E8;
+  border-radius: 12px;
+}
+
+.schedule-now-line-dot {
+  background-color: #E63946;
+}
+
+.schedule-now-line-bar {
+  background-color: #E63946;
+}
+
+.schedule-day-header-dot {
+  color: #888;
+}
+
+.schedule-heat-legend-label {
+  color: #888;
+}
+
+.schedule-accent-bar-confirmed {
+  background-color: #E63946;
+}
+
+.schedule-accent-bar-pending {
+  background-color: #F5A623;
+}
+
+.schedule-accent-bar-cancelled {
+  background-color: #999999;
+}
+
+.schedule-status-badge-confirmed {
+  color: #E63946;
+  background-color: #FDECEA;
+}
+
+.schedule-status-badge-pending {
+  color: #F5A623;
+  background-color: #FFF8E1;
+}
+
+.schedule-status-badge-cancelled {
+  color: #666666;
+  background-color: #EDEDED;
+}
+
+.schedule-day-cell-selected {
+  background-color: #E63946;
+  color: white;
+  box-shadow: 0 0 0 2px #A32832;
+}
+
+.schedule-day-text-outside {
+  color: #CCCCCC;
+}
+
+.schedule-day-text-today {
+  color: #E63946;
+}
+
+.schedule-heat-dot {
+  background-color: #D94040;
+}
+
+.schedule-selected-indicator {
+  background-color: #E63946;
+}
+
+/* Flash auto-dismiss animation */
+@keyframes flash-fade-out {
+  0% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.flash-auto-dismiss {
+  animation: flash-fade-out 5s ease-out forwards;
+}

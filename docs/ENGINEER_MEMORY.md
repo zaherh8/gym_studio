@@ -176,3 +176,16 @@ Lessons learned from code reviews. Read this before every task.
 ## Dead Code in Date Calculations
 
 - **`Date.beginning_of_week` on a value that's already the beginning of the week is a no-op.** Same for `Date.end_of_week` on a value computed from `beginning_of_week + 6`. Remove unnecessary recalculations.
+
+## Schedule Redesign — Month Grid + Day Rail (PR #87)
+
+- **`select_date` must sync `current_month`** when clicking a padding day from another month. Without this, the month grid doesn't navigate to show the selected date. Check `date.month != current_month.month or date.year != current_month.year` and update `current_month` accordingly.
+- **`compute_day_stats` available hours must intersect with display range (6..21).** If a trainer's availability starts at 5 AM, counting `end_h - start_h` inflates the open count. Use `MapSet.intersection` with the display range to only count visible hours.
+- **Never use `Date.utc_today()` for display logic** — use `DateTime.now("Asia/Beirut")` with fallback. Store as `local_today` assign for template access. This prevents the now-line and today-highlight from being 3 hours off between midnight and 3 AM Beirut time.
+- **Now-line position should use percentage, not hardcoded pixel row height.** Use `(minutes_from_6am / 960) * 100%` instead of `minutes / 60 * 58px`. This is robust regardless of row height changes.
+- **Move hardcoded inline styles to CSS classes.** Hex colors in inline styles are hard to maintain and override. Use semantic CSS classes (e.g., `schedule-accent-bar-confirmed`, `schedule-now-line-dot`) and keep inline styles only for truly dynamic values (heat-map background colors from data).
+- **Flash messages need auto-dismiss** — use a `phx-hook` (`FlashAutoDismiss`) that hides the element after 5 seconds. The hook requires an `id` attribute on the element.
+- **`phx-hook` requires an `id` attribute** on the element. Without it, Phoenix LiveView raises a parse error.
+- **Remove unused helper functions** — `status_badge_styles`, `session_accent_color`, `day_text_style` etc. became dead code after moving to CSS classes. `mix compile --warnings-as-errors` catches these.
+- **Test for cross-month date selection** — verify that clicking a padding day from another month updates the month navigation header.
+- **Test for availability intersection with display range** — verify that hours outside 6..21 don't inflate the open count.

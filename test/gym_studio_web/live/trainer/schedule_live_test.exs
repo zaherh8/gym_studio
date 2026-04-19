@@ -123,6 +123,23 @@ defmodule GymStudioWeb.Trainer.ScheduleLiveTest do
       assert html =~ "My Schedule"
     end
 
+    test "selecting a date outside current month syncs the month navigation", %{
+      conn: conn,
+      trainer_user: trainer_user
+    } do
+      conn = log_in_user(conn, trainer_user)
+      {:ok, view, _html} = live(conn, ~p"/trainer/schedule")
+
+      # Select a date in the previous month
+      today = Date.utc_today()
+      prev_month_date = Date.add(today, -35)
+
+      html = render_click(view, "select_date", %{"date" => Date.to_iso8601(prev_month_date)})
+
+      # The month header should show the previous month
+      assert html =~ Calendar.strftime(prev_month_date, "%B %Y")
+    end
+
     test "calendar is always expanded", %{conn: conn, trainer_user: trainer_user} do
       conn = log_in_user(conn, trainer_user)
       {:ok, _view, html} = live(conn, ~p"/trainer/schedule")
@@ -216,6 +233,29 @@ defmodule GymStudioWeb.Trainer.ScheduleLiveTest do
 
       html = render_click(view, "open_slot_click", %{"hour" => "9"})
       assert html =~ "coming soon"
+    end
+
+    test "day stats only count available hours within display range", %{
+      conn: conn,
+      trainer_user: trainer_user
+    } do
+      today = Date.utc_today()
+      day_of_week = Date.day_of_week(today)
+
+      # Set availability starting at 5 AM (outside display range) to 10 AM
+      # Only 6..9 should count as available (4 hours), not 5..9 (5 hours)
+      {:ok, _availability} =
+        GymStudio.Scheduling.set_trainer_availability(trainer_user.id, day_of_week, %{
+          start_time: ~T[05:00:00],
+          end_time: ~T[10:00:00]
+        })
+
+      conn = log_in_user(conn, trainer_user)
+      {:ok, _view, html} = live(conn, ~p"/trainer/schedule")
+
+      # Open count should be 4 (hours 6, 7, 8, 9) not 5 (hours 5, 6, 7, 8, 9)
+      assert html =~ "4 open"
+      refute html =~ "5 open"
     end
   end
 end

@@ -17,7 +17,7 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.user
     trainer = Accounts.get_trainer_by_user_id(user.id)
-    today = Date.utc_today()
+    today = local_today()
     current_month = Date.beginning_of_month(today)
 
     socket =
@@ -27,6 +27,7 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
       |> assign(current_month: current_month)
       |> assign(selected_date: today)
       |> assign(selected_session: nil)
+      |> assign(local_today: today)
       |> assign(current_week_start: Date.beginning_of_week(today, :monday))
       |> load_schedule_data()
 
@@ -139,17 +140,27 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
       |> List.flatten()
       |> Enum.count(fn s -> s.status == "pending" end)
 
-    # Count available hours that have no sessions
+    # Count available hours within the display range (6..21) that have no sessions
+    display_range = MapSet.new(6..21)
+
     available_hours =
       case Map.get(availability_map, dow) do
-        nil -> 0
-        {start_h, end_h} -> max(end_h - start_h, 0)
+        nil ->
+          MapSet.new()
+
+        {start_h, end_h} ->
+          start_h..(end_h - 1) |> MapSet.new() |> MapSet.intersection(display_range)
       end
 
-    hours_with_sessions = Map.keys(day_sessions) |> MapSet.new()
+    hours_with_sessions =
+      day_sessions
+      |> Map.keys()
+      |> MapSet.new()
+      |> MapSet.intersection(display_range)
 
     open =
-      available_hours - MapSet.size(MapSet.intersection(hours_with_sessions, MapSet.new(6..21)))
+      MapSet.size(available_hours) -
+        MapSet.size(MapSet.intersection(hours_with_sessions, available_hours))
 
     %{booked: booked, pending: pending, open: max(open, 0)}
   end
@@ -180,7 +191,7 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
   end
 
   def handle_event("today", _params, socket) do
-    today = Date.utc_today()
+    today = local_today()
     new_week_start = Date.beginning_of_week(today, :monday)
 
     socket =
@@ -196,9 +207,19 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
   def handle_event("select_date", %{"date" => date_str}, socket) do
     case Date.from_iso8601(date_str) do
       {:ok, date} ->
+        # Sync current_month when the selected date is in a different month
+        current_month =
+          if date.month != socket.assigns.current_month.month or
+               date.year != socket.assigns.current_month.year do
+            Date.beginning_of_month(date)
+          else
+            socket.assigns.current_month
+          end
+
         socket =
           socket
           |> assign(selected_date: date)
+          |> assign(current_month: current_month)
           |> load_schedule_data()
 
         {:noreply, socket}
@@ -307,17 +328,17 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
     |> Enum.chunk_every(7)
   end
 
-  defp session_accent_color("confirmed"), do: "#E63946"
-  defp session_accent_color("completed"), do: "#E63946"
-  defp session_accent_color("pending"), do: "#F5A623"
-  defp session_accent_color("cancelled"), do: "#999999"
-  defp session_accent_color(_), do: "#999999"
+  defp session_accent_bar_class("confirmed"), do: "schedule-accent-bar-confirmed"
+  defp session_accent_bar_class("completed"), do: "schedule-accent-bar-confirmed"
+  defp session_accent_bar_class("pending"), do: "schedule-accent-bar-pending"
+  defp session_accent_bar_class("cancelled"), do: "schedule-accent-bar-cancelled"
+  defp session_accent_bar_class(_), do: "schedule-accent-bar-cancelled"
 
-  defp status_badge_styles("confirmed"), do: "color: #E63946; background-color: #FDECEA;"
-  defp status_badge_styles("completed"), do: "color: #E63946; background-color: #FDECEA;"
-  defp status_badge_styles("pending"), do: "color: #F5A623; background-color: #FFF8E1;"
-  defp status_badge_styles("cancelled"), do: "color: #666666; background-color: #EDEDED;"
-  defp status_badge_styles(_), do: "color: #666666; background-color: #EDEDED;"
+  defp status_badge_class("confirmed"), do: "schedule-status-badge-confirmed"
+  defp status_badge_class("completed"), do: "schedule-status-badge-confirmed"
+  defp status_badge_class("pending"), do: "schedule-status-badge-pending"
+  defp status_badge_class("cancelled"), do: "schedule-status-badge-cancelled"
+  defp status_badge_class(_), do: "schedule-status-badge-cancelled"
 
   defp status_label("confirmed"), do: "CONFIRMED"
   defp status_label("completed"), do: "CONFIRMED"
@@ -342,18 +363,10 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
 
   defp day_text_class(in_month, is_selected, is_today) do
     cond do
-      !in_month -> "text-sm"
+      !in_month -> "text-sm schedule-day-text-outside"
       is_selected -> "text-sm font-bold text-white"
-      is_today -> "text-sm font-bold"
+      is_today -> "text-sm font-bold schedule-day-text-today"
       true -> "text-sm font-medium"
-    end
-  end
-
-  defp day_text_style(in_month, is_today, is_selected) do
-    cond do
-      !in_month -> "color: #CCCCCC;"
-      is_today && !is_selected -> "color: #E63946;"
-      true -> ""
     end
   end
 
@@ -361,20 +374,27 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
   defp display_name(%{email: email}) when is_binary(email), do: email
   defp display_name(_), do: "Unassigned"
 
+  defp local_today do
+    case DateTime.now("Asia/Beirut") do
+      {:ok, datetime} -> DateTime.to_date(datetime)
+      {:error, _} -> Date.utc_today()
+    end
+  end
+
   defp format_hour(0), do: "12 AM"
   defp format_hour(h) when h < 12, do: "#{h} AM"
   defp format_hour(12), do: "12 PM"
   defp format_hour(h), do: "#{h - 12} PM"
 
   defp now_minutes_offset(selected_date) do
-    if selected_date == Date.utc_today() do
+    if selected_date == local_today() do
       now =
         case DateTime.now("Asia/Beirut") do
           {:ok, datetime} -> DateTime.to_time(datetime)
           {:error, :utc_only_time_zone_database} -> Time.utc_now()
         end
 
-      if now.hour >= 6 and now.hour <= 22 do
+      if now.hour >= 6 and now.hour < 22 do
         (now.hour - 6) * 60 + now.minute
       else
         nil
@@ -384,8 +404,15 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
     end
   end
 
+  defp now_line_percent(nil), do: nil
+
+  defp now_line_percent(minutes_offset) do
+    # Total display range: 6 AM to 10 PM = 16 hours = 960 minutes
+    Float.round(minutes_offset / 960.0 * 100, 2)
+  end
+
   defp is_past_hour?(selected_date, hour) do
-    if selected_date == Date.utc_today() do
+    if selected_date == local_today() do
       now =
         case DateTime.now("Asia/Beirut") do
           {:ok, datetime} -> DateTime.to_time(datetime)
@@ -395,7 +422,7 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
       hour < now.hour
     else
       # For past dates (before today), all hours are past
-      Date.compare(selected_date, Date.utc_today()) == :lt
+      Date.compare(selected_date, local_today()) == :lt
     end
   end
 
@@ -422,12 +449,20 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
     <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
       <!-- Flash Messages -->
       <%= if flash = Phoenix.Flash.get(@flash, :info) do %>
-        <div class="alert alert-info mb-4 shadow-sm">
+        <div
+          id="flash-info"
+          class="alert alert-info mb-4 shadow-sm flash-auto-dismiss"
+          phx-hook="FlashAutoDismiss"
+        >
           <span>{flash}</span>
         </div>
       <% end %>
       <%= if flash = Phoenix.Flash.get(@flash, :error) do %>
-        <div class="alert alert-error mb-4 shadow-sm">
+        <div
+          id="flash-error"
+          class="alert alert-error mb-4 shadow-sm flash-auto-dismiss"
+          phx-hook="FlashAutoDismiss"
+        >
           <span>{flash}</span>
         </div>
       <% end %>
@@ -465,11 +500,11 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
                 <div class="p-2"></div>
                 <%= for day_offset <- 0..6 do %>
                   <% day = Date.add(@current_week_start, day_offset) %>
-                  <div class={"text-center p-2 #{if day == Date.utc_today(), do: "bg-primary/10 rounded-t-lg"}"}>
+                  <div class={"text-center p-2 #{if day == @local_today, do: "bg-primary/10 rounded-t-lg"}"}>
                     <div class="text-xs font-medium text-base-content/60">
                       {Calendar.strftime(day, "%a")}
                     </div>
-                    <div class={"text-lg font-bold #{if day == Date.utc_today(), do: "text-primary"}"}>
+                    <div class={"text-lg font-bold #{if day == @local_today, do: "text-primary"}"}>
                       {Calendar.strftime(day, "%d")}
                     </div>
                   </div>
@@ -583,7 +618,7 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
             <!-- Day Headers -->
             <div class="grid grid-cols-7 mb-1">
               <%= for day_name <- ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"] do %>
-                <div class="text-center text-xs font-medium" style="color: #888">
+                <div class="text-center text-xs font-medium schedule-day-header-dot">
                   {day_name}
                 </div>
               <% end %>
@@ -597,7 +632,7 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
                   <% count = Map.get(@month_session_counts, day, 0) %>
                   <% level = heat_level(count) %>
                   <% is_selected = day == @selected_date %>
-                  <% is_today = day == Date.utc_today() %>
+                  <% is_today = day == @local_today %>
                   <div class="flex items-center justify-center py-0.5" style="height: 40px;">
                     <button
                       type="button"
@@ -606,16 +641,13 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
                       class="relative flex items-center justify-center rounded-full transition-all duration-150 ease-in-out"
                       style={day_cell_style(is_selected, level, count)}
                     >
-                      <span
-                        class={day_text_class(in_month, is_selected, is_today)}
-                        style={day_text_style(in_month, is_today, is_selected)}
-                      >
+                      <span class={day_text_class(in_month, is_selected, is_today)}>
                         {day.day}
                       </span>
                       <%= if level == 1 and !is_selected do %>
                         <span
-                          class="absolute bottom-0.5 left-1/2 -translate-x-1/2 rounded-full"
-                          style="width: 4px; height: 4px; background-color: #D94040;"
+                          class="absolute bottom-0.5 left-1/2 -translate-x-1/2 rounded-full schedule-heat-dot"
+                          style="width: 4px; height: 4px;"
                         >
                         </span>
                       <% end %>
@@ -627,7 +659,7 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
             
     <!-- Heat-map Legend -->
             <div class="flex items-center justify-center gap-2 mt-2 mb-1">
-              <span class="text-xs" style="color: #888">Less</span>
+              <span class="text-xs schedule-heat-legend-label">Less</span>
               <%= for level <- 1..5 do %>
                 <div
                   class="rounded-sm"
@@ -635,26 +667,23 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
                 >
                 </div>
               <% end %>
-              <span class="text-xs" style="color: #888">Busier</span>
-              <span class="mx-1 text-xs" style="color: #888">·</span>
+              <span class="text-xs schedule-heat-legend-label">Busier</span>
+              <span class="mx-1 text-xs schedule-heat-legend-label">·</span>
               <span class="flex items-center gap-1">
                 <span
-                  class="rounded-full"
-                  style="width: 14px; height: 14px; background-color: #E63946;"
+                  class="rounded-full schedule-selected-indicator"
+                  style="width: 14px; height: 14px;"
                 >
                 </span>
-                <span class="text-xs" style="color: #888">Selected</span>
+                <span class="text-xs schedule-heat-legend-label">Selected</span>
               </span>
             </div>
           </div>
           
     <!-- Day Schedule Header -->
           <div class="mt-4 mb-3">
-            <div
-              class="uppercase tracking-widest text-xs mb-1"
-              style="color: #888; letter-spacing: 0.1em;"
-            >
-              <%= if @selected_date == Date.utc_today() do %>
+            <div class="uppercase tracking-widest text-xs mb-1 schedule-day-header-label">
+              <%= if @selected_date == @local_today do %>
                 Today's Schedule
               <% else %>
                 {Calendar.strftime(@selected_date, "%A")}'s Schedule
@@ -664,7 +693,7 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
               <h3 class="text-2xl font-bold">
                 {Calendar.strftime(@selected_date, "%A")}
               </h3>
-              <span class="text-xl" style="color: #888">
+              <span class="text-xl schedule-day-header-dot">
                 · {Calendar.strftime(@selected_date, "%b %d")}
               </span>
             </div>
@@ -673,20 +702,15 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
     <!-- Stats Row -->
           <div class="flex items-center gap-3 mb-4 text-sm">
             <span class="flex items-center gap-1">
-              <span class="inline-block w-2.5 h-2.5 rounded-full" style="background-color: #E63946;">
-              </span>
+              <span class="inline-block w-2.5 h-2.5 rounded-full schedule-stat-dot-booked"></span>
               <span>{@day_stats.booked} booked</span>
             </span>
             <span class="flex items-center gap-1">
-              <span class="inline-block w-2.5 h-2.5 rounded-full" style="background-color: #F5A623;">
-              </span>
+              <span class="inline-block w-2.5 h-2.5 rounded-full schedule-stat-dot-pending"></span>
               <span>{@day_stats.pending} pending</span>
             </span>
             <span class="flex items-center gap-1">
-              <span
-                class="inline-block w-2.5 h-2.5 rounded-full border border-gray-300"
-                style="background-color: white;"
-              >
+              <span class="inline-block w-2.5 h-2.5 rounded-full border border-gray-300 schedule-stat-dot-open">
               </span>
               <span>{@day_stats.open} open</span>
             </span>
@@ -698,16 +722,13 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
               <% dow = Date.day_of_week(@selected_date) %>
               <% available = is_available?(@availability_map, dow, hour) %>
               <% sessions = Map.get(@day_sessions, hour, []) %>
-              <div class="flex items-stretch" style="min-height: 58px;">
+              <div class="flex items-stretch schedule-rail-row">
                 <!-- Time Label -->
-                <div
-                  class="w-16 shrink-0 text-xs flex items-start justify-end pr-3 pt-3"
-                  style="color: #AAAAAA;"
-                >
+                <div class="w-16 shrink-0 text-xs flex items-start justify-end pr-3 pt-3 schedule-rail-time-label">
                   {format_hour(hour)}
                 </div>
                 <!-- Slot Content -->
-                <div class="flex-1 border-t py-1.5" style="border-color: #E8E8E8;">
+                <div class="flex-1 border-t py-1.5 schedule-rail-slot-border">
                   <%= if sessions != [] do %>
                     <%= for session <- sessions do %>
                       <!-- Booked Session Card -->
@@ -715,29 +736,21 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
                         type="button"
                         phx-click="show_session"
                         phx-value-session-id={session.id}
-                        class="w-full text-left flex rounded-xl overflow-hidden bg-white border mb-1 cursor-pointer hover:shadow-sm transition-shadow"
-                        style="border-color: #E8E8E8; border-radius: 12px;"
+                        class="w-full text-left flex rounded-xl overflow-hidden bg-white border mb-1 cursor-pointer hover:shadow-sm transition-shadow schedule-session-card"
                       >
                         <!-- Left Accent Bar -->
-                        <div
-                          class="w-1 shrink-0"
-                          style={"background-color: #{session_accent_color(session.status)}"}
-                        >
-                        </div>
+                        <div class={"w-1 shrink-0 #{session_accent_bar_class(session.status)}"}></div>
                         <!-- Card Content -->
                         <div class="flex-1 p-3">
                           <div class="flex items-center justify-between">
                             <span class="font-semibold text-base">
                               {display_name(session.client)}
                             </span>
-                            <span
-                              class="text-xs font-semibold px-2 py-0.5 rounded-full"
-                              style={status_badge_styles(session.status)}
-                            >
+                            <span class={"text-xs font-semibold px-2 py-0.5 rounded-full #{status_badge_class(session.status)}"}>
                               {status_label(session.status)}
                             </span>
                           </div>
-                          <div class="text-sm mt-0.5" style="color: #888888;">
+                          <div class="text-sm mt-0.5 schedule-day-header-dot">
                             <%= if session.package do %>
                               {session.package.package_type}
                             <% else %>
@@ -750,17 +763,13 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
                   <% else %>
                     <%= if available and !is_past_hour?(@selected_date, hour) do %>
                       <!-- Open Slot Card (future only) -->
-                      <div
-                        class="flex items-center justify-between rounded-xl px-3 py-3 border border-dashed"
-                        style="border-color: #E8E8E8; border-radius: 12px; background: white;"
-                      >
-                        <span class="text-sm" style="color: #888888;">Open for booking</span>
+                      <div class="flex items-center justify-between rounded-xl px-3 py-3 border border-dashed schedule-rail-slot-border schedule-session-card">
+                        <span class="text-sm schedule-day-header-dot">Open for booking</span>
                         <button
                           type="button"
                           phx-click="open_slot_click"
                           phx-value-hour={hour}
-                          class="flex items-center justify-center w-7 h-7 rounded-full border-2 transition-colors hover:bg-red-50"
-                          style="border-color: #E63946; color: #E63946;"
+                          class="flex items-center justify-center w-7 h-7 rounded-full border-2 transition-colors schedule-open-slot-btn"
                         >
                           <span class="text-lg leading-none font-light">+</span>
                         </button>
@@ -772,19 +781,15 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
             <% end %>
             
     <!-- Now-line (today only) -->
-            <% now_offset = now_minutes_offset(@selected_date) %>
-            <%= if now_offset do %>
+            <% now_pct = now_minutes_offset(@selected_date) |> now_line_percent() %>
+            <%= if now_pct do %>
               <div
                 class="absolute left-16 right-0 pointer-events-none"
-                style={"top: #{now_offset / 60.0 * 58.0}px;"}
+                style={"top: #{now_pct}%;"}
               >
                 <div class="relative">
-                  <div
-                    class="absolute left-0 top-0 w-2 h-2 rounded-full"
-                    style="background-color: #E63946;"
-                  >
-                  </div>
-                  <div class="ml-1.5 h-0.5" style="background-color: #E63946;"></div>
+                  <div class="absolute left-0 top-0 w-2 h-2 rounded-full schedule-now-line-dot"></div>
+                  <div class="ml-1.5 h-0.5 schedule-now-line-bar"></div>
                 </div>
               </div>
             <% end %>
