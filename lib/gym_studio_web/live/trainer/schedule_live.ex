@@ -26,7 +26,6 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
       |> assign(trainer: trainer)
       |> assign(current_month: current_month)
       |> assign(selected_date: today)
-      |> assign(calendar_expanded: true)
       |> assign(selected_session: nil)
       |> assign(current_week_start: Date.beginning_of_week(today, :monday))
       |> load_schedule_data()
@@ -189,7 +188,6 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
       |> assign(current_week_start: new_week_start)
       |> assign(selected_date: today)
       |> assign(current_month: Date.beginning_of_month(today))
-      |> assign(calendar_expanded: true)
       |> load_schedule_data()
 
     {:noreply, socket}
@@ -232,18 +230,6 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
       |> load_schedule_data()
 
     {:noreply, socket}
-  end
-
-  def handle_event("toggle_calendar", _params, socket) do
-    {:noreply, assign(socket, calendar_expanded: !socket.assigns.calendar_expanded)}
-  end
-
-  def handle_event("collapse_calendar", _params, socket) do
-    {:noreply, assign(socket, calendar_expanded: false)}
-  end
-
-  def handle_event("expand_calendar", _params, socket) do
-    {:noreply, assign(socket, calendar_expanded: true)}
   end
 
   def handle_event("show_session", %{"session-id" => session_id}, socket) do
@@ -319,15 +305,6 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
     |> Stream.iterate(&Date.add(&1, 1))
     |> Stream.take_while(&(Date.compare(&1, cal_end) != :gt))
     |> Enum.chunk_every(7)
-  end
-
-  defp week_days_for_date(date) do
-    week_start = Date.beginning_of_week(date, :monday)
-
-    week_start
-    |> Stream.iterate(&Date.add(&1, 1))
-    |> Stream.take(7)
-    |> Enum.to_list()
   end
 
   defp session_accent_color("confirmed"), do: "#E63946"
@@ -546,11 +523,8 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
         </div>
         
     <!-- ==================== MOBILE VIEW (new month grid + hourly rail) ==================== -->
-        <div class="lg:hidden" id="mobile-schedule" phx-hook="ScheduleCollapse">
-          <!-- Sentinel for IntersectionObserver (scroll-triggered collapse) -->
-          <div id="calendar-sentinel" class="h-1"></div>
-          
-    <!-- Month Navigation -->
+        <div class="lg:hidden">
+          <!-- Month Navigation -->
           <div class="flex justify-between items-center mb-3">
             <button phx-click="previous_month" class="btn btn-ghost btn-sm p-1">
               <svg
@@ -585,125 +559,74 @@ defmodule GymStudioWeb.Trainer.ScheduleLive do
             </button>
           </div>
           
-    <!-- Expandable Month Grid / Collapsed Week Strip -->
-          <div
-            id="calendar-grid-container"
-            class="transition-all duration-150 ease-in-out overflow-hidden"
-          >
-            <%= if @calendar_expanded do %>
-              <!-- Full Month Grid -->
-              <div id="month-grid">
-                <!-- Day Headers -->
-                <div class="grid grid-cols-7 mb-1">
-                  <%= for day_name <- ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"] do %>
-                    <div class="text-center text-xs font-medium" style="color: #888">
-                      {day_name}
-                    </div>
-                  <% end %>
+    <!-- Month Grid (always expanded) -->
+          <div id="month-grid">
+            <!-- Day Headers -->
+            <div class="grid grid-cols-7 mb-1">
+              <%= for day_name <- ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"] do %>
+                <div class="text-center text-xs font-medium" style="color: #888">
+                  {day_name}
                 </div>
-                
+              <% end %>
+            </div>
+            
     <!-- Calendar Weeks -->
-                <%= for week <- calendar_weeks(@current_month) do %>
-                  <div class="grid grid-cols-7">
-                    <%= for day <- week do %>
-                      <% in_month = day.month == @current_month.month %>
-                      <% count = Map.get(@month_session_counts, day, 0) %>
-                      <% level = heat_level(count) %>
-                      <% is_selected = day == @selected_date %>
-                      <% is_today = day == Date.utc_today() %>
-                      <div class="flex items-center justify-center py-0.5" style="height: 40px;">
-                        <button
-                          type="button"
-                          phx-click="select_date"
-                          phx-value-date={Date.to_iso8601(day)}
-                          class="relative flex items-center justify-center rounded-full transition-all duration-150 ease-in-out"
-                          style={day_cell_style(is_selected, level, count)}
+            <%= for week <- calendar_weeks(@current_month) do %>
+              <div class="grid grid-cols-7">
+                <%= for day <- week do %>
+                  <% in_month = day.month == @current_month.month %>
+                  <% count = Map.get(@month_session_counts, day, 0) %>
+                  <% level = heat_level(count) %>
+                  <% is_selected = day == @selected_date %>
+                  <% is_today = day == Date.utc_today() %>
+                  <div class="flex items-center justify-center py-0.5" style="height: 40px;">
+                    <button
+                      type="button"
+                      phx-click="select_date"
+                      phx-value-date={Date.to_iso8601(day)}
+                      class="relative flex items-center justify-center rounded-full transition-all duration-150 ease-in-out"
+                      style={day_cell_style(is_selected, level, count)}
+                    >
+                      <span
+                        class={day_text_class(in_month, is_selected, is_today)}
+                        style={day_text_style(in_month, is_today, is_selected)}
+                      >
+                        {day.day}
+                      </span>
+                      <%= if level == 1 and !is_selected do %>
+                        <span
+                          class="absolute bottom-0.5 left-1/2 -translate-x-1/2 rounded-full"
+                          style="width: 4px; height: 4px; background-color: #D94040;"
                         >
-                          <span
-                            class={day_text_class(in_month, is_selected, is_today)}
-                            style={day_text_style(in_month, is_today, is_selected)}
-                          >
-                            {day.day}
-                          </span>
-                          <%= if level == 1 and !is_selected do %>
-                            <span
-                              class="absolute bottom-0.5 left-1/2 -translate-x-1/2 rounded-full"
-                              style="width: 4px; height: 4px; background-color: #D94040;"
-                            >
-                            </span>
-                          <% end %>
-                        </button>
-                      </div>
-                    <% end %>
+                        </span>
+                      <% end %>
+                    </button>
                   </div>
                 <% end %>
-                
-    <!-- Heat-map Legend -->
-                <div class="flex items-center justify-center gap-2 mt-2 mb-1">
-                  <span class="text-xs" style="color: #888">Less</span>
-                  <%= for level <- 1..5 do %>
-                    <div
-                      class="rounded-sm"
-                      style={"width: 14px; height: 14px; background-color: #{heat_color_for_level(level)}"}
-                    >
-                    </div>
-                  <% end %>
-                  <span class="text-xs" style="color: #888">Busier</span>
-                  <span class="mx-1 text-xs" style="color: #888">·</span>
-                  <span class="flex items-center gap-1">
-                    <span
-                      class="rounded-full"
-                      style="width: 14px; height: 14px; background-color: #E63946;"
-                    >
-                    </span>
-                    <span class="text-xs" style="color: #888">Selected</span>
-                  </span>
-                </div>
-              </div>
-            <% else %>
-              <!-- Collapsed Week Strip -->
-              <div id="week-strip" class="mb-2">
-                <div class="flex items-center gap-1">
-                  <% week_days = week_days_for_date(@selected_date) %>
-                  <%= for day <- week_days do %>
-                    <% in_month = day.month == @current_month.month %>
-                    <% count = Map.get(@month_session_counts, day, 0) %>
-                    <% level = heat_level(count) %>
-                    <% is_selected = day == @selected_date %>
-                    <div class="flex-1 flex items-center justify-center" style="height: 40px;">
-                      <button
-                        type="button"
-                        phx-click="select_date"
-                        phx-value-date={Date.to_iso8601(day)}
-                        class="relative flex items-center justify-center rounded-full transition-all duration-150 ease-in-out"
-                        style={day_cell_style(is_selected, level, count)}
-                      >
-                        <span
-                          class={day_text_class(in_month, is_selected, false)}
-                          style={if !in_month, do: "color: #CCCCCC;", else: ""}
-                        >
-                          {day.day}
-                        </span>
-                        <%= if level == 1 and !is_selected do %>
-                          <span
-                            class="absolute bottom-0.5 left-1/2 -translate-x-1/2 rounded-full"
-                            style="width: 4px; height: 4px; background-color: #D94040;"
-                          >
-                          </span>
-                        <% end %>
-                      </button>
-                    </div>
-                  <% end %>
-                  <button
-                    phx-click="expand_calendar"
-                    class="text-sm font-medium whitespace-nowrap ml-2"
-                    style="color: #E63946;"
-                  >
-                    Expand ∨
-                  </button>
-                </div>
               </div>
             <% end %>
+            
+    <!-- Heat-map Legend -->
+            <div class="flex items-center justify-center gap-2 mt-2 mb-1">
+              <span class="text-xs" style="color: #888">Less</span>
+              <%= for level <- 1..5 do %>
+                <div
+                  class="rounded-sm"
+                  style={"width: 14px; height: 14px; background-color: #{heat_color_for_level(level)}"}
+                >
+                </div>
+              <% end %>
+              <span class="text-xs" style="color: #888">Busier</span>
+              <span class="mx-1 text-xs" style="color: #888">·</span>
+              <span class="flex items-center gap-1">
+                <span
+                  class="rounded-full"
+                  style="width: 14px; height: 14px; background-color: #E63946;"
+                >
+                </span>
+                <span class="text-xs" style="color: #888">Selected</span>
+              </span>
+            </div>
           </div>
           
     <!-- Day Schedule Header -->

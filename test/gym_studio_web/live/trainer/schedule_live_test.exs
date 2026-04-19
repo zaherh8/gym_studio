@@ -123,17 +123,14 @@ defmodule GymStudioWeb.Trainer.ScheduleLiveTest do
       assert html =~ "My Schedule"
     end
 
-    test "toggles calendar expansion", %{conn: conn, trainer_user: trainer_user} do
+    test "calendar is always expanded", %{conn: conn, trainer_user: trainer_user} do
       conn = log_in_user(conn, trainer_user)
-      {:ok, view, _html} = live(conn, ~p"/trainer/schedule")
+      {:ok, _view, html} = live(conn, ~p"/trainer/schedule")
 
-      # Collapse
-      html = render_click(view, "toggle_calendar")
-      assert html =~ "Expand"
-
-      # Expand
-      html = render_click(view, "expand_calendar")
+      # Month grid is always visible — no Expand button
       refute html =~ "Expand ∨"
+      assert html =~ "Less"
+      assert html =~ "Busier"
     end
 
     test "shows today button on mobile", %{conn: conn, trainer_user: trainer_user} do
