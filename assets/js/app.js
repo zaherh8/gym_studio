@@ -76,28 +76,31 @@ const ProgressChart = {
  */
 const ScheduleCollapse = {
   mounted() {
-    this._observer = null
-    // Delay observer setup to avoid triggering on initial render/layout
-    setTimeout(() => this._setupObserver(), 1000)
+    this._bound = false
+    this._setupScrollListener()
   },
   destroyed() {
-    if (this._observer) this._observer.disconnect()
+    if (this._bound) {
+      window.removeEventListener("scroll", this._onScroll)
+      this._bound = false
+    }
   },
-  _setupObserver() {
-    const sentinel = this.el.querySelector("#calendar-sentinel")
-    if (!sentinel) return
+  _setupScrollListener() {
+    const grid = this.el.querySelector("#month-grid")
+    if (!grid) return
 
-    this._observer = new IntersectionObserver(
-      ([entry]) => {
-        // Only collapse when the sentinel scrolls out of the viewport
-        // (one-directional: never auto-expands)
-        if (!entry.isIntersecting) {
-          this.pushEvent("collapse_calendar", {})
-        }
-      },
-      { threshold: 0 }
-    )
-    this._observer.observe(sentinel)
+    this._onScroll = () => {
+      const rect = grid.getBoundingClientRect()
+      // When the month grid has scrolled out of view (above viewport), collapse it
+      if (rect.bottom < -50) {
+        this.pushEvent("collapse_calendar", {})
+        window.removeEventListener("scroll", this._onScroll)
+        this._bound = false
+      }
+    }
+
+    window.addEventListener("scroll", this._onScroll, { passive: true })
+    this._bound = true
   },
 }
 
