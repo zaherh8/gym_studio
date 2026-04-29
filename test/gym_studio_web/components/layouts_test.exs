@@ -189,7 +189,7 @@ defmodule GymStudioWeb.LayoutsTest do
           current_path: "/client"
         )
 
-      assert html =~ "safe-area-inset-bottom"
+      assert html =~ "pb-safe-bottom"
     end
 
     test "nav landmark element is present" do
@@ -291,8 +291,8 @@ defmodule GymStudioWeb.LayoutsTest do
       # Items should be centered vertically, not bottom-aligned
       assert html =~ "items-center"
       refute html =~ "items-end"
-      # Safe area padding via style attribute
-      assert html =~ "safe-area-inset-bottom"
+      # Safe area padding via CSS utility class
+      assert html =~ "pb-safe-bottom"
     end
   end
 end

@@ -284,3 +284,35 @@
 .flash-auto-dismiss {
   animation: flash-fade-out 5s ease-out forwards;
 }
+
+/* ==========================================================================
+   Safe Area Utilities (notched devices — iPhone X+ etc.)
+   viewport-fit=cover is set in root.html.heex <meta viewport>
+   ========================================================================== */
+
+.pt-safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.pb-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Bottom nav height includes safe-area-inset-bottom so body padding
+   via Tailwind classes (pb-24 / pb-20) correctly clears the bar.
+   DaisyUI's dock component uses the same pattern. */
+
+/* Body padding-bottom that accounts for safe-area-inset-bottom on notched devices */
+.pb-safe-20 {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+}
+
+.pb-safe-24 {
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 768px) {
+  .pb-safe-20, .pb-safe-24 {
+    padding-bottom: 0;
+  }
+}
