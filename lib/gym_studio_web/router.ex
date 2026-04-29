@@ -17,6 +17,11 @@ defmodule GymStudioWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # [LANDING-PAGE] Redirect auth routes to / until registration launches - see #92
+  pipeline :landing_page_redirect do
+    plug :redirect_to_home
+  end
+
   # Public pages - accessible to everyone
   scope "/", GymStudioWeb do
     pipe_through :browser
@@ -118,16 +123,21 @@ defmodule GymStudioWeb.Router do
   end
 
   ## Authentication routes
-  # [LANDING-PAGE] Auth routes kept for ~p sigil compatibility but hidden from UI - see #92
+  # [LANDING-PAGE] Auth routes redirect to / for landing page release - see #92
+  # Routes are kept so ~p sigils compile, but ALL visitors are redirected to /
+  # until we're ready to launch registration. Log-out remains accessible.
 
   scope "/", GymStudioWeb do
-    pipe_through [:browser, :redirect_if_user_is_authenticated]
+    pipe_through [:browser, :landing_page_redirect]
 
     live_session :registration,
-      on_mount: [{GymStudioWeb.UserAuth, :redirect_if_authenticated}] do
+      on_mount: [{GymStudioWeb.UserAuth, :mount_current_scope}] do
       live "/users/register", RegistrationLive, :index
       live "/users/forgot-password", ForgotPasswordLive, :index
     end
+
+    get "/users/log-in", UserSessionController, :new
+    post "/users/log-in", UserSessionController, :create
   end
 
   scope "/", GymStudioWeb do
@@ -139,15 +149,16 @@ defmodule GymStudioWeb.Router do
   end
 
   scope "/", GymStudioWeb do
-    pipe_through [:browser, :redirect_if_user_is_authenticated]
-
-    get "/users/log-in", UserSessionController, :new
-    post "/users/log-in", UserSessionController, :create
-  end
-
-  scope "/", GymStudioWeb do
     pipe_through [:browser]
 
     delete "/users/log-out", UserSessionController, :delete
+  end
+
+  # [LANDING-PAGE] Redirect all auth route requests to / - see #92
+  # Remove this plug when registration/login should be public again
+  defp redirect_to_home(conn, _opts) do
+    conn
+    |> Phoenix.Controller.redirect(to: "/")
+    |> Plug.Conn.halt()
   end
 end
