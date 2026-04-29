@@ -17,7 +17,7 @@ defmodule GymStudioWeb.Router do
     plug :accepts, ["json"]
   end
 
-  # [LANDING-PAGE] Redirect auth routes to / until registration launches - see #92
+  # TODO(#92): Remove this pipeline when registration/login should be public again
   pipeline :landing_page_redirect do
     plug :redirect_to_home
   end
@@ -154,8 +154,7 @@ defmodule GymStudioWeb.Router do
     delete "/users/log-out", UserSessionController, :delete
   end
 
-  # [LANDING-PAGE] Redirect all auth route requests to / - see #92
-  # Remove this plug when registration/login should be public again
+  # TODO(#92): Remove this plug when registration/login should be public again
   defp redirect_to_home(conn, _opts) do
     conn
     |> Phoenix.Controller.redirect(to: "/")
