@@ -2,9 +2,6 @@ defmodule GymStudioWeb.PageControllerTest do
   use GymStudioWeb.ConnCase
 
   import GymStudio.AccountsFixtures
-  import GymStudio.BranchesFixtures
-
-  alias GymStudio.Branches
 
   test "GET /", %{conn: conn} do
     conn = get(conn, ~p"/")
@@ -31,79 +28,70 @@ defmodule GymStudioWeb.PageControllerTest do
     refute response =~ "Expert in strength training"
   end
 
-  describe "branches assign" do
-    test "GET / assigns active branches only", %{conn: conn} do
-      _active = branch_fixture(%{name: "Active Branch", slug: "active-branch"})
-
-      _inactive =
-        branch_fixture(%{name: "Inactive Branch", slug: "inactive-branch", active: false})
-
+  describe "static branches" do
+    test "GET / displays static branch data in Our Locations section", %{conn: conn} do
       conn = get(conn, ~p"/")
       response = html_response(conn, 200)
 
-      assert response =~ "Active Branch"
-      refute response =~ "Inactive Branch"
+      # Horsh Tabet branch
+      assert response =~ "Horsh Tabet"
+      assert response =~ "Clover Park, 4th floor"
+      assert response =~ "+961 70 379 764"
+      assert response =~ "https://wa.me/96170379764"
+
+      # Jal El Dib branch
+      assert response =~ "Jal El Dib"
+      assert response =~ "Main Street"
+      assert response =~ "+961 71 633 970"
+      assert response =~ "https://wa.me/96171633970"
     end
 
-    test "GET / displays branch details in Our Locations section", %{conn: conn} do
-      _branch =
-        branch_fixture(%{
-          name: "React — Sin El Fil",
-          address: "Horsh Tabet, Clover Park Bldg., 4th Floor",
-          phone: "+961 71 104 483",
-          latitude: 33.8723,
-          longitude: 35.5316,
-          operating_hours: %{
-            "mon" => "06:00-22:00",
-            "tue" => "06:00-22:00",
-            "wed" => "06:00-22:00",
-            "thu" => "06:00-22:00",
-            "fri" => "06:00-22:00",
-            "sat" => "08:00-18:00",
-            "sun" => "08:00-18:00"
-          }
-        })
-
+    test "GET / shows Get Directions links for each branch", %{conn: conn} do
       conn = get(conn, ~p"/")
       response = html_response(conn, 200)
 
-      assert response =~ "React — Sin El Fil"
-      assert response =~ "Horsh Tabet, Clover Park Bldg., 4th Floor"
-      assert response =~ "+961 71 104 483"
       assert response =~ "Get Directions"
-      assert response =~ "google.com/maps"
+      assert response =~ "React+Gym+Clover+Park+Horsh+Tabet"
+      assert response =~ "React+Gym+Jal+El+Dib+Main+Street"
     end
 
-    test "GET / handles zero branches gracefully", %{conn: conn} do
-      # Deactivate all branches
-      for branch <- Branches.list_branches() do
-        Branches.update_branch(branch, %{active: false})
-      end
-
+    test "GET / does not display operating hours", %{conn: conn} do
       conn = get(conn, ~p"/")
       response = html_response(conn, 200)
 
-      assert response =~ "Location details coming soon"
-    end
-
-    test "GET / handles branch with nil operating_hours", %{conn: conn} do
-      _branch =
-        branch_fixture(%{
-          name: "No Hours Branch",
-          slug: "no-hours-branch",
-          operating_hours: nil
-        })
-
-      conn = get(conn, ~p"/")
-      response = html_response(conn, 200)
-
-      # Branch should still render without error
-      assert response =~ "No Hours Branch"
-      # Operating hours section should be omitted entirely
+      # Operating hours should not be shown for static branches
       refute response =~ "Mon:"
+      refute response =~ "operating_hours"
     end
 
-    # [LANDING-PAGE] Trainer cards hidden for landing page release - see #92
-    # test "GET / shows branch badge on trainer cards" - skipped
+    test "GET / phone numbers are WhatsApp links", %{conn: conn} do
+      conn = get(conn, ~p"/")
+      response = html_response(conn, 200)
+
+      # Phone numbers in locations section should link to WhatsApp
+      assert response =~ ~s(href="https://wa.me/96170379764")
+      assert response =~ ~s(href="https://wa.me/96171633970")
+    end
+  end
+
+  describe "WhatsApp CTA modal" do
+    test "GET / includes the branch selector modal", %{conn: conn} do
+      conn = get(conn, ~p"/")
+      response = html_response(conn, 200)
+
+      assert response =~ "whatsapp-modal"
+      assert response =~ "Choose a Branch"
+    end
+
+    test "GET / CTA buttons trigger modal instead of anchor links", %{conn: conn} do
+      conn = get(conn, ~p"/")
+      response = html_response(conn, 200)
+
+      # CTAs should use onclick to open modal, not href="#contact" or href="#packages"
+      assert response =~ "document.getElementById('whatsapp-modal').showModal()"
+
+      # Should not have anchor links to #contact
+      refute response =~ ~s(href="#contact")
+    end
   end
 end
