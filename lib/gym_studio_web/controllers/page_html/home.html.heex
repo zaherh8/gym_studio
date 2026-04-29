@@ -48,6 +48,7 @@
 
 <%!-- Hero Section - Dark with optional background image --%>
 <section class="relative min-h-screen flex items-center justify-center overflow-hidden">
+  <%!-- Background: Dark gradient that works standalone or with an image overlay --%>
   <div class="absolute inset-0 bg-gradient-to-br from-neutral via-base-300 to-neutral"></div>
   <img
     src={GymStudioWeb.CDN.url("/images/hero-gym.jpg")}
@@ -56,6 +57,7 @@
   />
   <div class="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-primary/30"></div>
 
+  <%!-- Subtle pattern overlay for texture --%>
   <div
     class="absolute inset-0 opacity-5"
     style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; viewBox=&quot;0 0 60 60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;%3E%3Cg fill=&quot;%23ffffff&quot; fill-opacity=&quot;0.4&quot;%3E%3Cpath d=&quot;M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z&quot;/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"
@@ -64,6 +66,7 @@
 
   <div class="relative z-10 container mx-auto px-4 py-20 sm:py-24 md:py-32">
     <div class="max-w-4xl mx-auto text-center">
+      <%!-- Badge --%>
       <div class="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
         <span class="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
         <span class="text-white/90 font-medium text-sm sm:text-base">
@@ -71,6 +74,7 @@
         </span>
       </div>
 
+      <%!-- Main Heading --%>
       <h1 class="mb-6 flex items-center justify-center">
         <img
           src={~p"/images/logo/react-wordmark-dark.svg"}
@@ -79,6 +83,7 @@
         />
       </h1>
 
+      <%!-- Subheading with better value proposition --%>
       <p class="text-xl sm:text-2xl md:text-3xl text-white/90 font-light mb-4 leading-relaxed">
         Where Fitness Meets <span class="text-primary font-semibold">Personal Attention</span>
       </p>
@@ -116,6 +121,7 @@
         </button>
       </div>
 
+      <%!-- Social Proof Stats --%>
       <div class="grid grid-cols-3 gap-4 sm:gap-8 max-w-lg mx-auto">
         <div class="text-center">
           <div class="text-3xl sm:text-4xl font-black text-primary">50+</div>
@@ -133,6 +139,7 @@
     </div>
   </div>
 
+  <%!-- Scroll indicator --%>
   <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
     <a href="#why-us" class="block">
       <svg
@@ -169,6 +176,7 @@
     </div>
 
     <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+      <%!-- Feature 1 --%>
       <div class="group p-6 sm:p-8 rounded-2xl bg-white border border-gray-200 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all">
         <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/10 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
           <svg
@@ -192,6 +200,7 @@
         </p>
       </div>
 
+      <%!-- Feature 2 --%>
       <div class="group p-6 sm:p-8 rounded-2xl bg-white border border-gray-200 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all">
         <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-secondary/20 to-accent/10 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
           <svg
@@ -215,6 +224,7 @@
         </p>
       </div>
 
+      <%!-- Feature 3 --%>
       <div class="group p-6 sm:p-8 rounded-2xl bg-white border border-gray-200 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all sm:col-span-2 lg:col-span-1">
         <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-accent/20 to-primary/10 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
           <svg
@@ -588,8 +598,10 @@
     <div class="grid sm:grid-cols-2 gap-6 sm:gap-8 max-w-6xl mx-auto">
       <%= for branch <- @branches do %>
         <div class="p-6 sm:p-8 rounded-2xl bg-white border border-gray-200 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all">
+          <%!-- Branch Name --%>
           <h3 class="text-xl font-bold mb-4 text-gray-900">{branch.name}</h3>
 
+          <%!-- Details --%>
           <div class="space-y-3">
             <div class="flex items-start gap-3">
               <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -634,6 +646,7 @@
             </div>
           </div>
 
+          <%!-- Get Directions Link --%>
           <div class="mt-5 pt-4 border-t border-gray-100">
             <a
               href={branch.directions_url}
@@ -705,6 +718,7 @@
 <footer class="bg-neutral text-neutral-content">
   <div class="container mx-auto px-4 py-12">
     <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <%!-- Brand --%>
       <div class="sm:col-span-2 lg:col-span-1">
         <p class="mb-3">
           <img
@@ -718,6 +732,7 @@
         </p>
       </div>
 
+      <%!-- Quick Links --%>
       <div>
         <h4 class="font-bold mb-4">Quick Links</h4>
         <ul class="space-y-2 text-sm">
@@ -748,6 +763,7 @@
         </ul>
       </div>
 
+      <%!-- Contact Info --%>
       <div>
         <h4 class="font-bold mb-4">Locations</h4>
         <ul class="space-y-2 text-sm text-neutral-content/70">
@@ -766,6 +782,7 @@
         </ul>
       </div>
 
+      <%!-- Social --%>
       <div>
         <h4 class="font-bold mb-4">Follow Us</h4>
         <div class="flex gap-3">
