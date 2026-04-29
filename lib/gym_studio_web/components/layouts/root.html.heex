@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="csrf-token" content={get_csrf_token()} />
     <meta
       name="description"
@@ -96,10 +96,13 @@
   <body class={[
     "bg-base-100",
     @current_scope &&
-      if(@current_scope.user.role == :client, do: "pb-24 md:pb-0", else: "pb-20 md:pb-0")
+      if(@current_scope.user.role == :client,
+        do: "pb-safe-24 md:pb-0",
+        else: "pb-safe-20 md:pb-0"
+      )
   ]}>
     <%!-- Modern Navigation Header --%>
-    <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-base-300/50 shadow-sm">
+    <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-base-300/50 shadow-sm pt-safe-top">
       <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16 sm:h-20">
           <%!-- Logo --%>

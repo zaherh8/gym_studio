@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-04-29
+
+### Changed
+- Landing page release: hide auth routes, trainer section, and portal access (#92, #98, #101)
+  - Auth routes (`/users/register`, `/users/log-in`) redirect to `/`
+  - Trainer section removed from landing page
+  - Client/trainer/admin portals accessible but not linked from landing page
+- All CTA buttons converted to WhatsApp deep links (#93)
+- Phone numbers in locations section link to WhatsApp chat (#97)
+- Facebook icon removed from footer (no Facebook page)
+- Hero CTAs now anchor to `#packages` and `#contact` sections
+- Footer quick links updated: added Packages, removed Trainers
+- 29 auth-related tests excluded with `landing_page_auth` tag
+
+### Fixed
+- Mobile navbar gap on notched devices (iPhone X+) (#99, #101)
+  - Added `viewport-fit=cover` meta tag
+  - Safe area padding via CSS utility classes (`pt-safe-top`, `pb-safe-bottom`, `pb-safe-24`, `pb-safe-20`)
+  - Bottom nav now accounts for `safe-area-inset-bottom` on notched devices
+
 ## [0.4.1] - 2026-04-19
 
 ### Fixed
