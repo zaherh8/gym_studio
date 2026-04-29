@@ -1,6 +1,13 @@
 defmodule GymStudioWeb.PageController do
   use GymStudioWeb, :controller
 
+  # [LANDING-PAGE] Static branch data for landing page release - see #92
+  # When re-enabling full features, replace @static_branches with DB lookup:
+  #   alias GymStudio.Accounts
+  #   alias GymStudio.Branches
+  #   trainers = Accounts.list_approved_trainers() |> GymStudio.Repo.preload(user: [:branch])
+  #   branches = Branches.list_branches(active: true)
+  #   render(conn, :home, branches: branches, trainers: trainers)
   @static_branches [
     %{
       name: "Horsh Tabet",
