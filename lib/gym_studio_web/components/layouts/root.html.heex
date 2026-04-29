@@ -213,21 +213,8 @@
               </div>
             </div>
           <% else %>
-            <%!-- Logged Out Nav --%>
-            <div class="flex items-center gap-2">
-              <.link
-                href={~p"/users/log-in"}
-                class="btn btn-ghost btn-sm rounded-full text-gray-700 hover:text-white hover:bg-gray-700"
-              >
-                Log in
-              </.link>
-              <.link
-                href={~p"/users/register"}
-                class="btn btn-primary btn-sm rounded-full shadow-md hover:shadow-lg transition-all"
-              >
-                Get Started
-              </.link>
-            </div>
+            <%!-- [LANDING-PAGE] Hidden for landing page release - see #92 --%>
+            <%!-- Logged Out Nav - auth links hidden --%>
           <% end %>
         </div>
       </nav>

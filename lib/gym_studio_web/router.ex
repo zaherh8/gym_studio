@@ -25,11 +25,17 @@ defmodule GymStudioWeb.Router do
     get "/offline", OfflineController, :index
 
     live_session :public, on_mount: {GymStudioWeb.UserAuth, :mount_current_scope} do
-      live "/trainers", TrainersLive, :index
+      # [LANDING-PAGE] Hidden for landing page release - see #92
+      # live "/trainers", TrainersLive, :index
       live "/gallery", GalleryLive, :index
       live "/contact", ContactLive, :index
     end
   end
+
+  # [LANDING-PAGE] All portal and auth routes below are hidden from the UI for
+  # the landing page release (see #92). The route definitions are kept so that
+  # ~p sigils in existing modules compile without warnings. The navbar, landing
+  # page CTAs, and mobile nav no longer link to any of these routes.
 
   # Client portal - requires authenticated client
   scope "/client", GymStudioWeb.Client, as: :client do
@@ -112,6 +118,7 @@ defmodule GymStudioWeb.Router do
   end
 
   ## Authentication routes
+  # [LANDING-PAGE] Auth routes kept for ~p sigil compatibility but hidden from UI - see #92
 
   scope "/", GymStudioWeb do
     pipe_through [:browser, :redirect_if_user_is_authenticated]

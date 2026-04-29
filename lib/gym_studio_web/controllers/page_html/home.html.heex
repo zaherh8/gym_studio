@@ -51,7 +51,7 @@
       <%!-- CTA Buttons --%>
       <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
         <a
-          href={~p"/users/register"}
+          href="#packages"
           class="btn btn-primary btn-lg text-base sm:text-lg rounded-full shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:scale-105 transition-all"
         >
           Start Your Journey
@@ -69,10 +69,10 @@
           </svg>
         </a>
         <a
-          href="#trainers"
+          href="#packages"
           class="btn btn-outline btn-lg text-base sm:text-lg rounded-full border-white/30 text-white hover:bg-white/10 hover:border-white/50"
         >
-          Meet Our Trainers
+          Explore Our Packages
         </a>
       </div>
 
@@ -244,7 +244,8 @@
   </div>
 </section>
 
-<%!-- Meet Our Trainers Section --%>
+<%!-- [LANDING-PAGE] Hidden for landing page release - see #92 --%>
+<%!--
 <section id="trainers" class="py-16 sm:py-20 md:py-24 bg-white">
   <div class="container mx-auto px-4">
     <div class="text-center mb-12 sm:mb-16">
@@ -342,6 +343,7 @@
     </div>
   </div>
 </section>
+--%>
 
 <%!-- Gallery Section --%>
 <section id="gallery" class="py-16 sm:py-20 md:py-24 bg-gray-100">
@@ -418,7 +420,7 @@
 </section>
 
 <%!-- Session Packages Section --%>
-<section class="py-16 sm:py-20 md:py-24 bg-white">
+<section id="packages" class="py-16 sm:py-20 md:py-24 bg-white">
   <div class="container mx-auto px-4">
     <div class="text-center mb-12 sm:mb-16">
       <span class="inline-block text-primary font-semibold text-sm uppercase tracking-wider mb-3">
@@ -491,7 +493,7 @@
           </li>
         </ul>
         <a
-          href={~p"/users/register"}
+          href="#contact"
           class="btn btn-outline btn-block rounded-full text-gray-700 border-gray-300 hover:text-white hover:bg-primary hover:border-primary"
         >
           Get Started
@@ -558,7 +560,7 @@
             <span>Priority booking</span>
           </li>
         </ul>
-        <a href={~p"/users/register"} class="btn btn-accent btn-block rounded-full shadow-lg">
+        <a href="#contact" class="btn btn-accent btn-block rounded-full shadow-lg">
           Get Started
         </a>
       </div>
@@ -621,7 +623,7 @@
           </li>
         </ul>
         <a
-          href={~p"/users/register"}
+          href="#contact"
           class="btn btn-outline btn-block rounded-full text-gray-700 border-gray-300 hover:text-white hover:bg-primary hover:border-primary"
         >
           Get Started
@@ -789,10 +791,10 @@
       Join our community and experience fitness the way it should be — personal, welcoming, and effective.
     </p>
     <a
-      href={~p"/users/register"}
+      href="#contact"
       class="btn btn-primary btn-lg rounded-full shadow-lg shadow-primary/30 hover:shadow-xl hover:scale-105 transition-all"
     >
-      Create Your Account
+      Get In Touch
       <svg
         xmlns="http://www.w3.org/2000/svg"
         class="h-5 w-5"
@@ -831,14 +833,15 @@
       <div>
         <h4 class="font-bold mb-4">Quick Links</h4>
         <ul class="space-y-2 text-sm">
-          <li>
+          <%!-- [LANDING-PAGE] Hidden for landing page release - see #92 --%>
+          <%!-- <li>
             <a
               href="#trainers"
               class="text-neutral-content/70 hover:text-primary transition-colors"
             >
               Our Trainers
             </a>
-          </li>
+          </li> --%>
           <li>
             <a
               href="#gallery"

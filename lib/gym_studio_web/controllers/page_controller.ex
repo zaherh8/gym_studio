@@ -1,15 +1,17 @@
 defmodule GymStudioWeb.PageController do
   use GymStudioWeb, :controller
 
-  alias GymStudio.Accounts
+  # [LANDING-PAGE] Hidden for landing page release - see #92
+  # alias GymStudio.Accounts
   alias GymStudio.Branches
 
   def home(conn, _params) do
-    trainers =
-      Accounts.list_approved_trainers()
-      |> GymStudio.Repo.preload(user: [:branch])
+    # [LANDING-PAGE] Hidden for landing page release - see #92
+    # trainers =
+    #   Accounts.list_approved_trainers()
+    #   |> GymStudio.Repo.preload(user: [:branch])
 
     branches = Branches.list_branches(active: true)
-    render(conn, :home, trainers: trainers, branches: branches)
+    render(conn, :home, branches: branches)
   end
 end
