@@ -17,6 +17,11 @@ defmodule GymStudioWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # TODO(#92): Remove this pipeline when registration/login should be public again
+  pipeline :landing_page_redirect do
+    plug :redirect_to_home
+  end
+
   # Public pages - accessible to everyone
   scope "/", GymStudioWeb do
     pipe_through :browser
@@ -25,11 +30,17 @@ defmodule GymStudioWeb.Router do
     get "/offline", OfflineController, :index
 
     live_session :public, on_mount: {GymStudioWeb.UserAuth, :mount_current_scope} do
-      live "/trainers", TrainersLive, :index
+      # [LANDING-PAGE] Hidden for landing page release - see #92
+      # live "/trainers", TrainersLive, :index
       live "/gallery", GalleryLive, :index
       live "/contact", ContactLive, :index
     end
   end
+
+  # [LANDING-PAGE] All portal and auth routes below are hidden from the UI for
+  # the landing page release (see #92). The route definitions are kept so that
+  # ~p sigils in existing modules compile without warnings. The navbar, landing
+  # page CTAs, and mobile nav no longer link to any of these routes.
 
   # Client portal - requires authenticated client
   scope "/client", GymStudioWeb.Client, as: :client do
@@ -112,15 +123,21 @@ defmodule GymStudioWeb.Router do
   end
 
   ## Authentication routes
+  # [LANDING-PAGE] Auth routes redirect to / for landing page release - see #92
+  # Routes are kept so ~p sigils compile, but ALL visitors are redirected to /
+  # until we're ready to launch registration. Log-out remains accessible.
 
   scope "/", GymStudioWeb do
-    pipe_through [:browser, :redirect_if_user_is_authenticated]
+    pipe_through [:browser, :landing_page_redirect]
 
     live_session :registration,
-      on_mount: [{GymStudioWeb.UserAuth, :redirect_if_authenticated}] do
+      on_mount: [{GymStudioWeb.UserAuth, :mount_current_scope}] do
       live "/users/register", RegistrationLive, :index
       live "/users/forgot-password", ForgotPasswordLive, :index
     end
+
+    get "/users/log-in", UserSessionController, :new
+    post "/users/log-in", UserSessionController, :create
   end
 
   scope "/", GymStudioWeb do
@@ -132,15 +149,15 @@ defmodule GymStudioWeb.Router do
   end
 
   scope "/", GymStudioWeb do
-    pipe_through [:browser, :redirect_if_user_is_authenticated]
-
-    get "/users/log-in", UserSessionController, :new
-    post "/users/log-in", UserSessionController, :create
-  end
-
-  scope "/", GymStudioWeb do
     pipe_through [:browser]
 
     delete "/users/log-out", UserSessionController, :delete
+  end
+
+  # TODO(#92): Remove this plug when registration/login should be public again
+  defp redirect_to_home(conn, _opts) do
+    conn
+    |> Phoenix.Controller.redirect(to: "/")
+    |> Plug.Conn.halt()
   end
 end

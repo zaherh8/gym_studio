@@ -4,6 +4,8 @@ defmodule GymStudioWeb.RegistrationLiveTest do
   import Phoenix.LiveViewTest
   import GymStudio.AccountsFixtures
 
+  @moduletag :landing_page_auth
+
   describe "Registration page" do
     test "renders registration page", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/register")

@@ -13,7 +13,8 @@ defmodule GymStudioWeb.PageControllerTest do
     assert response =~ "Where Fitness Meets"
   end
 
-  test "GET / shows dynamic trainers from DB", %{conn: conn} do
+  # [LANDING-PAGE] Trainers section hidden for landing page release - see #92
+  test "GET / does not show trainers section", %{conn: conn} do
     admin = user_fixture(%{role: :admin})
 
     trainer =
@@ -22,30 +23,12 @@ defmodule GymStudioWeb.PageControllerTest do
         specializations: ["Strength", "HIIT"]
       })
 
-    # Approve the trainer so it shows on homepage
     GymStudio.Accounts.approve_trainer(trainer, admin)
 
     conn = get(conn, ~p"/")
     response = html_response(conn, 200)
-    assert response =~ "Expert in strength training"
-    assert response =~ "Strength &amp; HIIT"
-  end
-
-  test "GET / handles zero trainers gracefully", %{conn: conn} do
-    conn = get(conn, ~p"/")
-    response = html_response(conn, 200)
-    assert response =~ "Our trainer profiles are being updated"
-  end
-
-  test "GET / does not show unapproved trainers", %{conn: conn} do
-    _trainer =
-      trainer_fixture(%{
-        bio: "Should not appear on homepage"
-      })
-
-    conn = get(conn, ~p"/")
-    response = html_response(conn, 200)
-    refute response =~ "Should not appear on homepage"
+    refute response =~ "Meet Your"
+    refute response =~ "Expert in strength training"
   end
 
   describe "branches assign" do
@@ -120,24 +103,7 @@ defmodule GymStudioWeb.PageControllerTest do
       refute response =~ "Mon:"
     end
 
-    test "GET / shows branch badge on trainer cards", %{conn: conn} do
-      admin = user_fixture(%{role: :admin})
-
-      trainer =
-        trainer_fixture(%{
-          bio: "Expert in strength training"
-        })
-
-      GymStudio.Accounts.approve_trainer(trainer, admin)
-
-      # The trainer's user should have a branch assigned
-      conn = get(conn, ~p"/")
-      response = html_response(conn, 200)
-
-      # The trainer card should show the branch name as a badge
-      trainer_user = GymStudio.Repo.preload(trainer, user: [:branch])
-      assert trainer_user.user.branch, "Trainer fixture should have a branch assigned"
-      assert response =~ trainer_user.user.branch.name
-    end
+    # [LANDING-PAGE] Trainer cards hidden for landing page release - see #92
+    # test "GET / shows branch badge on trainer cards" - skipped
   end
 end

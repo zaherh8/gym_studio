@@ -4,6 +4,8 @@ defmodule GymStudioWeb.ForgotPasswordLiveTest do
   import Phoenix.LiveViewTest
   import GymStudio.AccountsFixtures
 
+  @moduletag :landing_page_auth
+
   describe "Forgot password page" do
     test "renders forgot password page", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/users/forgot-password")

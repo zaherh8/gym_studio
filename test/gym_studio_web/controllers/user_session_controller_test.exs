@@ -7,7 +7,10 @@ defmodule GymStudioWeb.UserSessionControllerTest do
     %{user: user_fixture()}
   end
 
+  # [LANDING-PAGE] Auth routes redirect to / - see #92
+  # Login tests are tagged :landing_page_auth and excluded until registration launches
   describe "GET /users/log-in" do
+    @tag :landing_page_auth
     test "renders log in page", %{conn: conn} do
       conn = get(conn, ~p"/users/log-in")
       response = html_response(conn, 200)
@@ -15,6 +18,7 @@ defmodule GymStudioWeb.UserSessionControllerTest do
       assert response =~ ~p"/users/register"
     end
 
+    @tag :landing_page_auth
     test "redirects if already logged in", %{conn: conn, user: user} do
       conn = conn |> log_in_user(user) |> get(~p"/users/log-in")
       # Default role is :client, so redirects to client dashboard
@@ -23,6 +27,7 @@ defmodule GymStudioWeb.UserSessionControllerTest do
   end
 
   describe "POST /users/log-in - phone and password" do
+    @tag :landing_page_auth
     test "logs the user in", %{conn: conn, user: user} do
       conn =
         post(conn, ~p"/users/log-in", %{
@@ -41,6 +46,7 @@ defmodule GymStudioWeb.UserSessionControllerTest do
       assert response =~ ~p"/users/log-out"
     end
 
+    @tag :landing_page_auth
     test "logs the user in with remember me", %{conn: conn, user: user} do
       conn =
         post(conn, ~p"/users/log-in", %{
@@ -56,6 +62,7 @@ defmodule GymStudioWeb.UserSessionControllerTest do
       assert redirected_to(conn) == ~p"/client"
     end
 
+    @tag :landing_page_auth
     test "logs the user in with return to", %{conn: conn, user: user} do
       conn =
         conn
@@ -71,6 +78,7 @@ defmodule GymStudioWeb.UserSessionControllerTest do
       assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "Welcome"
     end
 
+    @tag :landing_page_auth
     test "redirects to login page with invalid credentials", %{conn: conn, user: user} do
       conn =
         post(conn, ~p"/users/log-in", %{
