@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-04-29
+
+### Changed
+- Landing page branches are now static (no database query) (#96)
+  - Horsh Tabet: Clover Park 4th floor, +961 70 379 764
+  - Jal El Dib: Main Street, +961 71 633 970
+- All CTA buttons now open a branch selector modal → WhatsApp (#93)
+  - "Start Your Journey", "Explore Our Packages", "Get Started", "Get In Touch" all trigger the modal
+  - Users pick a branch → opens WhatsApp chat for that location
+- Phone numbers in locations section are WhatsApp deep links
+- Removed operating hours display from landing page
+- Get Directions uses Google Maps search URLs (no coordinates needed)
+- Footer branch links now go to WhatsApp instead of anchor links
+
+### Removed
+- `format_operating_hours/1` and related helpers from `PageHTML` (unused after removing operating hours)
+
 ## [0.5.0] - 2026-04-29
 
 ### Changed
