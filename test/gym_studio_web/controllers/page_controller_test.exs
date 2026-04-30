@@ -77,6 +77,35 @@ defmodule GymStudioWeb.PageControllerTest do
     end
   end
 
+  describe "testimonials" do
+    test "GET / renders all testimonial authors", %{conn: conn} do
+      conn = get(conn, ~p"/")
+      response = html_response(conn, 200)
+
+      assert response =~ "Arline Atamian"
+      assert response =~ "Joseph Rehayem"
+      assert response =~ "Christelle Fawaz"
+      assert response =~ "Youssef Khouzami"
+      assert response =~ "Nader Abou Nader"
+    end
+
+    test "GET / includes carousel container with data attribute", %{conn: conn} do
+      conn = get(conn, ~p"/")
+      response = html_response(conn, 200)
+
+      assert response =~ "data-testimonial-carousel"
+    end
+
+    test "GET / renders correct number of slides", %{conn: conn} do
+      conn = get(conn, ~p"/")
+      response = html_response(conn, 200)
+
+      # 5 slides with data-slide attribute
+      slide_count = response |> String.split("data-slide") |> length() |> Kernel.-(1)
+      assert slide_count == 5
+    end
+  end
+
   describe "WhatsApp CTA modal" do
     test "GET / includes the branch selector modal", %{conn: conn} do
       conn = get(conn, ~p"/")

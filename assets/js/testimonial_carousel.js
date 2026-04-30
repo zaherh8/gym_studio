@@ -7,15 +7,24 @@ function initCarousel(el) {
 
   function goTo(index) {
     slides.forEach((slide, i) => {
-      slide.style.opacity = i === index ? "1" : "0"
-      slide.style.position = i === index ? "relative" : "absolute"
-      slide.style.pointerEvents = i === index ? "auto" : "none"
+      const isActive = i === index
+      slide.classList.toggle("opacity-100", isActive)
+      slide.classList.toggle("relative", isActive)
+      slide.classList.toggle("opacity-0", !isActive)
+      slide.classList.toggle("absolute", !isActive)
+      slide.classList.toggle("pointer-events-none", !isActive)
     })
     dots.forEach((dot, i) => {
-      dot.classList.toggle("bg-primary", i === index)
-      dot.classList.toggle("bg-gray-300", i !== index)
+      const isActive = i === index
+      dot.classList.toggle("bg-primary", isActive)
+      dot.classList.toggle("bg-gray-300", !isActive)
+      dot.setAttribute("aria-selected", isActive)
     })
     currentIndex = index
+    const liveRegion = el.querySelector("[aria-live]")
+    if (liveRegion) {
+      liveRegion.setAttribute("aria-label", `Slide ${index + 1} of ${total}`)
+    }
   }
 
   let timer = setInterval(() => goTo((currentIndex + 1) % total), 5000)
@@ -31,6 +40,18 @@ function initCarousel(el) {
       resetTimer()
     })
   })
+
+  // Keyboard navigation
+  function handleKeydown(e) {
+    if (e.key === "ArrowLeft") {
+      goTo((currentIndex - 1 + total) % total)
+      resetTimer()
+    } else if (e.key === "ArrowRight") {
+      goTo((currentIndex + 1) % total)
+      resetTimer()
+    }
+  }
+  el.addEventListener("keydown", handleKeydown)
 
   // Swipe support
   let startX = 0
@@ -54,12 +75,21 @@ function initCarousel(el) {
     resetTimer()
   }, { passive: true })
 
+  // Cleanup: observe DOM removal to clear interval and listeners
+  const observer = new MutationObserver(() => {
+    if (!document.body.contains(el)) {
+      clearInterval(timer)
+      el.removeEventListener("keydown", handleKeydown)
+      observer.disconnect()
+    }
+  })
+  observer.observe(document.body, { childList: true, subtree: true })
+
   // Initialize first slide
   goTo(0)
 }
 
-// Auto-initialize on DOM ready
-document.addEventListener("DOMContentLoaded", () => {
+export function init() {
   const el = document.querySelector("[data-testimonial-carousel]")
   if (el) initCarousel(el)
-})
+}
