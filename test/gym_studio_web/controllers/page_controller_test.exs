@@ -77,6 +77,52 @@ defmodule GymStudioWeb.PageControllerTest do
     end
   end
 
+  describe "branch photos" do
+    test "GET / renders branch photos with responsive srcset", %{conn: conn} do
+      conn = get(conn, ~p"/")
+      response = html_response(conn, 200)
+
+      # Horsh Tabet photos
+      assert response =~ "horsh-tabet-space-400w.webp 400w"
+      assert response =~ "horsh-tabet-space-800w.webp 800w"
+      assert response =~ "horsh-tabet-space-1200w.webp 1200w"
+      assert response =~ "horsh-tabet-cable-800w.webp"
+
+      # Jal El Dib photos
+      assert response =~ "jal-el-dib-stretching-400w.webp 400w"
+      assert response =~ "jal-el-dib-stretching-800w.webp 800w"
+      assert response =~ "jal-el-dib-stretching-1200w.webp 1200w"
+      assert response =~ "jal-el-dib-coaching-800w.webp"
+    end
+
+    test "GET / branch photos have lazy loading and async decoding", %{conn: conn} do
+      conn = get(conn, ~p"/")
+      response = html_response(conn, 200)
+
+      assert response =~ ~s(loading="lazy")
+      assert response =~ ~s(decoding="async")
+    end
+
+    test "GET / branch photos have descriptive alt text", %{conn: conn} do
+      conn = get(conn, ~p"/")
+      response = html_response(conn, 200)
+
+      assert response =~ "React Gym Horsh Tabet interior"
+      assert response =~ "React Gym Horsh Tabet cable machine"
+      assert response =~ "React Gym Jal El Dib smiling client"
+      assert response =~ "React Gym Jal El Dib trainer coaching"
+    end
+
+    test "GET / branch photos use picture element with webp source", %{conn: conn} do
+      conn = get(conn, ~p"/")
+      response = html_response(conn, 200)
+
+      assert response =~ "<picture>"
+      assert response =~ ~s(type="image/webp")
+      assert response =~ "sizes=\"(max-width: 640px) 400px, 800px\""
+    end
+  end
+
   describe "testimonials" do
     test "GET / renders all testimonial authors", %{conn: conn} do
       conn = get(conn, ~p"/")
