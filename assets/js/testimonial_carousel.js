@@ -41,6 +41,8 @@ function initCarousel(el) {
   }
 
   function pauseForInteraction() {
+    // Once the user interacts (click, swipe, keyboard), auto-rotation is
+    // permanently disabled to respect their preference.
     userPaused = true
     stopTimer()
   }
@@ -82,12 +84,12 @@ function initCarousel(el) {
   let startX = 0
   let startY = 0
 
-  el.addEventListener("touchstart", (e) => {
+  function handleTouchstart(e) {
     startX = e.touches[0].clientX
     startY = e.touches[0].clientY
-  }, { passive: true })
+  }
 
-  el.addEventListener("touchend", (e) => {
+  function handleTouchend(e) {
     const dx = e.changedTouches[0].clientX - startX
     const dy = e.changedTouches[0].clientY - startY
     if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return
@@ -98,7 +100,10 @@ function initCarousel(el) {
       goTo((currentIndex - 1 + total) % total)
     }
     pauseForInteraction()
-  }, { passive: true })
+  }
+
+  el.addEventListener("touchstart", handleTouchstart, { passive: true })
+  el.addEventListener("touchend", handleTouchend, { passive: true })
 
   // Cleanup: observe DOM removal to clear interval and listeners
   const mutationObserver = new MutationObserver(() => {
@@ -106,6 +111,8 @@ function initCarousel(el) {
       stopTimer()
       visibilityObserver.disconnect()
       el.removeEventListener("keydown", handleKeydown)
+      el.removeEventListener("touchstart", handleTouchstart)
+      el.removeEventListener("touchend", handleTouchend)
       mutationObserver.disconnect()
     }
   })
