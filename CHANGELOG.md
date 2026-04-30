@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-04-30
+
+### Added
+- Testimonial carousel with 5 real member reviews (#94, #103)
+  - Auto-rotation every 5 seconds
+  - Navigation dots with ARIA tablist pattern
+  - Keyboard navigation (ArrowLeft/ArrowRight) with circular wrapping
+  - Swipe support on touch devices
+  - Progressive enhancement: first testimonial visible without JS
+  - Accessibility: `aria-roledescription="carousel"`, slide roles, live region
+
+### Changed
+- WhatsApp deep links now include pre-filled message: "Hello, can you tell me more about the service you provide at React?" (#94, #103)
+  - Applies to all WhatsApp links: hero CTA modal, locations section, footer
+- WhatsApp pre-filled message text refined for natural conversation starter
+
 ## [0.6.0] - 2026-04-29
 
 ### Changed
