@@ -16,7 +16,17 @@ defmodule GymStudioWeb.PageController do
       whatsapp_url:
         "https://wa.me/96170379764?text=Hello%2C%20can%20you%20tell%20me%20more%20about%20the%20service%20you%20provide%20at%20React%3F",
       directions_url:
-        "https://www.google.com/maps/search/?api=1&query=React+Gym+Clover+Park+Horsh+Tabet"
+        "https://www.google.com/maps/search/?api=1&query=React+Gym+Clover+Park+Horsh+Tabet",
+      photos: [
+        %{
+          alt: "React Gym Horsh Tabet interior with wide open training space",
+          base: "/images/branches/horsh-tabet-space"
+        },
+        %{
+          alt: "React Gym Horsh Tabet cable machine and REACT logo wall",
+          base: "/images/branches/horsh-tabet-cable"
+        }
+      ]
     },
     %{
       name: "Jal El Dib",
@@ -25,7 +35,17 @@ defmodule GymStudioWeb.PageController do
       whatsapp_url:
         "https://wa.me/96171633970?text=Hello%2C%20can%20you%20tell%20me%20more%20about%20the%20service%20you%20provide%20at%20React%3F",
       directions_url:
-        "https://www.google.com/maps/search/?api=1&query=React+Gym+Jal+El+Dib+Main+Street"
+        "https://www.google.com/maps/search/?api=1&query=React+Gym+Jal+El+Dib+Main+Street",
+      photos: [
+        %{
+          alt: "React Gym Jal El Dib smiling client with trainer during stretching",
+          base: "/images/branches/jal-el-dib-stretching"
+        },
+        %{
+          alt: "React Gym Jal El Dib trainer coaching client",
+          base: "/images/branches/jal-el-dib-coaching"
+        }
+      ]
     }
   ]
 
