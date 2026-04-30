@@ -68,9 +68,12 @@ defmodule GymStudioWeb.PageControllerTest do
       conn = get(conn, ~p"/")
       response = html_response(conn, 200)
 
-      # Phone numbers in locations section should link to WhatsApp
-      assert response =~ ~s(href="https://wa.me/96170379764")
-      assert response =~ ~s(href="https://wa.me/96171633970")
+      # Phone numbers in locations section should link to WhatsApp with pre-filled message
+      assert response =~
+               ~s(href="https://wa.me/96170379764?text=Hi%2C%20I%27m%20interested%20in%20training%20at%20React%20Gym")
+
+      assert response =~
+               ~s(href="https://wa.me/96171633970?text=Hi%2C%20I%27m%20interested%20in%20training%20at%20React%20Gym")
     end
   end
 
