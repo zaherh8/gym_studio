@@ -27,17 +27,44 @@ function initCarousel(el) {
     }
   }
 
-  let timer = setInterval(() => goTo((currentIndex + 1) % total), 5000)
+  let timer = null
+  let userPaused = false
 
-  function resetTimer() {
-    clearInterval(timer)
+  function startTimer() {
+    if (timer) return
     timer = setInterval(() => goTo((currentIndex + 1) % total), 5000)
   }
+
+  function stopTimer() {
+    clearInterval(timer)
+    timer = null
+  }
+
+  function pauseForInteraction() {
+    // Once the user interacts (click, swipe, keyboard), auto-rotation is
+    // permanently disabled to respect their preference.
+    userPaused = true
+    stopTimer()
+  }
+
+  // Intersection Observer: auto-rotate only when visible
+  const visibilityObserver = new IntersectionObserver(
+    (entries) => {
+      const entry = entries[0]
+      if (entry.isIntersecting && !userPaused) {
+        startTimer()
+      } else {
+        stopTimer()
+      }
+    },
+    { threshold: 0.3 }
+  )
+  visibilityObserver.observe(el)
 
   dots.forEach((dot, i) => {
     dot.addEventListener("click", () => {
       goTo(i)
-      resetTimer()
+      pauseForInteraction()
     })
   })
 
@@ -45,10 +72,10 @@ function initCarousel(el) {
   function handleKeydown(e) {
     if (e.key === "ArrowLeft") {
       goTo((currentIndex - 1 + total) % total)
-      resetTimer()
+      pauseForInteraction()
     } else if (e.key === "ArrowRight") {
       goTo((currentIndex + 1) % total)
-      resetTimer()
+      pauseForInteraction()
     }
   }
   el.addEventListener("keydown", handleKeydown)
@@ -57,12 +84,12 @@ function initCarousel(el) {
   let startX = 0
   let startY = 0
 
-  el.addEventListener("touchstart", (e) => {
+  function handleTouchstart(e) {
     startX = e.touches[0].clientX
     startY = e.touches[0].clientY
-  }, { passive: true })
+  }
 
-  el.addEventListener("touchend", (e) => {
+  function handleTouchend(e) {
     const dx = e.changedTouches[0].clientX - startX
     const dy = e.changedTouches[0].clientY - startY
     if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return
@@ -72,18 +99,24 @@ function initCarousel(el) {
     } else {
       goTo((currentIndex - 1 + total) % total)
     }
-    resetTimer()
-  }, { passive: true })
+    pauseForInteraction()
+  }
+
+  el.addEventListener("touchstart", handleTouchstart, { passive: true })
+  el.addEventListener("touchend", handleTouchend, { passive: true })
 
   // Cleanup: observe DOM removal to clear interval and listeners
-  const observer = new MutationObserver(() => {
+  const mutationObserver = new MutationObserver(() => {
     if (!document.body.contains(el)) {
-      clearInterval(timer)
+      stopTimer()
+      visibilityObserver.disconnect()
       el.removeEventListener("keydown", handleKeydown)
-      observer.disconnect()
+      el.removeEventListener("touchstart", handleTouchstart)
+      el.removeEventListener("touchend", handleTouchend)
+      mutationObserver.disconnect()
     }
   })
-  observer.observe(document.body, { childList: true, subtree: true })
+  mutationObserver.observe(document.body, { childList: true, subtree: true })
 
   // Initialize first slide
   goTo(0)

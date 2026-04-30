@@ -269,7 +269,7 @@
         aria-label="Customer testimonials"
         tabindex="0"
       >
-        <div class="relative bg-white rounded-3xl p-8 sm:p-12 border border-gray-200 shadow-sm overflow-hidden">
+        <div class="relative bg-white rounded-3xl p-8 sm:p-12 border border-gray-200 shadow-sm overflow-hidden min-h-[280px] sm:min-h-[260px]">
           <svg
             class="absolute top-6 left-6 sm:top-8 sm:left-8 h-10 w-10 text-primary/20"
             fill="currentColor"
@@ -428,80 +428,6 @@
   </div>
 </section>
 --%>
-
-<%!-- Gallery Section --%>
-<section id="gallery" class="py-16 sm:py-20 md:py-24 bg-gray-100">
-  <div class="container mx-auto px-4">
-    <div class="text-center mb-12 sm:mb-16">
-      <span class="inline-block text-primary font-semibold text-sm uppercase tracking-wider mb-3">
-        Our Space
-      </span>
-      <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-gray-900">
-        The <span class="text-primary">Studio</span>
-      </h2>
-      <p class="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
-        A modern, private space designed for focused training
-      </p>
-    </div>
-
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-6xl mx-auto">
-      <div class="relative group overflow-hidden rounded-xl aspect-square col-span-2 row-span-2">
-        <img
-          src={GymStudioWeb.CDN.url("/images/training-area.jpg")}
-          alt="Main Training Area"
-          class="absolute inset-0 w-full h-full object-cover"
-        />
-        <div class="absolute inset-0 bg-black/30 group-hover:bg-primary/30 transition-colors flex items-end p-4">
-          <p class="text-white font-medium text-lg">Main Training Area</p>
-        </div>
-      </div>
-
-      <div class="relative group overflow-hidden rounded-xl aspect-square">
-        <img
-          src={GymStudioWeb.CDN.url("/images/equipment.jpg")}
-          alt="Equipment"
-          class="absolute inset-0 w-full h-full object-cover"
-        />
-        <div class="absolute inset-0 bg-black/30 group-hover:bg-primary/30 transition-colors flex items-end p-3">
-          <p class="text-white text-sm font-medium">Equipment</p>
-        </div>
-      </div>
-
-      <div class="relative group overflow-hidden rounded-xl aspect-square">
-        <img
-          src={GymStudioWeb.CDN.url("/images/cardio.jpg")}
-          alt="Cardio"
-          class="absolute inset-0 w-full h-full object-cover"
-        />
-        <div class="absolute inset-0 bg-black/30 group-hover:bg-primary/30 transition-colors flex items-end p-3">
-          <p class="text-white text-sm font-medium">Cardio</p>
-        </div>
-      </div>
-
-      <div class="relative group overflow-hidden rounded-xl aspect-square">
-        <img
-          src={GymStudioWeb.CDN.url("/images/stretching.jpg")}
-          alt="Stretching Zone"
-          class="absolute inset-0 w-full h-full object-cover"
-        />
-        <div class="absolute inset-0 bg-black/30 group-hover:bg-primary/30 transition-colors flex items-end p-3">
-          <p class="text-white text-sm font-medium">Stretching</p>
-        </div>
-      </div>
-
-      <div class="relative group overflow-hidden rounded-xl aspect-square">
-        <img
-          src={GymStudioWeb.CDN.url("/images/weights.jpg")}
-          alt="Free Weights"
-          class="absolute inset-0 w-full h-full object-cover"
-        />
-        <div class="absolute inset-0 bg-black/30 group-hover:bg-primary/30 transition-colors flex items-end p-3">
-          <p class="text-white text-sm font-medium">Free Weights</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <%!-- Session Packages Section --%>
 <section id="packages" class="py-16 sm:py-20 md:py-24 bg-white">
@@ -999,14 +925,6 @@
               class="text-neutral-content/70 hover:text-primary transition-colors"
             >
               Packages
-            </a>
-          </li>
-          <li>
-            <a
-              href="#gallery"
-              class="text-neutral-content/70 hover:text-primary transition-colors"
-            >
-              Gallery
             </a>
           </li>
           <li>
