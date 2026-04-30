@@ -27,17 +27,42 @@ function initCarousel(el) {
     }
   }
 
-  let timer = setInterval(() => goTo((currentIndex + 1) % total), 5000)
+  let timer = null
+  let userPaused = false
 
-  function resetTimer() {
-    clearInterval(timer)
+  function startTimer() {
+    if (timer) return
     timer = setInterval(() => goTo((currentIndex + 1) % total), 5000)
   }
+
+  function stopTimer() {
+    clearInterval(timer)
+    timer = null
+  }
+
+  function pauseForInteraction() {
+    userPaused = true
+    stopTimer()
+  }
+
+  // Intersection Observer: auto-rotate only when visible
+  const visibilityObserver = new IntersectionObserver(
+    (entries) => {
+      const entry = entries[0]
+      if (entry.isIntersecting && !userPaused) {
+        startTimer()
+      } else {
+        stopTimer()
+      }
+    },
+    { threshold: 0.3 }
+  )
+  visibilityObserver.observe(el)
 
   dots.forEach((dot, i) => {
     dot.addEventListener("click", () => {
       goTo(i)
-      resetTimer()
+      pauseForInteraction()
     })
   })
 
@@ -45,10 +70,10 @@ function initCarousel(el) {
   function handleKeydown(e) {
     if (e.key === "ArrowLeft") {
       goTo((currentIndex - 1 + total) % total)
-      resetTimer()
+      pauseForInteraction()
     } else if (e.key === "ArrowRight") {
       goTo((currentIndex + 1) % total)
-      resetTimer()
+      pauseForInteraction()
     }
   }
   el.addEventListener("keydown", handleKeydown)
@@ -72,18 +97,19 @@ function initCarousel(el) {
     } else {
       goTo((currentIndex - 1 + total) % total)
     }
-    resetTimer()
+    pauseForInteraction()
   }, { passive: true })
 
   // Cleanup: observe DOM removal to clear interval and listeners
-  const observer = new MutationObserver(() => {
+  const mutationObserver = new MutationObserver(() => {
     if (!document.body.contains(el)) {
-      clearInterval(timer)
+      stopTimer()
+      visibilityObserver.disconnect()
       el.removeEventListener("keydown", handleKeydown)
-      observer.disconnect()
+      mutationObserver.disconnect()
     }
   })
-  observer.observe(document.body, { childList: true, subtree: true })
+  mutationObserver.observe(document.body, { childList: true, subtree: true })
 
   // Initialize first slide
   goTo(0)
