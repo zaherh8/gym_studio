@@ -70,10 +70,10 @@ defmodule GymStudioWeb.PageControllerTest do
 
       # Phone numbers in locations section should link to WhatsApp with pre-filled message
       assert response =~
-               ~s(href="https://wa.me/96170379764?text=Hi%2C%20I%27m%20interested%20in%20training%20at%20React%20Gym")
+               ~s(href="https://wa.me/96170379764?text=Hello%2C%20can%20you%20tell%20me%20more%20about%20the%20service%20you%20provide%20at%20React%3F")
 
       assert response =~
-               ~s(href="https://wa.me/96171633970?text=Hi%2C%20I%27m%20interested%20in%20training%20at%20React%20Gym")
+               ~s(href="https://wa.me/96171633970?text=Hello%2C%20can%20you%20tell%20me%20more%20about%20the%20service%20you%20provide%20at%20React%3F")
     end
   end
 

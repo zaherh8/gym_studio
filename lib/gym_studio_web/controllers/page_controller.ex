@@ -14,7 +14,7 @@ defmodule GymStudioWeb.PageController do
       address: "Clover Park, 4th floor",
       phone: "+961 70 379 764",
       whatsapp_url:
-        "https://wa.me/96170379764?text=Hi%2C%20I%27m%20interested%20in%20training%20at%20React%20Gym",
+        "https://wa.me/96170379764?text=Hello%2C%20can%20you%20tell%20me%20more%20about%20the%20service%20you%20provide%20at%20React%3F",
       directions_url:
         "https://www.google.com/maps/search/?api=1&query=React+Gym+Clover+Park+Horsh+Tabet"
     },
@@ -23,7 +23,7 @@ defmodule GymStudioWeb.PageController do
       address: "Main Street",
       phone: "+961 71 633 970",
       whatsapp_url:
-        "https://wa.me/96171633970?text=Hi%2C%20I%27m%20interested%20in%20training%20at%20React%20Gym",
+        "https://wa.me/96171633970?text=Hello%2C%20can%20you%20tell%20me%20more%20about%20the%20service%20you%20provide%20at%20React%3F",
       directions_url:
         "https://www.google.com/maps/search/?api=1&query=React+Gym+Jal+El+Dib+Main+Street"
     }
