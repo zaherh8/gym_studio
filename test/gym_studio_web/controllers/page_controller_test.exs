@@ -113,12 +113,12 @@ defmodule GymStudioWeb.PageControllerTest do
       assert response =~ "React Gym Jal El Dib trainer coaching"
     end
 
-    test "GET / branch photos use picture element with webp source", %{conn: conn} do
+    test "GET / branch photos use plain img tags without picture wrapper", %{conn: conn} do
       conn = get(conn, ~p"/")
       response = html_response(conn, 200)
 
-      assert response =~ "<picture>"
-      assert response =~ ~s(type="image/webp")
+      refute response =~ "<picture>"
+      refute response =~ ~s(type="image/webp")
       assert response =~ "sizes=\"(max-width: 640px) 400px, 800px\""
     end
   end

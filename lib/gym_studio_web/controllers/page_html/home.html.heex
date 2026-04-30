@@ -831,22 +831,15 @@
           <div class="grid grid-cols-2 gap-1">
             <%= for {photo, idx} <- Enum.with_index(branch.photos) do %>
               <div class={if idx == 0, do: "col-span-2", else: "col-span-2 sm:col-span-1"}>
-                <picture>
-                  <source
-                    type="image/webp"
-                    srcset={"#{GymStudioWeb.CDN.url("#{photo.base}-400w.webp")} 400w, #{GymStudioWeb.CDN.url("#{photo.base}-800w.webp")} 800w, #{GymStudioWeb.CDN.url("#{photo.base}-1200w.webp")} 1200w"}
-                    sizes="(max-width: 640px) 400px, 800px"
-                  />
-                  <img
-                    src={GymStudioWeb.CDN.url("#{photo.base}-800w.webp")}
-                    srcset={"#{GymStudioWeb.CDN.url("#{photo.base}-400w.webp")} 400w, #{GymStudioWeb.CDN.url("#{photo.base}-800w.webp")} 800w, #{GymStudioWeb.CDN.url("#{photo.base}-1200w.webp")} 1200w"}
-                    sizes="(max-width: 640px) 400px, 800px"
-                    alt={photo.alt}
-                    loading="lazy"
-                    decoding="async"
-                    class={"w-full object-cover #{if idx == 0, do: "h-48 sm:h-56", else: "h-32 sm:h-40"}"}
-                  />
-                </picture>
+                <img
+                  src={GymStudioWeb.CDN.url("#{photo.base}-800w.webp")}
+                  srcset={"#{GymStudioWeb.CDN.url("#{photo.base}-400w.webp")} 400w, #{GymStudioWeb.CDN.url("#{photo.base}-800w.webp")} 800w, #{GymStudioWeb.CDN.url("#{photo.base}-1200w.webp")} 1200w"}
+                  sizes="(max-width: 640px) 400px, 800px"
+                  alt={photo.alt}
+                  loading="lazy"
+                  decoding="async"
+                  class={"w-full object-cover #{if idx == 0, do: "h-48 sm:h-56", else: "h-32 sm:h-40"}"}
+                />
               </div>
             <% end %>
           </div>
