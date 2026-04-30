@@ -444,9 +444,14 @@
       </p>
     </div>
 
-    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto">
+    <%!-- Mobile: horizontal carousel with scroll-snap | Desktop: grid --%>
+    <div
+      id="packages-carousel"
+      class="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth px-[9vw] pb-4 -mx-4 lg:mx-auto lg:grid lg:grid-cols-3 lg:gap-8 lg:overflow-visible lg:snap-none lg:px-0 lg:pb-0 max-w-5xl"
+      style="scrollbar-width: none; -ms-overflow-style: none;"
+    >
       <%!-- Starter Package --%>
-      <div class="relative p-6 sm:p-8 rounded-2xl bg-white border-2 border-gray-200 hover:border-primary/30 transition-all">
+      <div class="relative p-6 sm:p-8 rounded-2xl bg-white border-2 border-gray-200 hover:border-primary/30 transition-all flex-shrink-0 w-[82vw] snap-center lg:w-auto lg:flex-shrink">
         <div class="text-center mb-6">
           <h3 class="text-2xl font-bold mb-1 text-gray-900">Starter</h3>
           <p class="text-gray-500 text-sm mb-4">Perfect for trying us out</p>
@@ -511,7 +516,10 @@
       </div>
 
       <%!-- Standard Package - Featured --%>
-      <div class="relative p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-primary to-secondary text-primary-content shadow-xl scale-105 z-10">
+      <div
+        id="package-standard"
+        class="relative p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-primary to-secondary text-primary-content shadow-xl lg:scale-105 z-10 flex-shrink-0 w-[82vw] snap-center lg:w-auto lg:flex-shrink"
+      >
         <div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
           <span class="badge badge-accent font-bold px-4 py-3 shadow-lg">Most Popular</span>
         </div>
@@ -579,7 +587,7 @@
       </div>
 
       <%!-- Premium Package --%>
-      <div class="relative p-6 sm:p-8 rounded-2xl bg-white border-2 border-gray-200 hover:border-primary/30 transition-all sm:col-span-2 lg:col-span-1">
+      <div class="relative p-6 sm:p-8 rounded-2xl bg-white border-2 border-gray-200 hover:border-primary/30 transition-all flex-shrink-0 w-[82vw] snap-center lg:w-auto lg:flex-shrink lg:col-span-1">
         <div class="text-center mb-6">
           <h3 class="text-2xl font-bold mb-1 text-gray-900">Premium</h3>
           <p class="text-gray-500 text-sm mb-4">Maximum results</p>
@@ -643,8 +651,76 @@
         </button>
       </div>
     </div>
+
+    <%!-- Dot indicators (mobile only) --%>
+    <div id="packages-dots" class="flex justify-center gap-2 mt-4 lg:hidden">
+      <button
+        type="button"
+        class="packages-dot w-2 h-2 rounded-full bg-gray-300 transition-colors"
+        aria-label="Go to Starter package"
+      >
+      </button>
+      <button
+        type="button"
+        class="packages-dot w-2 h-2 rounded-full bg-gray-300 transition-colors"
+        aria-label="Go to Standard package"
+      >
+      </button>
+      <button
+        type="button"
+        class="packages-dot w-2 h-2 rounded-full bg-gray-300 transition-colors"
+        aria-label="Go to Premium package"
+      >
+      </button>
+    </div>
   </div>
 </section>
+
+<script>
+  (function() {
+    const carousel = document.getElementById("packages-carousel");
+    const dots = document.querySelectorAll(".packages-dot");
+    if (!carousel || !dots.length) return;
+
+    // Scroll to Standard (center card) on load for mobile
+    const standardCard = document.getElementById("package-standard");
+    if (standardCard && window.innerWidth < 1024) {
+      // Use requestAnimationFrame to ensure layout is computed
+      requestAnimationFrame(function() {
+        standardCard.scrollIntoView({ inline: "center", block: "nearest", behavior: "instant" });
+      });
+    }
+
+    function updateDots() {
+      const cards = carousel.children;
+      const scrollCenter = carousel.scrollLeft + carousel.offsetWidth / 2;
+      let activeIndex = 0;
+      let minDist = Infinity;
+      for (let i = 0; i < cards.length; i++) {
+        const cardCenter = cards[i].offsetLeft - carousel.offsetLeft + cards[i].offsetWidth / 2;
+        const dist = Math.abs(scrollCenter - cardCenter);
+        if (dist < minDist) { minDist = dist; activeIndex = i; }
+      }
+      dots.forEach(function(dot, i) {
+        dot.classList.toggle("bg-primary", i === activeIndex);
+        dot.classList.toggle("bg-gray-300", i !== activeIndex);
+      });
+    }
+
+    carousel.addEventListener("scroll", updateDots, { passive: true });
+
+    // Dot click scrolls to card
+    dots.forEach(function(dot, i) {
+      dot.addEventListener("click", function() {
+        const card = carousel.children[i];
+        if (card) card.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+      });
+    });
+
+    // Initial dot state
+    requestAnimationFrame(updateDots);
+  })();
+</script>
 
 <%!-- [LANDING-PAGE] Old DB-driven location cards hidden for landing page release - see #92 --%>
 <%!--

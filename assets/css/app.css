@@ -316,3 +316,7 @@
     padding-bottom: 0;
   }
 }
+
+#packages-carousel::-webkit-scrollbar {
+  display: none;
+}
