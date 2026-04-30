@@ -444,19 +444,19 @@
       </p>
     </div>
 
-    <%!-- Mobile: centered card stack | Desktop: grid --%>
+    <%!-- Mobile: horizontal carousel with scroll-snap | Desktop: grid --%>
     <div
       id="packages-carousel"
       role="region"
       aria-label="Session packages"
-      class="relative pt-8 pb-4 max-w-5xl overflow-visible"
+      class="flex gap-4 overflow-x-auto overflow-y-visible snap-x snap-mandatory scroll-smooth px-[12vw] pt-6 pb-4 -mx-4 lg:mx-auto lg:grid lg:grid-cols-3 lg:gap-8 lg:overflow-visible lg:snap-none lg:px-0 lg:pt-0 lg:pb-0 max-w-5xl"
       style="scrollbar-width: none; -ms-overflow-style: none;"
     >
       <%!-- Starter Package --%>
       <div
         role="group"
         aria-label="Starter package"
-        class="package-card p-6 sm:p-8 rounded-2xl bg-white border-2 border-gray-200 hover:border-primary/30 transition-all duration-500 ease-out"
+        class="package-card relative p-6 sm:p-8 rounded-2xl bg-white border-2 border-gray-200 hover:border-primary/30 transition-all duration-300 flex-shrink-0 w-[75vw] snap-center lg:w-auto lg:flex-shrink lg:!scale-100 lg:!opacity-100 lg:!z-auto"
       >
         <div class="text-center mb-6">
           <h3 class="text-2xl font-bold mb-1 text-gray-900">Starter</h3>
@@ -526,7 +526,7 @@
         id="package-standard"
         role="group"
         aria-label="Standard package"
-        class="package-card p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-primary to-secondary text-primary-content shadow-xl transition-all duration-500 ease-out"
+        class="package-card relative p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-primary to-secondary text-primary-content shadow-xl lg:scale-105 z-10 transition-all duration-300 flex-shrink-0 w-[75vw] snap-center lg:w-auto lg:flex-shrink lg:!opacity-100 lg:!z-10"
       >
         <div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
           <span class="badge badge-accent font-bold px-4 py-3 shadow-lg">Most Popular</span>
@@ -598,7 +598,7 @@
       <div
         role="group"
         aria-label="Premium package"
-        class="package-card p-6 sm:p-8 rounded-2xl bg-white border-2 border-gray-200 hover:border-primary/30 transition-all duration-500 ease-out"
+        class="package-card relative p-6 sm:p-8 rounded-2xl bg-white border-2 border-gray-200 hover:border-primary/30 transition-all duration-300 flex-shrink-0 w-[75vw] snap-center lg:w-auto lg:flex-shrink lg:col-span-1 lg:!scale-100 lg:!opacity-100 lg:!z-auto"
       >
         <div class="text-center mb-6">
           <h3 class="text-2xl font-bold mb-1 text-gray-900">Premium</h3>
@@ -696,174 +696,84 @@
 
 <script>
   (function() {
-    var carousel = document.getElementById("packages-carousel");
-    var dots = document.querySelectorAll(".packages-dot");
+    const carousel = document.getElementById("packages-carousel");
+    const dots = document.querySelectorAll(".packages-dot");
     if (!carousel || !dots.length) return;
 
-    var currentIndex = 1; // Start on Standard (center)
-    var isMobile = window.innerWidth < 1024;
+    var rafPending = false;
 
-    function layoutCards() {
-      var cards = carousel.querySelectorAll(".package-card");
-      isMobile = window.innerWidth < 1024;
-
-      if (!isMobile) {
-        // Desktop: 3-column grid
-        carousel.style.display = "grid";
-        carousel.style.gridTemplateColumns = "repeat(3, 1fr)";
-        carousel.style.gap = "2rem";
-        carousel.style.height = "";
-        cards.forEach(function(card) {
-          card.style.position = "";
-          card.style.left = "";
-          card.style.top = "";
-          card.style.width = "";
-          card.style.transform = "";
-          card.style.opacity = "";
-          card.style.zIndex = "";
-          card.style.boxShadow = "";
-          card.style.transition = "";
-        });
-        // Featured card scale
-        if (cards[1]) {
-          cards[1].style.transform = "scale(1.05)";
-          cards[1].style.zIndex = "10";
-        }
-        return;
-      }
-
-      // Mobile: stacked card layout using pixel positioning
-      carousel.style.display = "";
-      carousel.style.gridTemplateColumns = "";
-      carousel.style.gap = "";
-
-      var cardW = Math.round(window.innerWidth * 0.6); // 60vw in px
-      var containerW = carousel.offsetWidth;
-      var centerLeft = Math.round((containerW - cardW) / 2); // center card left offset
-
-      // Measure tallest card
-      var maxH = 0;
-      cards.forEach(function(card) {
-        card.style.position = "absolute";
-        card.style.width = cardW + "px";
-        card.style.left = centerLeft + "px";
-        card.style.top = "0";
-        card.style.transform = "scale(1)";
-        card.style.opacity = "1";
-        card.style.zIndex = "30";
-        card.style.boxShadow = "";
-        var h = card.offsetHeight;
-        if (h > maxH) maxH = h;
+    // Scroll to Standard (center card) on load for mobile
+    var standardCard = document.getElementById("package-standard");
+    if (standardCard && window.innerWidth < 1024) {
+      window.addEventListener("load", function() {
+        standardCard.scrollIntoView({ inline: "center", block: "nearest", behavior: "instant" });
       });
-      carousel.style.height = (maxH + 40) + "px";
-
-      updateStack();
     }
 
-    function updateStack() {
-      var cards = carousel.querySelectorAll(".package-card");
-      var cardW = Math.round(window.innerWidth * 0.6);
-      var containerW = carousel.offsetWidth;
-      var centerLeft = Math.round((containerW - cardW) / 2);
-      var scaledW = Math.round(cardW * 0.85);
-      var peekPx = 28; // pixels of side card visible on each side
+    function getActiveIndex() {
+      var cards = carousel.children;
+      var scrollCenter = carousel.scrollLeft + carousel.offsetWidth / 2;
+      var activeIndex = 0;
+      var minDist = Infinity;
+      for (var i = 0; i < cards.length; i++) {
+        var cardCenter = cards[i].offsetLeft - carousel.offsetLeft + cards[i].offsetWidth / 2;
+        var dist = Math.abs(scrollCenter - cardCenter);
+        if (dist < minDist) { minDist = dist; activeIndex = i; }
+      }
+      return activeIndex;
+    }
 
-      cards.forEach(function(card, i) {
-        card.style.position = "absolute";
-        card.style.width = cardW + "px";
-        card.style.top = "0";
-        card.style.transition = "left 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease";
+    function updateCarousel() {
+      var activeIndex = getActiveIndex();
+      var cards = carousel.children;
 
-        if (i === currentIndex) {
-          // Center card: full size, on top, centered
-          card.style.left = centerLeft + "px";
-          card.style.transform = "scale(1)";
-          card.style.opacity = "1";
-          card.style.zIndex = "30";
-          card.style.boxShadow = "";
-        } else {
-          // Side cards: scaled down, behind, peeking from edges
-          var direction = i < currentIndex ? -1 : 1;
-          // Position: side card's inner edge aligns near center card's outer edge
-          if (direction < 0) {
-            // Left card: right edge = center card's left edge - gap
-            card.style.left = (centerLeft - scaledW + peekPx) + "px";
+      // Update card transforms for stack effect (mobile only)
+      if (window.innerWidth < 1024) {
+        for (var i = 0; i < cards.length; i++) {
+          if (i === activeIndex) {
+            cards[i].style.transform = "scale(1)";
+            cards[i].style.opacity = "1";
+            cards[i].style.zIndex = "30";
           } else {
-            // Right card: left edge = center card's right edge + gap - peekPx
-            card.style.left = (centerLeft + cardW - peekPx) + "px";
+            cards[i].style.transform = "scale(0.88)";
+            cards[i].style.opacity = "0.7";
+            cards[i].style.zIndex = "10";
           }
-          card.style.transform = "scale(0.85)";
-          card.style.opacity = "0.75";
-          card.style.zIndex = "10";
-          card.style.boxShadow = "0 4px 20px rgba(0,0,0,0.12)";
         }
-      });
+      }
 
       // Update dots
       dots.forEach(function(dot, i) {
         var span = dot.querySelector("span");
         if (span) {
-          span.classList.toggle("bg-primary", i === currentIndex);
-          span.classList.toggle("bg-gray-300", i !== currentIndex);
+          span.classList.toggle("bg-primary", i === activeIndex);
+          span.classList.toggle("bg-gray-300", i !== activeIndex);
         }
-        dot.setAttribute("aria-current", i === currentIndex ? "true" : "false");
+        dot.setAttribute("aria-current", i === activeIndex ? "true" : "false");
       });
+
+      rafPending = false;
     }
 
-    // Dot click changes active card
+    function onScroll() {
+      if (!rafPending) {
+        rafPending = true;
+        requestAnimationFrame(updateCarousel);
+      }
+    }
+
+    carousel.addEventListener("scroll", onScroll, { passive: true });
+
+    // Dot click scrolls to card
     dots.forEach(function(dot, i) {
       dot.addEventListener("click", function() {
-        if (i !== currentIndex) {
-          currentIndex = i;
-          updateStack();
-        }
+        var card = carousel.children[i];
+        if (card) card.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
       });
     });
 
-    // Swipe support
-    var touchStartX = 0;
-
-    carousel.addEventListener("touchstart", function(e) {
-      touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true });
-
-    carousel.addEventListener("touchend", function(e) {
-      var touchEndX = e.changedTouches[0].screenX;
-      var diff = touchStartX - touchEndX;
-      if (Math.abs(diff) > 50) {
-        if (diff > 0 && currentIndex < 2) {
-          currentIndex++;
-          updateStack();
-        } else if (diff < 0 && currentIndex > 0) {
-          currentIndex--;
-          updateStack();
-        }
-      }
-    }, { passive: true });
-
-    // Keyboard support
-    carousel.setAttribute("tabindex", "0");
-    carousel.addEventListener("keydown", function(e) {
-      if (e.key === "ArrowRight" && currentIndex < 2) {
-        e.preventDefault();
-        currentIndex++;
-        updateStack();
-      } else if (e.key === "ArrowLeft" && currentIndex > 0) {
-        e.preventDefault();
-        currentIndex--;
-        updateStack();
-      }
-    });
-
-    // Handle resize
-    var resizeTimer;
-    window.addEventListener("resize", function() {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(layoutCards, 150);
-    });
-
-    // Initial layout
-    layoutCards();
+    // Initial state
+    requestAnimationFrame(updateCarousel);
   })();
 </script>
 
