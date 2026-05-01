@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2026-05-01
+
+### Changed
+- Replace em dashes with more natural punctuation on landing page (#109)
+  - Hero: period split instead of dash
+  - 100% Personal section: comma flow instead of dash
+  - Ready to Start section: colon instead of dash
+- Standard package card: "Flexible scheduling" instead of "Priority booking" (#109)
+
 ## [0.8.0] - 2026-04-30
 
 ### Added
