@@ -437,22 +437,33 @@
         Pricing
       </span>
       <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-gray-900">
-        Session <span class="text-primary">Packages</span>
+        Choose Your <span class="text-primary">Plan</span>
       </h2>
       <p class="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
-        Choose the commitment level that works for you. All packages include personal training sessions.
+        Pick the package that fits your goals. All include personal training.
       </p>
     </div>
 
-    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto">
+    <%!-- Mobile: horizontal carousel with scroll-snap | Desktop: 3-column grid --%>
+    <div
+      id="packages-carousel"
+      role="region"
+      aria-label="Session packages"
+      class="flex gap-4 overflow-x-auto overflow-y-visible snap-x snap-mandatory scroll-smooth px-[12vw] pt-6 pb-4 -mx-4 lg:mx-auto lg:grid lg:grid-cols-3 lg:gap-8 lg:overflow-visible lg:snap-none lg:px-0 lg:pt-0 lg:pb-0 max-w-5xl"
+      style="scrollbar-width: none; -ms-overflow-style: none;"
+    >
       <%!-- Starter Package --%>
-      <div class="relative p-6 sm:p-8 rounded-2xl bg-white border-2 border-gray-200 hover:border-primary/30 transition-all">
+      <div
+        role="group"
+        aria-label="Starter package"
+        class="package-card relative p-6 sm:p-8 rounded-2xl bg-white border-2 border-gray-200 hover:border-primary/30 shadow-sm hover:shadow-md transition-all duration-300 flex-shrink-0 w-[75vw] snap-center lg:w-auto lg:flex-shrink lg:!scale-100 lg:!opacity-100 lg:!z-auto"
+      >
         <div class="text-center mb-6">
           <h3 class="text-2xl font-bold mb-1 text-gray-900">Starter</h3>
           <p class="text-gray-500 text-sm mb-4">Perfect for trying us out</p>
           <div class="py-4">
             <span class="text-5xl font-black text-primary">8</span>
-            <span class="text-gray-600 text-lg ml-1">sessions</span>
+            <span class="block text-gray-500 text-sm font-medium mt-1">sessions</span>
           </div>
         </div>
         <ul class="space-y-3 mb-8 text-sm text-gray-700">
@@ -511,7 +522,12 @@
       </div>
 
       <%!-- Standard Package - Featured --%>
-      <div class="relative p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-primary to-secondary text-primary-content shadow-xl scale-105 z-10">
+      <div
+        id="package-standard"
+        role="group"
+        aria-label="Standard package"
+        class="package-card relative p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-primary to-secondary text-primary-content shadow-xl lg:scale-105 z-10 transition-all duration-300 flex-shrink-0 w-[75vw] snap-center lg:w-auto lg:flex-shrink lg:!opacity-100 lg:!z-10"
+      >
         <div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
           <span class="badge badge-accent font-bold px-4 py-3 shadow-lg">Most Popular</span>
         </div>
@@ -520,7 +536,7 @@
           <p class="opacity-80 text-sm mb-4">Best value for committed members</p>
           <div class="py-4">
             <span class="text-5xl font-black">12</span>
-            <span class="opacity-90 text-lg ml-1">sessions</span>
+            <span class="block opacity-80 text-sm font-medium mt-1">sessions</span>
           </div>
         </div>
         <ul class="space-y-3 mb-8 text-sm">
@@ -579,13 +595,17 @@
       </div>
 
       <%!-- Premium Package --%>
-      <div class="relative p-6 sm:p-8 rounded-2xl bg-white border-2 border-gray-200 hover:border-primary/30 transition-all sm:col-span-2 lg:col-span-1">
+      <div
+        role="group"
+        aria-label="Premium package"
+        class="package-card relative p-6 sm:p-8 rounded-2xl bg-white border-2 border-gray-200 hover:border-primary/30 shadow-sm hover:shadow-md transition-all duration-300 flex-shrink-0 w-[75vw] snap-center lg:w-auto lg:flex-shrink lg:col-span-1 lg:!scale-100 lg:!opacity-100 lg:!z-auto"
+      >
         <div class="text-center mb-6">
           <h3 class="text-2xl font-bold mb-1 text-gray-900">Premium</h3>
           <p class="text-gray-500 text-sm mb-4">Maximum results</p>
           <div class="py-4">
             <span class="text-5xl font-black text-primary">20</span>
-            <span class="text-gray-600 text-lg ml-1">sessions</span>
+            <span class="block text-gray-500 text-sm font-medium mt-1">sessions</span>
           </div>
         </div>
         <ul class="space-y-3 mb-8 text-sm text-gray-700">
@@ -643,8 +663,119 @@
         </button>
       </div>
     </div>
+
+    <%!-- Dot indicators (mobile only) --%>
+    <div id="packages-dots" class="flex justify-center gap-1 mt-4 lg:hidden">
+      <button
+        type="button"
+        class="packages-dot p-3"
+        aria-label="Go to Starter package"
+        aria-current="false"
+      >
+        <span class="block w-2.5 h-2.5 rounded-full bg-gray-300 transition-colors"></span>
+      </button>
+      <button
+        type="button"
+        class="packages-dot p-3"
+        aria-label="Go to Standard package"
+        aria-current="false"
+      >
+        <span class="block w-2.5 h-2.5 rounded-full bg-gray-300 transition-colors"></span>
+      </button>
+      <button
+        type="button"
+        class="packages-dot p-3"
+        aria-label="Go to Premium package"
+        aria-current="false"
+      >
+        <span class="block w-2.5 h-2.5 rounded-full bg-gray-300 transition-colors"></span>
+      </button>
+    </div>
   </div>
 </section>
+
+<script>
+  (function() {
+    var carousel = document.getElementById("packages-carousel");
+    var dots = document.querySelectorAll(".packages-dot");
+    if (!carousel || !dots.length) return;
+
+    var rafPending = false;
+
+    // Scroll to Standard (center card) on load for mobile
+    var standardCard = document.getElementById("package-standard");
+    if (standardCard && window.innerWidth < 1024) {
+      window.addEventListener("load", function() {
+        standardCard.scrollIntoView({ inline: "center", block: "nearest", behavior: "instant" });
+      });
+    }
+
+    function getActiveIndex() {
+      var cards = carousel.children;
+      var scrollCenter = carousel.scrollLeft + carousel.offsetWidth / 2;
+      var activeIndex = 0;
+      var minDist = Infinity;
+      for (var i = 0; i < cards.length; i++) {
+        var cardCenter = cards[i].offsetLeft - carousel.offsetLeft + cards[i].offsetWidth / 2;
+        var dist = Math.abs(scrollCenter - cardCenter);
+        if (dist < minDist) { minDist = dist; activeIndex = i; }
+      }
+      return activeIndex;
+    }
+
+    function updateCarousel() {
+      var activeIndex = getActiveIndex();
+      var cards = carousel.children;
+
+      // Update card transforms for stack effect (mobile only)
+      if (window.innerWidth < 1024) {
+        for (var i = 0; i < cards.length; i++) {
+          if (i === activeIndex) {
+            cards[i].style.transform = "scale(1)";
+            cards[i].style.opacity = "1";
+            cards[i].style.zIndex = "30";
+          } else {
+            cards[i].style.transform = "scale(0.88)";
+            cards[i].style.opacity = "0.7";
+            cards[i].style.zIndex = "10";
+          }
+        }
+      }
+
+      // Update dots
+      dots.forEach(function(dot, i) {
+        var span = dot.querySelector("span");
+        if (span) {
+          span.classList.toggle("bg-primary", i === activeIndex);
+          span.classList.toggle("bg-gray-300", i !== activeIndex);
+        }
+        dot.setAttribute("aria-current", i === activeIndex ? "true" : "false");
+      });
+
+      rafPending = false;
+    }
+
+    function onScroll() {
+      if (!rafPending) {
+        rafPending = true;
+        requestAnimationFrame(updateCarousel);
+      }
+    }
+
+    carousel.addEventListener("scroll", onScroll, { passive: true });
+
+    // Dot click scrolls to card
+    dots.forEach(function(dot, i) {
+      dot.addEventListener("click", function() {
+        var card = carousel.children[i];
+        if (card) card.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+      });
+    });
+
+    // Initial state
+    requestAnimationFrame(updateCarousel);
+  })();
+</script>
 
 <%!-- [LANDING-PAGE] Old DB-driven location cards hidden for landing page release - see #92 --%>
 <%!--
