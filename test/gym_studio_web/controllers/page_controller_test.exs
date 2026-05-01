@@ -51,7 +51,7 @@ defmodule GymStudioWeb.PageControllerTest do
       response = html_response(conn, 200)
 
       assert response =~ "Get Directions"
-      assert response =~ "place/33.895"
+      assert response =~ "place/33.8709"
       assert response =~ "place/33.9069"
     end
 
