@@ -19,12 +19,12 @@ defmodule GymStudioWeb.PageController do
         "https://www.google.com/maps/search/?api=1&query=React+Gym+Clover+Park+Horsh+Tabet",
       photos: [
         %{
-          alt: "React Gym Horsh Tabet interior with wide open training space",
-          base: "/images/branches/horsh-tabet-space"
+          alt: "React Gym Horsh Tabet member performing kettlebell press",
+          base: "/images/branches/horsh-tabet-kettlebell"
         },
         %{
-          alt: "React Gym Horsh Tabet cable machine and REACT logo wall",
-          base: "/images/branches/horsh-tabet-cable"
+          alt: "React Gym Horsh Tabet strength training with trap bar",
+          base: "/images/branches/horsh-tabet-row"
         }
       ]
     },
