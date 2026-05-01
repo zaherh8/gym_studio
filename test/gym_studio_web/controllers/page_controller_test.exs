@@ -82,17 +82,15 @@ defmodule GymStudioWeb.PageControllerTest do
       conn = get(conn, ~p"/")
       response = html_response(conn, 200)
 
-      # Horsh Tabet photos
-      assert response =~ "horsh-tabet-space-400w.webp 400w"
-      assert response =~ "horsh-tabet-space-800w.webp 800w"
-      assert response =~ "horsh-tabet-space-1200w.webp 1200w"
-      assert response =~ "horsh-tabet-cable-800w.webp"
+      # Horsh Tabet photo
+      assert response =~ "horsh-tabet-kettlebell-400w.webp 400w"
+      assert response =~ "horsh-tabet-kettlebell-800w.webp 800w"
+      assert response =~ "horsh-tabet-kettlebell-1200w.webp 1200w"
 
-      # Jal El Dib photos
+      # Jal El Dib photo
       assert response =~ "jal-el-dib-stretching-400w.webp 400w"
       assert response =~ "jal-el-dib-stretching-800w.webp 800w"
       assert response =~ "jal-el-dib-stretching-1200w.webp 1200w"
-      assert response =~ "jal-el-dib-coaching-800w.webp"
     end
 
     test "GET / branch photos have lazy loading and async decoding", %{conn: conn} do
@@ -107,10 +105,8 @@ defmodule GymStudioWeb.PageControllerTest do
       conn = get(conn, ~p"/")
       response = html_response(conn, 200)
 
-      assert response =~ "React Gym Horsh Tabet interior"
-      assert response =~ "React Gym Horsh Tabet cable machine"
+      assert response =~ "React Gym Horsh Tabet member performing kettlebell press"
       assert response =~ "React Gym Jal El Dib smiling client"
-      assert response =~ "React Gym Jal El Dib trainer coaching"
     end
 
     test "GET / branch photos use plain img tags without picture wrapper", %{conn: conn} do

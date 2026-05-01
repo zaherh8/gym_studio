@@ -703,10 +703,13 @@
     var rafPending = false;
 
     // Scroll to Standard (center card) on load for mobile
+    // Use scrollLeft instead of scrollIntoView to avoid vertical page scroll on mobile browsers
     var standardCard = document.getElementById("package-standard");
     if (standardCard && window.innerWidth < 1024) {
       window.addEventListener("load", function() {
-        standardCard.scrollIntoView({ inline: "center", block: "nearest", behavior: "instant" });
+        var cardLeft = standardCard.offsetLeft - carousel.offsetLeft;
+        var offset = cardLeft - (carousel.offsetWidth / 2) + (standardCard.offsetWidth / 2);
+        carousel.scrollLeft = offset;
       });
     }
 
@@ -764,11 +767,15 @@
 
     carousel.addEventListener("scroll", onScroll, { passive: true });
 
-    // Dot click scrolls to card
+    // Dot click scrolls to card (horizontal only, no vertical page scroll)
     dots.forEach(function(dot, i) {
       dot.addEventListener("click", function() {
         var card = carousel.children[i];
-        if (card) card.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+        if (card) {
+          var cardLeft = card.offsetLeft - carousel.offsetLeft;
+          var offset = cardLeft - (carousel.offsetWidth / 2) + (card.offsetWidth / 2);
+          carousel.scrollTo({ left: offset, behavior: "smooth" });
+        }
       });
     });
 
