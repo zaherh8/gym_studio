@@ -21,10 +21,6 @@ defmodule GymStudioWeb.PageController do
         %{
           alt: "React Gym Horsh Tabet member performing kettlebell press",
           base: "/images/branches/horsh-tabet-kettlebell"
-        },
-        %{
-          alt: "React Gym Horsh Tabet strength training with trap bar",
-          base: "/images/branches/horsh-tabet-row"
         }
       ]
     },
@@ -40,10 +36,6 @@ defmodule GymStudioWeb.PageController do
         %{
           alt: "React Gym Jal El Dib smiling client with trainer during stretching",
           base: "/images/branches/jal-el-dib-stretching"
-        },
-        %{
-          alt: "React Gym Jal El Dib trainer coaching client",
-          base: "/images/branches/jal-el-dib-coaching"
         }
       ]
     }
