@@ -16,7 +16,7 @@ defmodule GymStudioWeb.PageController do
       whatsapp_url:
         "https://wa.me/96170379764?text=Hello%2C%20can%20you%20tell%20me%20more%20about%20the%20service%20you%20provide%20at%20React%3F",
       directions_url:
-        "https://www.google.com/maps/search/?api=1&query=33.8709%2C35.5343",
+        "https://www.google.com/maps/search/?api=1&query=33.8953%2C35.5106",
       photos: [
         %{
           alt: "React Gym Horsh Tabet member performing kettlebell press",
