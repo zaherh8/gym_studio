@@ -51,8 +51,8 @@ defmodule GymStudioWeb.PageControllerTest do
       response = html_response(conn, 200)
 
       assert response =~ "Get Directions"
-      assert response =~ "React+Gym+Clover+Park+Horsh+Tabet"
-      assert response =~ "React+Gym+Jal+El+Dib+Main+Street"
+      assert response =~ "query=33.8709"
+      assert response =~ "query=33.9069"
     end
 
     test "GET / does not display operating hours", %{conn: conn} do
