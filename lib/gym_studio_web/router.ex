@@ -36,6 +36,11 @@ defmodule GymStudioWeb.Router do
       live "/gallery", GalleryLive, :index
       live "/contact", ContactLive, :index
     end
+
+    # Standalone link-in-bio page — minimal layout with no nav/footer
+    live_session :links, root_layout: {GymStudioWeb.Layouts, :links} do
+      live "/links", LinksLive, :index
+    end
   end
 
   # [LANDING-PAGE] All portal and auth routes below are hidden from the UI for

@@ -4,7 +4,7 @@ defmodule GymStudio.MixProject do
   def project do
     [
       app: :gym_studio,
-      version: "0.8.3",
+      version: "0.8.4",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
