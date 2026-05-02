@@ -68,8 +68,8 @@ defmodule GymStudioWeb.PageControllerTest do
       assert response =~ "6:00 AM – 2:00 PM"
       assert response =~ "Sunday"
       assert response =~ "Closed"
-      # Both branches note
-      assert response =~ "Both Horsh Tabet &amp; Jal El Dib branches"
+      # All branches schedule
+      assert response =~ "All branches follow the same schedule"
     end
 
     test "GET / does not display DB-driven operating_hours", %{conn: conn} do

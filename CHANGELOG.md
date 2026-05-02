@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Opening hours section on landing page (Mon–Fri 6 AM–10 PM, Sat 6 AM–2 PM, Sun Closed)
-- "Visit Our Website" link on `/links` page (points to reactgym.com)
+- "Visit Our Website" link on `/links` page (links to site root)
 
 ### Changed
 - Opening hours copy: "Both" → "All branches"
