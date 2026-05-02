@@ -55,12 +55,28 @@ defmodule GymStudioWeb.PageControllerTest do
       assert response =~ "place/33.9069"
     end
 
-    test "GET / does not display operating hours", %{conn: conn} do
+    test "GET / displays opening hours section", %{conn: conn} do
       conn = get(conn, ~p"/")
       response = html_response(conn, 200)
 
-      # Operating hours should not be shown for static branches
-      refute response =~ "Mon:"
+      # Opening hours section
+      assert response =~ "Opening Hours"
+      assert response =~ "When We're"
+      assert response =~ "Monday – Friday"
+      assert response =~ "6:00 AM – 10:00 PM"
+      assert response =~ "Saturday"
+      assert response =~ "6:00 AM – 2:00 PM"
+      assert response =~ "Sunday"
+      assert response =~ "Closed"
+      # All branches schedule
+      assert response =~ "All branches follow the same schedule"
+    end
+
+    test "GET / does not display DB-driven operating_hours", %{conn: conn} do
+      conn = get(conn, ~p"/")
+      response = html_response(conn, 200)
+
+      # The old DB-driven operating_hours field should not be rendered
       refute response =~ "operating_hours"
     end
 

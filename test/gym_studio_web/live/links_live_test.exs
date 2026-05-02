@@ -11,6 +11,8 @@ defmodule GymStudioWeb.LinksLiveTest do
       assert html =~ "React"
       # Slogan
       assert html =~ "Where Fitness Meets Personal Attention"
+      # Website link
+      assert html =~ "Visit Our Website"
       # Location buttons
       assert html =~ "📍"
       assert html =~ "Horsh Tabet"
@@ -45,6 +47,14 @@ defmodule GymStudioWeb.LinksLiveTest do
 
       assert html =~ "https://wa.me/96170379764"
       assert html =~ "https://wa.me/96171633970"
+    end
+
+    test "includes website link pointing to home page", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/links")
+
+      assert html =~ "Visit Our Website"
+      # The link should point to the root path
+      assert html =~ ~s(href="/")
     end
   end
 end
