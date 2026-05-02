@@ -22,7 +22,7 @@ defmodule GymStudioWeb.LinksLiveTest do
       assert html =~ "Chat with us"
       # Instagram section
       assert html =~ "Follow us on"
-      assert html =~ "instagram.com/reactgym"
+      assert html =~ "instagram.com/react.lb"
       # Branch picker modal
       assert html =~ "whatsapp-modal"
       assert html =~ "Choose a Branch"

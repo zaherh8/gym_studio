@@ -81,7 +81,7 @@ defmodule GymStudioWeb.LinksLive do
       <div class="mt-10 flex flex-col items-center gap-2">
         <p class="text-white/50 text-sm">Follow us on</p>
         <a
-          href="https://instagram.com/reactgym"
+          href="https://www.instagram.com/react.lb"
           target="_blank"
           rel="noopener noreferrer"
           class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-colors duration-200"
