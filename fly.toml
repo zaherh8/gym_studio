@@ -12,16 +12,16 @@ primary_region = 'cdg'
   release_command = '/app/bin/migrate'
 
 [env]
-  PHX_HOST = 'gym-studio.fly.dev'
+  PHX_HOST = 'reactgym.com'
   PORT = '8080'
   ECTO_IPV6 = 'true'
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = 'stop'
+  auto_stop_machines = false
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
   processes = ['app']
 
   [http_service.concurrency]
