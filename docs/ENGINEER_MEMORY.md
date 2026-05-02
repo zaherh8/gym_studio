@@ -165,6 +165,17 @@ Lessons learned from code reviews. Read this before every task.
 
 - **When session data exists in multiple assigns (day_sessions, week_sessions), lookup must search all of them.** A click handler that only searches one map will silently fail for sessions in the other. Use a unified `find_session_by_id` that handles both flat (`%{hour => [sessions]}`) and nested (`%{date => %{hour => [sessions]}}`) map structures.
 
+## HEEx / Template Interpolation
+
+- **Elixir string interpolation `#{...}` does NOT work inside HEEx `<script>` tags.** HEEx renders `<script>` content as literal text — the `#{}` is not evaluated. Use `{raw(...)}` with an Elixir function that returns the interpolated string (e.g., `Jason.encode!` for JSON-LD), or use `<%=` in a `.ex` template (not `.heex`).
+- **`raw/1` is required when injecting pre-rendered HTML/JSON into HEEx.** Without it, the content gets HTML-escaped (e.g., quotes become `&quot;`).
+- **`og:url`, `canonical`, and attribute interpolation `{...}` work fine in HEEx** — the issue is only with text content inside `<script>` blocks.
+
+## Plug / Redirects
+
+- **`conn.request_path` does NOT include `conn.query_string`.** When building redirect URLs, always check if `conn.query_string` is non-empty and append `"?" <> conn.query_string`. Otherwise UTM params and other query strings are silently dropped on redirect.
+- **Always test `init/1` for Plugs** — it may have default-fetching logic (e.g., reading from Application config) that should be verified independently.
+
 ## Elixir Pattern Matching
 
 - **`Date.from_iso8601/1` returns `{:error, reason}`, not `:error`.** Pattern matching on `:error` will never match. Always use `{:error, _}`.

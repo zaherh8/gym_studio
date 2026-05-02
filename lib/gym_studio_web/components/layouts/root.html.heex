@@ -19,7 +19,7 @@
       content="React Gym - Private personal training studio in Horsh Tabet, Lebanon. One-on-one sessions, certified trainers, flexible scheduling."
     />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://gym-studio.fly.dev/" />
+    <meta property="og:url" content={GymStudioWeb.Endpoint.url() <> "/"} />
     <meta property="og:locale" content="en_US" />
     <meta property="og:site_name" content="React Gym" />
     <%!-- Twitter Card --%>
@@ -31,7 +31,7 @@
     />
     <%!-- Additional SEO --%>
     <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://gym-studio.fly.dev/" />
+    <link rel="canonical" href={GymStudioWeb.Endpoint.url() <> "/"} />
     <%!-- PWA --%>
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -41,25 +41,7 @@
     <meta name="apple-mobile-web-app-title" content="React Gym" />
     <%!-- Structured Data (JSON-LD) --%>
     <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "GymFitness",
-        "name": "React Gym",
-        "description": "Private personal training studio in Horsh Tabet, Lebanon. One-on-one sessions, certified trainers, flexible scheduling.",
-        "url": "https://gym-studio.fly.dev/",
-        "telephone": "+961 71 104 483",
-        "address": {
-          "@type": "PostalAddress",
-          "streetAddress": "Clover Park Bldg, 4th Floor, Horsh Tabet",
-          "addressLocality": "Sin El Fil",
-          "addressCountry": "LB"
-        },
-        "geo": {
-          "@type": "GeoCoordinates",
-          "latitude": 33.8773,
-          "longitude": 35.5268
-        }
-      }
+      {raw(GymStudioWeb.Helpers.SeoHelpers.json_ld())}
     </script>
     <.live_title default="React Gym" suffix=" · Your Personal Training Studio">
       {assigns[:page_title]}
