@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.5] - 2026-05-02
+
+### Added
+- Opening hours section on landing page (Mon–Fri 6 AM–10 PM, Sat 6 AM–2 PM, Sun Closed)
+- "Visit Our Website" link on `/links` page (points to reactgym.com)
+
+### Changed
+- Opening hours copy: "Both" → "All branches"
+- Removed bottom note from opening hours section
+
 ## [0.8.4] - 2026-05-02
 
 ### Added
