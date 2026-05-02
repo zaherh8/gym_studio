@@ -14,9 +14,16 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content={GymStudioWeb.Endpoint.url() <> "/links"} />
     <meta property="og:site_name" content="React Gym" />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content={GymStudioWeb.CDN.url("/images/hero-gym.jpg")} />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="React Gym — Links" />
+    <link rel="canonical" href={GymStudioWeb.Endpoint.url() <> "/links"} />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#DC2626" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="React Gym" />
     <.live_title default="React Gym" suffix=" · Links">
       {assigns[:page_title]}
     </.live_title>

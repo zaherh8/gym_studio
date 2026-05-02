@@ -184,6 +184,12 @@ Lessons learned from code reviews. Read this before every task.
 
 - **Compile-time constants (color maps, ranges) should be module attributes, not socket assigns.** Socket assigns are for runtime data that changes per request. Moving static maps to `@module_attr` avoids unnecessary assigns and template `@` references. Use helper functions (e.g., `heat_color_for_level/1`) for template access to module attributes.
 
+## Layout / SEO / PWA
+
+- **Every layout must have `og:image`, `canonical`, and PWA meta tags** (manifest, apple-touch-icon, apple-mobile-web-app-capable). Missing any of these breaks social sharing previews or mobile "Add to Home Screen". Compare with root layout before shipping a new layout.
+- **`twitter:card` must be consistent across layouts.** Use `summary_large_image` for sharing/link-in-bio pages — the large card is always better for pages designed to be shared.
+- **Extract duplicated inline SVGs to function components.** When the same SVG icon appears in multiple places in a template, extract it to a shared function component (e.g., `Layouts.whatsapp_icon/1`) with a `class` attr for sizing/styling. Avoids maintenance burden and keeps templates DRY.
+
 ## Dead Code in Date Calculations
 
 - **`Date.beginning_of_week` on a value that's already the beginning of the week is a no-op.** Same for `Date.end_of_week` on a value computed from `beginning_of_week + 6`. Remove unnecessary recalculations.
