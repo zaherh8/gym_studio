@@ -37,7 +37,7 @@ defmodule GymStudioWeb.LinksLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-gradient-to-b from-neutral to-base-300 flex flex-col items-center px-6 py-12">
+    <div class="min-h-screen w-full bg-gradient-to-b from-neutral to-base-300 flex flex-col items-center px-6 py-12">
       <%!-- Logo --%>
       <div class="mb-3">
         <img
