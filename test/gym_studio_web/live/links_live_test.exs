@@ -15,9 +15,9 @@ defmodule GymStudioWeb.LinksLiveTest do
       assert html =~ "📍"
       assert html =~ "Horsh Tabet"
       assert html =~ "Jal El Dib"
-      # Google Maps links
-      assert html =~ "React+Gym+Horsh+Tabet"
-      assert html =~ "React+Gym+Jal+El+Dib"
+      # Google Maps links (exact coordinates matching landing page)
+      assert html =~ "33.8709623,35.5343566"
+      assert html =~ "33.9069,35.5801"
       # WhatsApp "Chat with us" button
       assert html =~ "Chat with us"
       # Instagram section
