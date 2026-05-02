@@ -41,25 +41,7 @@
     <meta name="apple-mobile-web-app-title" content="React Gym" />
     <%!-- Structured Data (JSON-LD) --%>
     <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "GymFitness",
-        "name": "React Gym",
-        "description": "Private personal training studio in Horsh Tabet, Lebanon. One-on-one sessions, certified trainers, flexible scheduling.",
-        "url": "#{GymStudioWeb.Endpoint.url()}/",
-        "telephone": "+961 71 104 483",
-        "address": {
-          "@type": "PostalAddress",
-          "streetAddress": "Clover Park Bldg, 4th Floor, Horsh Tabet",
-          "addressLocality": "Sin El Fil",
-          "addressCountry": "LB"
-        },
-        "geo": {
-          "@type": "GeoCoordinates",
-          "latitude": 33.8773,
-          "longitude": 35.5268
-        }
-      }
+      {raw(GymStudioWeb.Helpers.SeoHelpers.json_ld())}
     </script>
     <.live_title default="React Gym" suffix=" · Your Personal Training Studio">
       {assigns[:page_title]}

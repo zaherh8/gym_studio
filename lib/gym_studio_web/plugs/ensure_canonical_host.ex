@@ -23,7 +23,12 @@ defmodule GymStudioWeb.Plugs.EnsureCanonicalHost do
   end
 
   defp redirect_to_canonical(conn, canonical_host) do
-    url = "https://#{canonical_host}#{conn.request_path}"
+    path =
+      if conn.query_string == "",
+        do: conn.request_path,
+        else: "#{conn.request_path}?#{conn.query_string}"
+
+    url = "https://#{canonical_host}#{path}"
 
     conn
     |> put_resp_header("location", url)
