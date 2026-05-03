@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="csrf-token" content={get_csrf_token()} />
+    <meta
+      name="description"
+      content="Claim your free private training session at React Gym in Sin El Fil. No commitment, no card required."
+    />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta property="og:title" content="React — Claim Your Free Session" />
+    <meta
+      property="og:description"
+      content="Get 1 free private training session at React Gym. No commitment, no card. Sin El Fil — 5 min from Horch Tabet roundabout."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={GymStudioWeb.Endpoint.url() <> "/offer"} />
+    <meta property="og:site_name" content="React Gym" />
+    <meta property="og:image" content={GymStudioWeb.CDN.url("/images/hero-gym.jpg")} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="React — Claim Your Free Session" />
+    <link rel="canonical" href={GymStudioWeb.Endpoint.url() <> "/offer"} />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#DC2626" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="React Gym" />
+    <.live_title default="React — Claim Your Free Session">
+      {assigns[:page_title]}
+    </.live_title>
+    <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
+    </script>
+  </head>
+  <body class="bg-base-100">
+    {@inner_content}
+  </body>
+</html>
