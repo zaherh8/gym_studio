@@ -31,6 +31,13 @@ defmodule GymStudioWeb.OfferLiveTest do
       refute html =~ "All rights reserved"
     end
 
+    test "renders background hero image", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/offer")
+
+      assert html =~ ~s(src="/images/offer-hero.jpg")
+      assert html =~ "object-cover"
+    end
+
     test "WhatsApp CTA links to correct number with pre-filled message", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/offer")
 

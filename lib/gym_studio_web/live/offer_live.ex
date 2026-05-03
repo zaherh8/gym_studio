@@ -33,84 +33,98 @@ defmodule GymStudioWeb.OfferLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen w-full bg-gradient-to-b from-neutral to-base-300 flex flex-col items-center justify-center px-6 py-5">
-      <%!-- Logo --%>
-      <div class="mb-3">
+    <div class="min-h-screen w-full relative flex flex-col items-center justify-center px-6 py-5 overflow-hidden">
+      <%!-- Background image with dark overlay --%>
+      <div class="absolute inset-0 z-0">
         <img
-          src={~p"/images/logo/react-wordmark-white.svg"}
-          alt="React"
-          class="h-9 w-auto"
+          src={~p"/images/offer-hero.jpg"}
+          alt=""
+          class="w-full h-full object-cover object-center"
+          loading="eager"
         />
+        <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/70 to-black/85"></div>
       </div>
 
-      <%!-- Headline --%>
-      <h1 class="text-3xl sm:text-4xl font-black text-center tracking-tight leading-tight mb-4">
-        <span class="text-primary">YOUR FIRST SESSION</span> <br />
-        <span class="text-primary">IS ON US</span>
-      </h1>
-
-      <%!-- Benefits --%>
-      <ul class="w-full max-w-sm space-y-2.5 mb-6">
-        <li class="flex items-start gap-3">
-          <svg
-            class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2.5"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-          <span class="text-white/90 text-base">1 free private training session</span>
-        </li>
-        <li class="flex items-start gap-3">
-          <svg
-            class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2.5"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-          <span class="text-white/90 text-base">No commitment, no card</span>
-        </li>
-        <li class="flex items-start gap-3">
-          <svg
-            class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2.5"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-          <span class="text-white/90 text-base">In the heart of Horsh Tabet</span>
-        </li>
-      </ul>
-
-      <%!-- CTA Button --%>
-      <a
-        href={@whatsapp_url}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="flex items-center justify-center gap-2 w-full max-w-sm py-4 px-6 rounded-full bg-primary text-white font-bold text-lg border border-primary hover:bg-primary-focus hover:shadow-lg hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
-      >
-        <Layouts.whatsapp_icon class="w-6 h-6" />
-        <span>CLAIM YOUR FREE SESSION</span>
-      </a>
-
-      <%!-- Location --%>
-      <div class="mt-6 flex items-center gap-2 text-white/50 text-sm">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+      <%!-- Content --%>
+      <div class="relative z-10 flex flex-col items-center justify-center">
+        <%!-- Logo --%>
+        <div class="mb-3">
+          <img
+            src={~p"/images/logo/react-wordmark-white.svg"}
+            alt="React"
+            class="h-9 w-auto"
           />
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-        <span>Clover Park, 4th floor — Sin El Fil</span>
+        </div>
+
+        <%!-- Headline --%>
+        <h1 class="text-3xl sm:text-4xl font-black text-center tracking-tight leading-tight mb-4">
+          <span class="text-primary">YOUR FIRST SESSION</span> <br />
+          <span class="text-primary">IS ON US</span>
+        </h1>
+
+        <%!-- Benefits --%>
+        <ul class="w-full max-w-sm space-y-2.5 mb-6">
+          <li class="flex items-start gap-3">
+            <svg
+              class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            <span class="text-white/90 text-base">1 free private training session</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <svg
+              class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            <span class="text-white/90 text-base">No commitment, no card</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <svg
+              class="w-6 h-6 text-primary flex-shrink-0 mt-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            <span class="text-white/90 text-base">In the heart of Horsh Tabet</span>
+          </li>
+        </ul>
+
+        <%!-- CTA Button --%>
+        <a
+          href={@whatsapp_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center justify-center gap-2 w-full max-w-sm py-4 px-6 rounded-full bg-primary text-white font-bold text-lg border border-primary hover:bg-primary-focus hover:shadow-lg hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+        >
+          <Layouts.whatsapp_icon class="w-6 h-6" />
+          <span>CLAIM YOUR FREE SESSION</span>
+        </a>
+
+        <%!-- Location --%>
+        <div class="mt-6 flex items-center gap-2 text-white/50 text-sm">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+            />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span>Clover Park, 4th floor — Sin El Fil</span>
+        </div>
       </div>
     </div>
     """
