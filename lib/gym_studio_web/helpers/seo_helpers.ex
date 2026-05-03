@@ -7,7 +7,7 @@ defmodule GymStudioWeb.Helpers.SeoHelpers do
 
   @doc """
   Generates JSON-LD structured data for the gym.
-  Returns an HTML-safe string ready for injection into a <script> tag.
+  Returns a JSON string (no script wrapper).
   """
   def json_ld do
     Jason.encode!(%{
@@ -30,5 +30,17 @@ defmodule GymStudioWeb.Helpers.SeoHelpers do
         "longitude" => 35.5268
       }
     })
+  end
+
+  @doc """
+  Generates the full JSON-LD `<script>` tag.
+  Returns an HTML-safe string with the complete `<script type="application/ld+json">` block.
+
+  This is necessary because HEEx does NOT evaluate Elixir expressions inside
+  `<script>` tag content — `{raw(...)}` inside `<script>` is rendered literally.
+  Using `<%= raw(...) %>` with the complete tag output bypasses this limitation.
+  """
+  def json_ld_script do
+    ~s(<script type="application/ld+json">#{json_ld()}</script>)
   end
 end
