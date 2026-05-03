@@ -41,6 +41,11 @@ defmodule GymStudioWeb.Router do
     live_session :links, root_layout: {GymStudioWeb.Layouts, :links} do
       live "/links", LinksLive, :index
     end
+
+    # Standalone campaign landing page — no nav/footer, noindex
+    live_session :offer, root_layout: {GymStudioWeb.Layouts, :offer} do
+      live "/offer", OfferLive, :index
+    end
   end
 
   # [LANDING-PAGE] All portal and auth routes below are hidden from the UI for

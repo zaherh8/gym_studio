@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.6] - 2026-05-03
+
+### Added
+- Campaign landing page at `/offer` for the "Lift Off" marketing campaign (#127)
+  - Standalone layout with no nav/footer
+  - WhatsApp CTA with pre-filled message to Horsh Tabet branch
+  - UTM parameter support (utm_source, utm_campaign, utm_content)
+  - noindex meta tag, og tags, canonical URL
+  - Mobile-first design — all content above fold on 375×812
+
 ## [0.8.5] - 2026-05-02
 
 ### Added
