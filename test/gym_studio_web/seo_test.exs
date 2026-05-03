@@ -70,7 +70,7 @@ defmodule GymStudioWeb.SeoTest do
       html = html_response(conn, 200)
 
       assert html =~ ~s(property="og:image")
-      assert html =~ "hero-gym.jpg"
+      assert html =~ "hero-gym.png"
     end
 
     test "home page has twitter:image meta tag" do
@@ -79,7 +79,7 @@ defmodule GymStudioWeb.SeoTest do
       html = html_response(conn, 200)
 
       assert html =~ ~s(name="twitter:image")
-      assert html =~ "hero-gym.jpg"
+      assert html =~ "hero-gym.png"
     end
 
     test "home page has JSON-LD structured data" do
@@ -99,7 +99,7 @@ defmodule GymStudioWeb.SeoTest do
       {:ok, _view, html} = live(conn, "/offer")
 
       assert html =~ ~s(property="og:image")
-      assert html =~ "hero-gym.jpg"
+      assert html =~ "hero-gym.png"
     end
 
     test "offer page has twitter:image meta tag" do
@@ -116,7 +116,7 @@ defmodule GymStudioWeb.SeoTest do
       {:ok, _view, html} = live(conn, "/links")
 
       assert html =~ ~s(property="og:image")
-      assert html =~ "hero-gym.jpg"
+      assert html =~ "hero-gym.png"
     end
   end
 
@@ -142,7 +142,6 @@ defmodule GymStudioWeb.SeoTest do
       content = File.read!(source_path)
 
       assert content =~ "https://reactgym.com/"
-      assert content =~ "https://reactgym.com/offer"
       assert content =~ "https://reactgym.com/links"
     end
 

@@ -13,8 +13,8 @@ defmodule GymStudioWeb.CDN do
 
   ## Examples
 
-      iex> GymStudioWeb.CDN.url("/images/hero-gym.jpg")
-      "https://us-central-1.telnyxcloudstorage.com/react-gym-studio-cdn/images/hero-gym.jpg"
+      iex> GymStudioWeb.CDN.url("/images/hero-gym.png")
+      "https://us-central-1.telnyxcloudstorage.com/react-gym-studio-cdn/images/hero-gym.png"
   """
   def url(path) do
     base = System.get_env("CDN_BASE_URL") || @default_base_url
