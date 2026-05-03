@@ -85,7 +85,7 @@ defmodule GymStudioWeb.OfferLive do
           >
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
           </svg>
-          <span class="text-white/90 text-base">Sin El Fil — 5 min from Horch Tabet roundabout</span>
+          <span class="text-white/90 text-base">In the heart of Horsh Tabet</span>
         </li>
       </ul>
 

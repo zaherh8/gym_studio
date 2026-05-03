@@ -14,7 +14,7 @@ defmodule GymStudioWeb.OfferLiveTest do
       assert html =~ "1 free private training session"
       assert html =~ "No commitment, no card"
       assert html =~ "Sin El Fil"
-      assert html =~ "Horch Tabet roundabout"
+      assert html =~ "In the heart of Horsh Tabet"
       # CTA button text
       assert html =~ "CLAIM YOUR FREE SESSION"
       # Location
