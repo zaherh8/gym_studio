@@ -52,6 +52,9 @@ defmodule GymStudioWeb.OfferLiveTest do
       {:ok, _lv, html} = live(conn, ~p"/offer")
 
       assert html =~ ~s(property="og:title" content="React — Claim Your Free Session")
+      assert html =~ ~s(name="twitter:card" content="summary_large_image")
+      assert html =~ ~s(name="twitter:title" content="React — Claim Your Free Session")
+      assert html =~ ~s(name="twitter:description")
       assert html =~ ~s(rel="canonical")
       assert html =~ "/offer"
     end
@@ -60,9 +63,12 @@ defmodule GymStudioWeb.OfferLiveTest do
       {:ok, _lv, html} =
         live(conn, ~p"/offer?utm_source=flyer&utm_campaign=lift_off&utm_content=dumbbell_v1")
 
-      assert html =~ "utm_source=flyer"
-      assert html =~ "utm_campaign=lift_off"
-      assert html =~ "utm_content=dumbbell_v1"
+      # UTM params are now embedded in the WhatsApp message text
+      assert html =~ "flyer"
+      assert html =~ "lift_off"
+      assert html =~ "dumbbell_v1"
+      # The source label appears in the message
+      assert html =~ "Source"
     end
 
     test "works without UTM parameters", %{conn: conn} do
@@ -71,17 +77,17 @@ defmodule GymStudioWeb.OfferLiveTest do
       # Should still have the WhatsApp URL with just the message
       assert html =~ "https://wa.me/96170379764"
       assert html =~ "text="
-      # Should not have utm params appended
-      refute html =~ "utm_source="
+      # Should not have Source label
+      refute html =~ "Source"
     end
 
     test "preserves partial UTM parameters", %{conn: conn} do
       {:ok, _lv, html} = live(conn, ~p"/offer?utm_source=instagram")
 
-      assert html =~ "utm_source=instagram"
-      # Other UTM params should not be present
-      refute html =~ "utm_campaign="
-      refute html =~ "utm_content="
+      # Instagram source embedded in message
+      assert html =~ "instagram"
+      # Should have Source label but only one value
+      assert html =~ "Source"
     end
 
     test "shows checkmark icons for benefits", %{conn: conn} do
