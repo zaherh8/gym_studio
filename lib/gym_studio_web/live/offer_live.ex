@@ -123,7 +123,7 @@ defmodule GymStudioWeb.OfferLive do
             />
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          <span>Clover Park, 4th floor — Sin El Fil</span>
+          <span>Clover Park, 4th floor</span>
         </div>
       </div>
     </div>

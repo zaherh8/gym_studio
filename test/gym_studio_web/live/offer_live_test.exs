@@ -13,13 +13,11 @@ defmodule GymStudioWeb.OfferLiveTest do
       # Benefits
       assert html =~ "1 free private training session"
       assert html =~ "No commitment, no card"
-      assert html =~ "Sin El Fil"
       assert html =~ "In the heart of Horsh Tabet"
       # CTA button text
       assert html =~ "CLAIM YOUR FREE SESSION"
       # Location
       assert html =~ "Clover Park, 4th floor"
-      assert html =~ "Sin El Fil"
     end
 
     test "does not include navbar or footer", %{conn: conn} do
