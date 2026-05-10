@@ -18,15 +18,16 @@ defmodule GymStudioWeb.BranchPickerComponent do
       `:phone` and `:address`. Displays `phone` if present, otherwise `address`.
   """
   attr :branches, :list, required: true
+  attr :id, :string, default: "whatsapp-modal"
 
   def branch_picker_modal(assigns) do
     ~H"""
-    <dialog id="whatsapp-modal" class="modal modal-bottom sm:modal-middle">
+    <dialog id={@id} class="modal modal-bottom sm:modal-middle" aria-labelledby={"#{@id}-title"}>
       <div class="modal-box">
         <form method="dialog">
           <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
         </form>
-        <h3 class="text-lg font-bold mb-1">Choose a Branch</h3>
+        <h3 id={"#{@id}-title"} class="text-lg font-bold mb-1">Choose a Branch</h3>
         <p class="text-sm text-base-content/60 mb-5">Select which studio to contact on WhatsApp</p>
         <div class="grid gap-4">
           <a
@@ -58,9 +59,12 @@ defmodule GymStudioWeb.BranchPickerComponent do
               />
             </svg>
           </a>
+          <p :if={Enum.empty?(@branches)} class="text-center text-base-content/60 py-4">
+            No branches available
+          </p>
         </div>
       </div>
-      <form method="dialog" class="modal-backdrop">
+      <form id={"#{@id}-backdrop"} method="dialog" class="modal-backdrop">
         <button>close</button>
       </form>
     </dialog>
