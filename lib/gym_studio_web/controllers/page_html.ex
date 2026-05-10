@@ -6,6 +6,8 @@ defmodule GymStudioWeb.PageHTML do
   """
   use GymStudioWeb, :html
 
+  import GymStudioWeb.BranchPickerComponent
+
   embed_templates "page_html/*"
 
   # TODO(#92): Uncomment when operating hours are shown on landing page

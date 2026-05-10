@@ -5,6 +5,8 @@ defmodule GymStudioWeb.LinksLive do
   """
   use GymStudioWeb, :live_view
 
+  import GymStudioWeb.BranchPickerComponent
+
   @branches [
     %{
       name: "Horsh Tabet",
@@ -122,49 +124,7 @@ defmodule GymStudioWeb.LinksLive do
       </div>
     </div>
 
-    <%!-- WhatsApp Branch Picker Modal --%>
-    <dialog id="whatsapp-modal" class="modal modal-bottom sm:modal-middle">
-      <div class="modal-box">
-        <form method="dialog">
-          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
-        </form>
-        <h3 class="text-lg font-bold mb-1">Choose a Branch</h3>
-        <p class="text-sm text-gray-500 mb-5">Select which studio to contact on WhatsApp</p>
-        <div class="grid gap-4">
-          <%= for branch <- @branches do %>
-            <a
-              href={branch.whatsapp_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="flex items-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-primary/40 hover:shadow-md transition-all group"
-            >
-              <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                <Layouts.whatsapp_icon class="w-6 h-6 text-primary" />
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="font-semibold text-gray-900">{branch.name}</p>
-                <p class="text-sm text-gray-500 truncate">{branch.phone}</p>
-              </div>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5 text-gray-400 group-hover:text-primary transition-colors flex-shrink-0"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-            </a>
-          <% end %>
-        </div>
-      </div>
-      <form method="dialog" class="modal-backdrop">
-        <button>close</button>
-      </form>
-    </dialog>
+    <.branch_picker_modal branches={@branches} />
     """
   end
 end
