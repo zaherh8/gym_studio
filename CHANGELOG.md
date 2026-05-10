@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.8] - 2026-05-10
+
+### Changed
+- Extract WhatsApp branch picker modal into reusable `BranchPickerComponent` (#132)
+  - Shared component used by both `/links` page and homepage
+  - Removes 88 lines of duplicated modal markup
+
+### Fixed
+- Dark mode: invisible branch names and phone numbers in WhatsApp "Choose a Branch" modal (#132)
+  - Replaced hardcoded `gray-*` / `text-black` classes with DaisyUI semantic tokens (`text-base-content`, `text-base-content/60`, `border-base-300`)
+  - Text now correctly adapts to dark theme when OS/browser prefers dark color scheme
+
 ## [0.8.7] - 2026-05-03
 
 ### Added
