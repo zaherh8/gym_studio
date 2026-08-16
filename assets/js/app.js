@@ -186,6 +186,45 @@ topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
+/**
+ * Meta Pixel — LiveView-aware tracking.
+ *
+ * The base snippet in the layout fires a single PageView on hard page load.
+ * Live navigation swaps the DOM over the websocket without a reload, so
+ * without this every subsequent page would go uncounted.
+ *
+ * Both handlers no-op when `fbq` is undefined, which is the case whenever
+ * META_PIXEL_ID is unset or an ad blocker dropped the script.
+ */
+let lastTrackedPath = window.location.pathname
+
+window.addEventListener("phx:page-loading-stop", () => {
+  if (typeof window.fbq !== "function") return
+
+  // page-loading-stop also fires for form submits and the initial mount, so
+  // only track when the path actually changed to avoid duplicate PageViews.
+  const path = window.location.pathname
+  if (path === lastTrackedPath) return
+
+  lastTrackedPath = path
+  window.fbq("track", "PageView")
+})
+
+// Delegated so it covers CTAs rendered after live navigation and the links
+// inside the WhatsApp branch picker modal.
+document.addEventListener("click", e => {
+  const target = e.target.closest("[data-pixel-event]")
+  if (!target || typeof window.fbq !== "function") return
+
+  const event = target.dataset.pixelEvent
+  const params = {}
+  if (target.dataset.pixelBranch) params.branch = target.dataset.pixelBranch
+  if (target.dataset.pixelSource) params.source = target.dataset.pixelSource
+  if (target.dataset.pixelCampaign) params.campaign = target.dataset.pixelCampaign
+
+  window.fbq("track", event, params)
+})
+
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 

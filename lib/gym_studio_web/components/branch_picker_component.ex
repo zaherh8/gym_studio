@@ -35,6 +35,8 @@ defmodule GymStudioWeb.BranchPickerComponent do
             href={branch.whatsapp_url}
             target="_blank"
             rel="noopener noreferrer"
+            data-pixel-event="Lead"
+            data-pixel-branch={branch.name}
             class="flex items-center gap-4 p-4 rounded-xl border border-base-300 hover:border-primary/40 hover:shadow-md transition-all group"
           >
             <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
