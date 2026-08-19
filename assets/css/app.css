@@ -298,6 +298,12 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Margin variant, for fixed elements that sit above the home indicator
+   rather than padding their own content away from it. */
+.mb-safe-bottom {
+  margin-bottom: env(safe-area-inset-bottom);
+}
+
 /* Bottom nav height includes safe-area-inset-bottom so body padding
    via Tailwind classes (pb-24 / pb-20) correctly clears the bar.
    DaisyUI's dock component uses the same pattern. */

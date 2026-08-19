@@ -4,6 +4,10 @@ defmodule GymStudioWeb.ContactLive do
   """
   use GymStudioWeb, :live_view
 
+  import GymStudioWeb.BranchPickerComponent
+
+  alias GymStudioWeb.Layouts
+
   @impl true
   def mount(_params, _session, socket) do
     {:ok, assign(socket, page_title: "Contact Us")}
@@ -13,6 +17,8 @@ defmodule GymStudioWeb.ContactLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-base-100">
+      <.branch_picker_modal branches={public_branches()} />
+      <Layouts.floating_whatsapp_button />
       <%!-- Hero Section --%>
       <section class="py-20 bg-base-200">
         <div class="container mx-auto px-4 text-center">
