@@ -12,6 +12,38 @@ defmodule GymStudioWeb.Layouts do
   embed_templates "layouts/*"
 
   @doc """
+  Renders a floating WhatsApp button fixed to the bottom-right of the viewport.
+
+  Opens the shared branch picker modal rather than linking to a single number,
+  so the visitor chooses their studio. The caller is responsible for rendering
+  `BranchPickerComponent.branch_picker_modal/1` with a matching `modal_id`.
+
+  Deliberately not rendered on `/offer`, which is a single-CTA conversion page
+  where a competing floating button works against the primary action.
+
+  ## Examples
+
+      <Layouts.floating_whatsapp_button />
+      <Layouts.floating_whatsapp_button modal_id="whatsapp-modal" />
+  """
+  attr :modal_id, :string, default: "whatsapp-modal"
+
+  def floating_whatsapp_button(assigns) do
+    ~H"""
+    <button
+      type="button"
+      onclick={"document.getElementById('#{@modal_id}').showModal()"}
+      data-pixel-event="Lead"
+      data-pixel-source="floating_button"
+      aria-label="Contact us on WhatsApp"
+      class="fixed z-40 bottom-6 right-4 sm:bottom-8 sm:right-8 mb-safe-bottom flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#25D366] text-white shadow-lg shadow-black/25 hover:bg-[#1eb855] hover:scale-110 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-all duration-200"
+    >
+      <.whatsapp_icon class="w-7 h-7 sm:w-8 sm:h-8" />
+    </button>
+    """
+  end
+
+  @doc """
   Renders the WhatsApp SVG icon.
 
   ## Examples

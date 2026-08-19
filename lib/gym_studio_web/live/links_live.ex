@@ -7,31 +7,12 @@ defmodule GymStudioWeb.LinksLive do
 
   import GymStudioWeb.BranchPickerComponent
 
-  @branches [
-    %{
-      name: "Horsh Tabet",
-      address: "Clover Park, 4th floor",
-      phone: "+961 70 379 764",
-      whatsapp_url:
-        "https://wa.me/96170379764?text=Hello%2C%20can%20you%20tell%20me%20more%20about%20the%20service%20you%20provide%20at%20React%3F",
-      directions_url: "https://www.google.com/maps/place/33.8709623,35.5343566"
-    },
-    %{
-      name: "Jal El Dib",
-      address: "Main Street",
-      phone: "+961 71 633 970",
-      whatsapp_url:
-        "https://wa.me/96171633970?text=Hello%2C%20can%20you%20tell%20me%20more%20about%20the%20service%20you%20provide%20at%20React%3F",
-      directions_url: "https://www.google.com/maps/place/33.9069,35.5801"
-    }
-  ]
-
   @impl true
   def mount(_params, _session, socket) do
     socket =
       socket
       |> assign(:page_title, "React Gym — Links")
-      |> assign(:branches, @branches)
+      |> assign(:branches, public_branches())
 
     {:ok, socket}
   end

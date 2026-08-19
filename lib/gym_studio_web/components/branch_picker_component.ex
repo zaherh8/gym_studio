@@ -9,6 +9,34 @@ defmodule GymStudioWeb.BranchPickerComponent do
 
   alias GymStudioWeb.Layouts
 
+  @whatsapp_message "Hello%2C%20can%20you%20tell%20me%20more%20about%20the%20service%20you%20provide%20at%20React%3F"
+
+  @public_branches [
+    %{
+      name: "Horsh Tabet",
+      address: "Clover Park, 4th floor",
+      phone: "+961 70 379 764",
+      whatsapp_url: "https://wa.me/96170379764?text=#{@whatsapp_message}",
+      directions_url: "https://www.google.com/maps/place/33.8709623,35.5343566"
+    },
+    %{
+      name: "Jal El Dib",
+      address: "Main Street",
+      phone: "+961 71 633 970",
+      whatsapp_url: "https://wa.me/96171633970?text=#{@whatsapp_message}",
+      directions_url: "https://www.google.com/maps/place/33.9069,35.5801"
+    }
+  ]
+
+  @doc """
+  Public branch contact details, for pages that need the picker but have no
+  branch data of their own.
+
+  Pages that render richer branch content (the landing page, with photos)
+  keep their own list — this is the minimum needed to contact a studio.
+  """
+  def public_branches, do: @public_branches
+
   @doc """
   Renders a WhatsApp branch picker modal.
 
