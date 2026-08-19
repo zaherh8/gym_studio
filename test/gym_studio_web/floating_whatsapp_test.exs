@@ -68,6 +68,36 @@ defmodule GymStudioWeb.FloatingWhatsappTest do
     end
   end
 
+  describe "simplified hero" do
+    test "leads with the category and both branch names", %{conn: conn} do
+      html = conn |> get(~p"/") |> html_response(200)
+
+      assert html =~ "Private Training."
+      assert html =~ "Built Around You."
+      # Both studios named — the "is it near me?" question, and the only
+      # place either branch appears above the fold.
+      assert html =~ "Jal El Dib"
+      assert html =~ "Horsh Tabet"
+    end
+
+    test "offers a single primary action", %{conn: conn} do
+      html = conn |> get(~p"/") |> html_response(200)
+
+      assert html =~ "Book Your Free First Session"
+      # A competing secondary CTA splits attention; packages are one scroll
+      # away and the floating button keeps a contact path in reach.
+      refute html =~ "Explore Our Packages"
+    end
+
+    test "drops the copy that repeated the headline", %{conn: conn} do
+      html = conn |> get(~p"/") |> html_response(200)
+
+      refute html =~ "Where Fitness Meets"
+      refute html =~ "Just you, your trainer, and your goals"
+      refute html =~ "Private Studio in Lebanon"
+    end
+  end
+
   describe "free first session offer (#139)" do
     test "appears in the landing hero", %{conn: conn} do
       html = conn |> get(~p"/") |> html_response(200)

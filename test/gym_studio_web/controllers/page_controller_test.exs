@@ -7,7 +7,8 @@ defmodule GymStudioWeb.PageControllerTest do
     conn = get(conn, ~p"/")
     response = html_response(conn, 200)
     assert response =~ "react-wordmark"
-    assert response =~ "Where Fitness Meets"
+    assert response =~ "Private Training."
+    assert response =~ "Built Around You."
   end
 
   # [LANDING-PAGE] Trainers section hidden for landing page release - see #92

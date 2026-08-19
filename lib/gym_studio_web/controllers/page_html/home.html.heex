@@ -25,16 +25,8 @@
 
   <div class="relative z-10 container mx-auto px-4 py-20 sm:py-24 md:py-32">
     <div class="max-w-4xl mx-auto text-center">
-      <%!-- Badge --%>
-      <div class="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-        <span class="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
-        <span class="text-white/90 font-medium text-sm sm:text-base">
-          Private Studio in Lebanon
-        </span>
-      </div>
-
-      <%!-- Main Heading --%>
-      <h1 class="mb-6 flex items-center justify-center">
+      <%!-- Logo --%>
+      <h1 class="mb-8 flex items-center justify-center">
         <img
           src={~p"/images/logo/react-wordmark-dark.svg"}
           alt="React"
@@ -42,14 +34,18 @@
         />
       </h1>
 
-      <%!-- Subheading with better value proposition --%>
-      <p class="text-xl sm:text-2xl md:text-3xl text-white/90 font-light mb-4 leading-relaxed">
-        Where Fitness Meets <span class="text-primary font-semibold">Personal Attention</span>
+      <%!-- Headline. Names the category and the differentiator; the branch
+           line carries both locations for local search and the "is it near
+           me?" question every local visitor asks first. --%>
+      <p class="text-2xl sm:text-3xl md:text-4xl text-white font-semibold mb-3 leading-tight">
+        <%!-- Each sentence stays whole on its own line rather than wrapping
+             mid-phrase and orphaning a word. --%>
+        <span class="block">Private Training.</span>
+        <span class="block text-primary">Built Around You.</span>
       </p>
 
-      <p class="text-base sm:text-lg text-white/70 max-w-2xl mx-auto mb-6 leading-relaxed">
-        One-on-one training sessions in a private, welcoming studio.
-        No crowds, no distractions. Just you, your trainer, and your goals.
+      <p class="text-base sm:text-lg text-white/70 mb-8">
+        Jal El Dib &amp; Horsh Tabet
       </p>
 
       <%!-- Free first session offer — same promise as the /offer campaign page (#139) --%>
@@ -64,13 +60,15 @@
         </p>
       </div>
 
-      <%!-- CTA Buttons — open WhatsApp branch selector modal --%>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+      <%!-- Single CTA — opens the WhatsApp branch selector. The packages
+           section is one scroll away and the floating button (#138) keeps a
+           contact path in reach, so a second hero CTA only splits attention. --%>
+      <div class="flex justify-center">
         <button
           onclick="document.getElementById('whatsapp-modal').showModal()"
           class="btn btn-primary btn-lg text-base sm:text-lg rounded-full shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:scale-105 transition-all"
         >
-          Start Your Journey
+          Book Your Free First Session
           <svg
             xmlns="http://www.w3.org/2000/svg"
             class="h-5 w-5"
@@ -84,28 +82,6 @@
             />
           </svg>
         </button>
-        <a
-          href="#packages"
-          class="btn btn-outline btn-lg text-base sm:text-lg rounded-full border-white/30 text-white hover:bg-white/10 hover:border-white/50"
-        >
-          Explore Our Packages
-        </a>
-      </div>
-
-      <%!-- Social Proof Stats --%>
-      <div class="grid grid-cols-3 gap-4 sm:gap-8 max-w-lg mx-auto">
-        <div class="text-center">
-          <div class="text-3xl sm:text-4xl font-black text-primary">50+</div>
-          <div class="text-white/60 text-xs sm:text-sm">Happy Members</div>
-        </div>
-        <div class="text-center border-x border-white/20">
-          <div class="text-3xl sm:text-4xl font-black text-primary">5</div>
-          <div class="text-white/60 text-xs sm:text-sm">Expert Trainers</div>
-        </div>
-        <div class="text-center">
-          <div class="text-3xl sm:text-4xl font-black text-primary">1:1</div>
-          <div class="text-white/60 text-xs sm:text-sm">Personal Sessions</div>
-        </div>
       </div>
     </div>
   </div>
