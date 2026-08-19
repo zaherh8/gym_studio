@@ -9,9 +9,15 @@
 # the build cannot start. Verified by holding Elixir and the Ubuntu base
 # fixed and moving OTP alone. Refreshing ca-certificates does not help — the
 # bug is in the TLS implementation, not the trust store.
+#
+# The Ubuntu tag must be published for linux/amd64, which is what CI builds
+# on. Not every hexpm/elixir tag is multi-arch — noble-20250529 is arm64
+# only, and picking it fails in CI with "no match for platform in manifest"
+# while building fine on an arm Mac. Check before bumping:
+#   docker manifest inspect hexpm/elixir:<tag> | grep architecture
 ARG ELIXIR_VERSION=1.18.4
 ARG OTP_VERSION=27.3.4
-ARG UBUNTU_VERSION=noble-20250529
+ARG UBUNTU_VERSION=noble-20250415.1
 
 ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-ubuntu-${UBUNTU_VERSION}"
 ARG RUNNER_IMAGE="ubuntu:${UBUNTU_VERSION}"
