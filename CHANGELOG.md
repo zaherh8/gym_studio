@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-08-20
+
+### Added
+- Floating WhatsApp button on landing, gallery, and contact pages (#138)
+- Free first session offer in the landing hero, matching `/offer` (#139)
+- Real coaching photo from Jal El Dib as the hero background on phones
+
+### Changed
+- Simplified the hero: headline, both branch names, offer, one CTA (#140)
+- Hero CTA: "Start Your Journey" → "Book Your Free First Session"
+- Removed the hero badge, subhead, secondary CTA, and stats row
+- Moved the public branch list into `BranchPickerComponent.public_branches/0`
+
+### Fixed
+- Docker build failing since May — OTP 27.2 rejected the builds.hex.pm
+  certificate chain, so `mix local.hex` could not run (#137)
+- Toolchain now Elixir 1.18.4 / OTP 27.3.4. Keep OTP >= 27.3, and use a
+  multi-arch Ubuntu tag — CI builds amd64.
+
 ## [0.8.8] - 2026-05-10
 
 ### Changed
