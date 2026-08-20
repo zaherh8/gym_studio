@@ -23,6 +23,11 @@ end
 config :gym_studio, GymStudioWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT") || "4000")]
 
+# Meta (Facebook) Pixel — set in all environments so the pixel can be verified
+# from dev against a test pixel. When unset the snippet is not rendered at all,
+# which keeps dev and test traffic out of production analytics by default.
+config :gym_studio, :meta_pixel_id, System.get_env("META_PIXEL_ID")
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
