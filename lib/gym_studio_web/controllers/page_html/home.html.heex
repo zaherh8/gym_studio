@@ -9,12 +9,40 @@
 <section class="relative min-h-screen flex items-center justify-center overflow-hidden">
   <%!-- Background: Dark gradient that works standalone or with an image overlay --%>
   <div class="absolute inset-0 bg-gradient-to-br from-neutral via-base-300 to-neutral"></div>
-  <img
-    src={GymStudioWeb.CDN.url("/images/hero-gym.jpg")}
-    alt=""
-    class="absolute inset-0 w-full h-full object-cover"
-  />
-  <div class="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-primary/30"></div>
+  <%!-- Two different photos, by viewport — not two crops of one.
+
+       Phones get a real session at Jal El Dib: a trainer coaching a client.
+       The subjects form a block taller than it is wide (~0.88:1), which fits
+       a portrait viewport but loses half its height to `object-cover` in a
+       ~1.75:1 desktop band — heads and dumbbells both clipped. Desktop keeps
+       the original wide studio shot, which suits that shape.
+
+       Traffic is overwhelmingly mobile, so the coaching photo runs where it
+       matters. Revisit if a landscape-orientation shot turns up. --%>
+  <picture>
+    <source
+      media="(max-width: 639px)"
+      srcset={
+        "#{GymStudioWeb.CDN.url("/images/hero-training-tall-600w.jpg")} 600w, " <>
+          "#{GymStudioWeb.CDN.url("/images/hero-training-tall-900w.jpg")} 900w"
+      }
+      sizes="100vw"
+    />
+    <img
+      src={GymStudioWeb.CDN.url("/images/hero-gym.jpg")}
+      alt=""
+      fetchpriority="high"
+      class="absolute inset-0 w-full h-full object-cover object-center"
+    />
+  </picture>
+  <%!-- The training photo is brighter and busier than the studio shot, so the
+       phone overlay is heavier — white text needs the contrast. Desktop keeps
+       the original lighter gradient; stacking the heavy one on an already
+       dark image just turns it to mud. --%>
+  <div class="absolute inset-0 bg-gradient-to-b from-black/75 via-black/80 to-black/85 sm:hidden">
+  </div>
+  <div class="absolute inset-0 hidden sm:block bg-gradient-to-br from-black/80 via-black/60 to-primary/30">
+  </div>
 
   <%!-- Subtle pattern overlay for texture --%>
   <div

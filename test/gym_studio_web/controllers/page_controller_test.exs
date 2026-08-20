@@ -130,7 +130,16 @@ defmodule GymStudioWeb.PageControllerTest do
       conn = get(conn, ~p"/")
       response = html_response(conn, 200)
 
-      refute response =~ "<picture>"
+      # Scoped to the branch photos themselves. The page-wide assertion this
+      # used to make broke once the hero adopted <picture> to serve a
+      # different photo to phones — that is the hero's concern, not this one.
+      branch_photos =
+        response
+        |> String.split("horsh-tabet-kettlebell")
+        |> Enum.drop(1)
+        |> Enum.join()
+
+      refute branch_photos =~ "<picture>"
       refute response =~ ~s(type="image/webp")
       assert response =~ "sizes=\"(max-width: 640px) 400px, 800px\""
     end

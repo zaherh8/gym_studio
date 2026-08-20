@@ -89,6 +89,19 @@ defmodule GymStudioWeb.FloatingWhatsappTest do
       refute html =~ "Explore Our Packages"
     end
 
+    test "serves the coaching photo to phones and the studio shot to desktop", %{conn: conn} do
+      html = conn |> get(~p"/") |> html_response(200)
+
+      # Phones get the real Jal El Dib session; the subjects form a block
+      # taller than it is wide, which only survives a portrait viewport.
+      assert html =~ ~S|media="(max-width: 639px)"|
+      assert html =~ "hero-training-tall-600w.jpg"
+      assert html =~ "hero-training-tall-900w.jpg"
+
+      # Desktop keeps the wide studio shot, which suits a landscape band.
+      assert html =~ "hero-gym.jpg"
+    end
+
     test "drops the copy that repeated the headline", %{conn: conn} do
       html = conn |> get(~p"/") |> html_response(200)
 
