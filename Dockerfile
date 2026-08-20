@@ -4,14 +4,25 @@
 # https://hub.docker.com/r/hexpm/elixir/tags?page=1&name=ubuntu
 # https://hub.docker.com/_/ubuntu?tab=tags
 #
-ARG ELIXIR_VERSION=1.17.3
-ARG OTP_VERSION=27.2
-ARG UBUNTU_VERSION=noble-20241118.1
+# OTP must stay >= 27.3. OTP 27.2's TLS stack rejects the builds.hex.pm
+# certificate chain with a key_usage_mismatch, so `mix local.hex` fails and
+# the build cannot start. Verified by holding Elixir and the Ubuntu base
+# fixed and moving OTP alone. Refreshing ca-certificates does not help — the
+# bug is in the TLS implementation, not the trust store.
+#
+# The Ubuntu tag must be published for linux/amd64, which is what CI builds
+# on. Not every hexpm/elixir tag is multi-arch — noble-20250529 is arm64
+# only, and picking it fails in CI with "no match for platform in manifest"
+# while building fine on an arm Mac. Check before bumping:
+#   docker manifest inspect hexpm/elixir:<tag> | grep architecture
+ARG ELIXIR_VERSION=1.18.4
+ARG OTP_VERSION=27.3.4
+ARG UBUNTU_VERSION=noble-20250415.1
 
 ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-ubuntu-${UBUNTU_VERSION}"
 ARG RUNNER_IMAGE="ubuntu:${UBUNTU_VERSION}"
 
-FROM ${BUILDER_IMAGE} as builder
+FROM ${BUILDER_IMAGE} AS builder
 
 # install build dependencies
 RUN apt-get update -y && apt-get install -y build-essential git \
@@ -67,9 +78,9 @@ RUN apt-get update -y && \
 # Set the locale
 RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
 
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:en
-ENV LC_ALL en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
 
 WORKDIR "/app"
 RUN chown nobody /app
