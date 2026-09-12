@@ -72,9 +72,13 @@ defmodule GymStudioWeb.PageController do
   # No branch on the cards, by request: trainers move between studios and the
   # badge dates quickly.
   #
-  # Elio and Sandy have photos but no bio yet. The template skips the bio
-  # paragraph when it is nil, so their cards render name, photo, and
-  # specializations until the copy arrives.
+  # Specializations name what sets a trainer apart, so "Personal Training" is
+  # not one — every trainer here does that. Leave the list empty rather than
+  # filling it with the job title.
+  #
+  # Elio and Sandy have photos but no copy yet. The template skips both the
+  # bio and the specializations line when they are absent, so their cards
+  # render photo and name until the detail arrives.
   @static_trainers [
     %{
       name: "Mario",
@@ -86,9 +90,9 @@ defmodule GymStudioWeb.PageController do
     %{
       name: "Lynn",
       slug: "lynn",
-      specializations: ["Personal Training", "Post-Rehabilitation", "Special Populations"],
+      specializations: ["Post-Rehabilitation", "Special Populations"],
       bio:
-        "Lynn has four years of experience in personal training, with a background in Physical Education and Marketing. She holds certifications in Personal Training, Post-Rehabilitation, and Special Populations, and has worked with clients across a wide range of ages, fitness levels, and goals."
+        "Lynn has four years of experience in personal training, with a background in Physical Education. She holds certifications in Personal Training, Post-Rehabilitation, and Special Populations, and has worked with clients across a wide range of ages, fitness levels, and goals."
     },
     %{
       name: "Maroun",
@@ -100,13 +104,13 @@ defmodule GymStudioWeb.PageController do
     %{
       name: "Elio",
       slug: "elio",
-      specializations: ["Personal Training"],
+      specializations: [],
       bio: nil
     },
     %{
       name: "Sandy",
       slug: "sandy",
-      specializations: ["Personal Training"],
+      specializations: [],
       bio: nil
     }
   ]

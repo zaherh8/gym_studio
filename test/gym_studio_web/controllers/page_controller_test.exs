@@ -205,6 +205,30 @@ defmodule GymStudioWeb.PageControllerTest do
       assert response =~ "Sports Science at UA University"
     end
 
+    test "GET / specializations exclude the job title itself", %{conn: conn} do
+      response = conn |> get(~p"/") |> html_response(200)
+
+      [_, rest | _] = String.split(response, ~s(id="trainers"))
+      [section | _] = String.split(rest, ~s(id="packages"))
+
+      # Every trainer here is a personal trainer, so listing it says nothing.
+      # Specializations are for what distinguishes one from another.
+      refute section =~ "Personal Training ·"
+      refute section =~ "· Personal Training"
+
+      # The distinguishing ones are still there.
+      assert section =~ "Post-Rehabilitation"
+      assert section =~ "HYROX"
+    end
+
+    test "GET / omits the specializations line when the list is empty", %{conn: conn} do
+      response = conn |> get(~p"/") |> html_response(200)
+
+      # Elio and Sandy have no copy yet; their cards should not render an
+      # empty red line where the specializations would go.
+      refute response =~ ~s(<p class="text-primary font-medium text-sm mb-2"></p>)
+    end
+
     test "GET / omits the bio paragraph for trainers without one", %{conn: conn} do
       response = conn |> get(~p"/") |> html_response(200)
 
