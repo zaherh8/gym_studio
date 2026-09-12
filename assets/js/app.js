@@ -24,7 +24,9 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import { init as initTestimonialCarousel } from "./testimonial_carousel"
+import { init as initCountUp } from "./count_up"
 initTestimonialCarousel()
+initCountUp()
 
 /**
  * ProgressChart hook — renders a Chart.js line chart from data passed

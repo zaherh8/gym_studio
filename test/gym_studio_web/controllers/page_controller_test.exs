@@ -145,6 +145,42 @@ defmodule GymStudioWeb.PageControllerTest do
     end
   end
 
+  describe "stats section" do
+    test "GET / renders the counters with their targets", %{conn: conn} do
+      response = conn |> get(~p"/") |> html_response(200)
+
+      assert response =~ ~s(data-count-up)
+      assert response =~ ~s(data-count-to="100")
+      assert response =~ ~s(data-count-suffix="+")
+      assert response =~ ~s(data-count-to="9")
+      assert response =~ "Happy Members"
+      assert response =~ "Expert Trainers"
+    end
+
+    test "GET / counters read as zero before JS runs", %{conn: conn} do
+      response = conn |> get(~p"/") |> html_response(200)
+
+      # The server-rendered value is the pre-animation state, so the section is
+      # still coherent without JS, behind an ad blocker, or before the bundle
+      # loads — rather than rendering empty and popping in.
+      [_, after_members | _] = String.split(response, ~s(data-count-to="100"))
+      assert after_members =~ ~r/\A[^<]*>\s*0\+/s
+
+      [_, after_trainers | _] = String.split(response, ~s(data-count-to="9"))
+      assert after_trainers =~ ~r/\A[^<]*>\s*0\s*</s
+    end
+
+    test "GET / stats stay out of the hero", %{conn: conn} do
+      response = conn |> get(~p"/") |> html_response(200)
+
+      # #140 cut the hero stats row to keep one promise and one CTA. The
+      # counters live below the fold; this guards against them creeping back.
+      [hero | _] = String.split(response, "Why React Gym?")
+      refute hero =~ "data-count-up"
+      refute hero =~ "Happy Members"
+    end
+  end
+
   describe "testimonials" do
     test "GET / renders all testimonial authors", %{conn: conn} do
       conn = get(conn, ~p"/")

@@ -226,6 +226,45 @@
   </div>
 </section>
 
+<%!-- Stats Section — counts animate up when scrolled into view. Deliberately
+     below the fold rather than in the hero (#140 cut the hero stats row to
+     keep one promise and one CTA); a counter is also only effective at the
+     moment it enters view, which never happened above the fold. --%>
+<section class="py-16 sm:py-20 md:py-24 bg-neutral text-white">
+  <div class="container mx-auto px-4">
+    <div
+      data-count-up
+      class="grid grid-cols-3 gap-4 sm:gap-8 max-w-3xl mx-auto text-center"
+    >
+      <div>
+        <div
+          class="text-4xl sm:text-5xl md:text-6xl font-black text-primary tabular-nums"
+          data-count-to="100"
+          data-count-suffix="+"
+        >
+          0+
+        </div>
+        <div class="text-white/60 text-xs sm:text-sm mt-2">Happy Members</div>
+      </div>
+      <div class="border-x border-white/15">
+        <div
+          class="text-4xl sm:text-5xl md:text-6xl font-black text-primary tabular-nums"
+          data-count-to="9"
+        >
+          0
+        </div>
+        <div class="text-white/60 text-xs sm:text-sm mt-2">Expert Trainers</div>
+      </div>
+      <div>
+        <div class="text-4xl sm:text-5xl md:text-6xl font-black text-primary tabular-nums">
+          1:1
+        </div>
+        <div class="text-white/60 text-xs sm:text-sm mt-2">Personal Sessions</div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <%!-- Testimonial Carousel Section --%>
 <section class="py-16 sm:py-20 bg-gray-100">
   <div class="container mx-auto px-4">
