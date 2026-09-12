@@ -180,6 +180,9 @@ defmodule GymStudioWeb.PageControllerTest do
       [hero | _] = String.split(response, "Why React Gym?")
       refute hero =~ "data-count-up"
       refute hero =~ "Happy Members"
+    end
+  end
+
   describe "trainers section" do
     test "GET / renders every trainer with a photo", %{conn: conn} do
       response = conn |> get(~p"/") |> html_response(200)
