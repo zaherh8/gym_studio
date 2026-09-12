@@ -65,7 +65,57 @@ defmodule GymStudioWeb.PageController do
     }
   ]
 
+  # [LANDING-PAGE] Static trainer data, matching the branches and testimonials
+  # above — the portal stays gated behind #92, so this avoids depending on
+  # seeded records for a public page.
+  #
+  # No branch on the cards, by request: trainers move between studios and the
+  # badge dates quickly.
+  #
+  # Elio and Sandy have photos but no bio yet. The template skips the bio
+  # paragraph when it is nil, so their cards render name, photo, and
+  # specializations until the copy arrives.
+  @static_trainers [
+    %{
+      name: "Mario",
+      slug: "mario",
+      specializations: ["Hybrid Training", "HYROX", "Calisthenics"],
+      bio:
+        "Certified Personal Trainer and HYROX Certified Coach specialising in hybrid training, combining running and strength work to balance physical performance with overall development. He has coached athletes for HYROX Paris and self-coached his own preparation for HYROX Turkey. He also teaches calisthenics fundamentals and progressive bodyweight training, helping clients build strength, control, and movement efficiency."
+    },
+    %{
+      name: "Lynn",
+      slug: "lynn",
+      specializations: ["Personal Training", "Post-Rehabilitation", "Special Populations"],
+      bio:
+        "Lynn has four years of experience in personal training, with a background in Physical Education and Marketing. She holds certifications in Personal Training, Post-Rehabilitation, and Special Populations, and has worked with clients across a wide range of ages, fitness levels, and goals."
+    },
+    %{
+      name: "Maroun",
+      slug: "maroun",
+      specializations: ["Sports Science", "Basketball", "Athletic Conditioning"],
+      bio:
+        "Maroun Naffaa is studying Sports Science at UA University and brings a competitive basketball background to his coaching. He has played for Chiyah Forum, Chabeb Zahle, and Damour, and currently plays for Beit Mery Basketball in Divisions 3 and 4. His training carries over the discipline and teamwork that competitive sport demands."
+    },
+    %{
+      name: "Elio",
+      slug: "elio",
+      specializations: ["Personal Training"],
+      bio: nil
+    },
+    %{
+      name: "Sandy",
+      slug: "sandy",
+      specializations: ["Personal Training"],
+      bio: nil
+    }
+  ]
+
   def home(conn, _params) do
-    render(conn, :home, branches: @static_branches, testimonials: @static_testimonials)
+    render(conn, :home,
+      branches: @static_branches,
+      testimonials: @static_testimonials,
+      trainers: @static_trainers
+    )
   end
 end
