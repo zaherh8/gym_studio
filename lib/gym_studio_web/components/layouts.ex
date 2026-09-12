@@ -12,6 +12,58 @@ defmodule GymStudioWeb.Layouts do
   embed_templates "layouts/*"
 
   @doc """
+  Renders the Meta (Facebook) Pixel base snippet.
+
+  Renders nothing when `:meta_pixel_id` is unconfigured, so dev and test
+  traffic stays out of production analytics unless `META_PIXEL_ID` is set.
+
+  Every public layout has its own `<head>`, so each one renders this
+  separately — keep them in sync when adding a new layout.
+
+  Live navigation does not reload the page, so the base snippet's single
+  `PageView` would undercount. `assets/js/app.js` fires the follow-up
+  `PageView` events on `phx:page-loading-stop`.
+  """
+  def meta_pixel(assigns) do
+    assigns = assign(assigns, :pixel_id, configured_pixel_id())
+
+    ~H"""
+    <script :if={@pixel_id} phx-track-static>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window,document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '<%= @pixel_id %>');
+      fbq('track', 'PageView');
+    </script>
+    <noscript :if={@pixel_id}>
+      <img
+        height="1"
+        width="1"
+        style="display:none"
+        alt=""
+        src={"https://www.facebook.com/tr?id=#{@pixel_id}&ev=PageView&noscript=1"}
+      />
+    </noscript>
+    """
+  end
+
+  # The id is interpolated into a <script> body, where HEEx escaping does not
+  # apply. It comes from our own env var rather than user input, so this is a
+  # guard against a malformed deploy value rather than a live injection path —
+  # but it keeps the safety property explicit instead of incidental.
+  defp configured_pixel_id do
+    case Application.get_env(:gym_studio, :meta_pixel_id) do
+      id when is_binary(id) -> if Regex.match?(~r/^\d+$/, id), do: id
+      _ -> nil
+    end
+  end
+
+  @doc """
   Renders the WhatsApp SVG icon.
 
   ## Examples

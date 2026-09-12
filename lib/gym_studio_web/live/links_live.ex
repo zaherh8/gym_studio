@@ -84,6 +84,8 @@ defmodule GymStudioWeb.LinksLive do
             href={branch.directions_url}
             target="_blank"
             rel="noopener noreferrer"
+            data-pixel-event="FindLocation"
+            data-pixel-branch={branch.name}
             class="flex items-center justify-center gap-2 w-full py-3.5 px-6 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-semibold hover:bg-primary hover:border-primary hover:shadow-lg hover:shadow-primary/30 hover:scale-[1.02] transition-all duration-200"
           >
             <span class="text-lg">📍</span>

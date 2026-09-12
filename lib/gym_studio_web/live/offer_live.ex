@@ -107,6 +107,10 @@ defmodule GymStudioWeb.OfferLive do
           href={@whatsapp_url}
           target="_blank"
           rel="noopener noreferrer"
+          data-pixel-event="Lead"
+          data-pixel-branch="Horsh Tabet"
+          data-pixel-source={@utm_source}
+          data-pixel-campaign={@utm_campaign}
           class="flex items-center justify-center gap-2 w-full max-w-sm py-4 px-6 rounded-full bg-primary text-white font-bold text-lg border border-primary hover:bg-primary-focus hover:shadow-lg hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
         >
           <Layouts.whatsapp_icon class="w-6 h-6" />
