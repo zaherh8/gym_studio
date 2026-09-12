@@ -342,8 +342,10 @@
   </div>
 </section>
 
-<%!-- [LANDING-PAGE] Trainers section hidden for landing page release - see #92 --%>
-<%!--
+<%!-- Meet the Team. Static data from PageController, matching branches and
+     testimonials — the portal stays gated behind #92, so this does not depend
+     on seeded records. No branch badge by request: trainers move between
+     studios and the badge dates quickly. --%>
 <section id="trainers" class="py-16 sm:py-20 md:py-24 bg-white">
   <div class="container mx-auto px-4">
     <div class="text-center mb-12 sm:mb-16">
@@ -358,90 +360,74 @@
       </p>
     </div>
 
-    <%= if @trainers != [] do %>
-      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
-        <%= for trainer <- @trainers do %>
-          <div class="group">
-            <div class="relative overflow-hidden rounded-2xl mb-4">
-              <div class="aspect-[3/4] bg-gradient-to-br from-neutral to-base-300 flex items-center justify-center">
-                <%= if trainer.photo_url do %>
-                  <img
-                    src={trainer.photo_url}
-                    alt={trainer.user.name || trainer.user.email}
-                    class="w-full h-full object-cover"
-                  />
-                <% else %>
-                  <div class="text-center p-6">
-                    <div class="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-3">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-12 w-12 text-white/40"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
-                      </svg>
-                    </div>
-                    <span class="text-white/40 text-sm">Photo Coming Soon</span>
-                  </div>
-                <% end %>
-              </div>
-              <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-              </div>
-            </div>
-            <h3 class="text-xl font-bold mb-1 text-gray-900">
-              {trainer.user.name || trainer.user.email}
-            </h3>
-            <%= if trainer.user.branch do %>
-              <span class="inline-block badge badge-primary badge-sm text-xs font-medium mb-1">
-                {trainer.user.branch.name}
-              </span>
-            <% end %>
-            <%= if trainer.specializations != [] do %>
-              <p class="text-primary font-medium text-sm mb-2">
-                {Enum.join(trainer.specializations, " & ")}
-              </p>
-            <% end %>
-            <%= if trainer.bio do %>
-              <p class="text-gray-600 text-sm leading-relaxed">{trainer.bio}</p>
-            <% end %>
-          </div>
-        <% end %>
-      </div>
-    <% else %>
-      <div class="text-center py-12">
-        <p class="text-gray-500 text-lg">
-          Our trainer profiles are being updated. Check back soon!
-        </p>
-      </div>
-    <% end %>
+    <%!-- Scroll-snap carousel rather than a grid. Traffic is almost entirely
+         mobile, where a grid stacks into a long column nobody scrolls to the
+         end of. Snapping keeps one card in view at a time and the partial
+         next card signals there is more to swipe.
 
-    <div class="text-center mt-10">
-      <a href={~p"/trainers"} class="btn btn-outline btn-primary rounded-full">
-        View All Trainers
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-4 w-4"
-          viewBox="0 0 20 20"
-          fill="currentColor"
+         The scrolling itself is native CSS — no JS needed for the gesture, so
+         it works before the bundle loads and with momentum on iOS. The hook
+         only syncs the dots. --%>
+    <div data-trainer-carousel class="max-w-6xl mx-auto">
+      <div
+        data-trainer-track
+        class="flex gap-5 sm:gap-8 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        tabindex="0"
+        role="group"
+        aria-label="Our trainers"
+      >
+        <div
+          :for={{trainer, i} <- Enum.with_index(@trainers)}
+          data-trainer-slide
+          aria-label={"#{i + 1} of #{length(@trainers)}"}
+          class="group snap-start shrink-0 w-[78%] sm:w-[46%] lg:w-[31%]"
         >
-          <path
-            fill-rule="evenodd"
-            d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-            clip-rule="evenodd"
-          />
-        </svg>
-      </a>
+          <div class="relative overflow-hidden rounded-2xl mb-4 bg-neutral">
+            <img
+              src={GymStudioWeb.CDN.url("/images/trainers/#{trainer.slug}-800w.jpg")}
+              srcset={
+                "#{GymStudioWeb.CDN.url("/images/trainers/#{trainer.slug}-400w.jpg")} 400w, " <>
+                  "#{GymStudioWeb.CDN.url("/images/trainers/#{trainer.slug}-800w.jpg")} 800w"
+              }
+              sizes="(max-width: 640px) 78vw, (max-width: 1024px) 46vw, 31vw"
+              alt={"#{trainer.name}, personal trainer at React Gym"}
+              loading="lazy"
+              decoding="async"
+              width="800"
+              height="1066"
+              class="w-full aspect-[3/4] object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          </div>
+          <h3 class="text-xl font-bold mb-1 text-gray-900">{trainer.name}</h3>
+          <%!-- Comma-separated: "A & B & C" reads badly once there are three. --%>
+          <p :if={trainer.specializations != []} class="text-primary font-medium text-sm mb-2">
+            {Enum.join(trainer.specializations, " · ")}
+          </p>
+          <p :if={trainer.bio} class="text-gray-600 text-sm leading-relaxed">{trainer.bio}</p>
+        </div>
+      </div>
+
+      <%!-- Dots are a position indicator, not a control surface: they are the
+           cheapest way to show how many trainers there are on a narrow screen.
+           Still buttons so they are keyboard reachable. --%>
+      <div class="flex justify-center gap-2 mt-6" role="tablist" aria-label="Trainer navigation">
+        <button
+          :for={{_trainer, i} <- Enum.with_index(@trainers)}
+          data-trainer-dot
+          type="button"
+          role="tab"
+          aria-selected={"#{i == 0}"}
+          aria-label={"Go to trainer #{i + 1}"}
+          class={[
+            "w-2.5 h-2.5 rounded-full transition-colors duration-300 cursor-pointer",
+            if(i == 0, do: "bg-primary", else: "bg-gray-300")
+          ]}
+        >
+        </button>
+      </div>
     </div>
   </div>
 </section>
---%>
 
 <%!-- Session Packages Section --%>
 <section id="packages" class="py-16 sm:py-20 md:py-24 bg-white">

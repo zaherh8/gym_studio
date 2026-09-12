@@ -11,8 +11,10 @@ defmodule GymStudioWeb.PageControllerTest do
     assert response =~ "Built Around You."
   end
 
-  # [LANDING-PAGE] Trainers section hidden for landing page release - see #92
-  test "GET / does not show trainers section", %{conn: conn} do
+  # The section now renders from static data in PageController, so an approved
+  # DB trainer must NOT leak onto the public page while the portal is still
+  # gated behind #92.
+  test "GET / trainers section ignores database records", %{conn: conn} do
     admin = user_fixture(%{role: :admin})
 
     trainer =
@@ -25,7 +27,7 @@ defmodule GymStudioWeb.PageControllerTest do
 
     conn = get(conn, ~p"/")
     response = html_response(conn, 200)
-    refute response =~ "Meet Your"
+    assert response =~ "Meet Your"
     refute response =~ "Expert in strength training"
   end
 
@@ -178,6 +180,109 @@ defmodule GymStudioWeb.PageControllerTest do
       [hero | _] = String.split(response, "Why React Gym?")
       refute hero =~ "data-count-up"
       refute hero =~ "Happy Members"
+    end
+  end
+
+  describe "trainers section" do
+    test "GET / renders every trainer with a photo", %{conn: conn} do
+      response = conn |> get(~p"/") |> html_response(200)
+
+      for slug <- ~w(mario lynn maroun elio sandy) do
+        assert response =~ "/images/trainers/#{slug}-400w.jpg 400w"
+        assert response =~ "/images/trainers/#{slug}-800w.jpg 800w"
+      end
+
+      for name <- ~w(Mario Lynn Maroun Elio Sandy) do
+        assert response =~ name
+      end
+    end
+
+    test "GET / renders the bios that exist", %{conn: conn} do
+      response = conn |> get(~p"/") |> html_response(200)
+
+      assert response =~ "HYROX Certified Coach"
+      assert response =~ "four years of experience in personal training"
+      assert response =~ "Sports Science at UA University"
+    end
+
+    test "GET / specializations exclude the job title itself", %{conn: conn} do
+      response = conn |> get(~p"/") |> html_response(200)
+
+      [_, rest | _] = String.split(response, ~s(id="trainers"))
+      [section | _] = String.split(rest, ~s(id="packages"))
+
+      # Every trainer here is a personal trainer, so listing it says nothing.
+      # Specializations are for what distinguishes one from another.
+      refute section =~ "Personal Training ·"
+      refute section =~ "· Personal Training"
+
+      # The distinguishing ones are still there.
+      assert section =~ "Post-Rehabilitation"
+      assert section =~ "HYROX"
+    end
+
+    test "GET / omits the specializations line when the list is empty", %{conn: conn} do
+      response = conn |> get(~p"/") |> html_response(200)
+
+      # Elio and Sandy have no copy yet; their cards should not render an
+      # empty red line where the specializations would go.
+      refute response =~ ~s(<p class="text-primary font-medium text-sm mb-2"></p>)
+    end
+
+    test "GET / omits the bio paragraph for trainers without one", %{conn: conn} do
+      response = conn |> get(~p"/") |> html_response(200)
+
+      # Elio and Sandy have photos but no copy yet. Their cards should render
+      # name, photo, and specializations rather than an empty paragraph.
+      refute response =~ ~s(<p class="text-gray-600 text-sm leading-relaxed"></p>)
+    end
+
+    test "GET / trainer cards carry no branch badge", %{conn: conn} do
+      response = conn |> get(~p"/") |> html_response(200)
+
+      # Trainers move between studios, so a branch on the card dates quickly.
+      [_, rest | _] = String.split(response, ~s(id="trainers"))
+      [section | _] = String.split(rest, ~s(id="packages"))
+
+      refute section =~ "badge-primary"
+      refute section =~ "Horsh Tabet"
+      refute section =~ "Jal El Dib"
+    end
+
+    test "GET / trainers render as a scroll-snap carousel", %{conn: conn} do
+      response = conn |> get(~p"/") |> html_response(200)
+
+      # Traffic is almost entirely mobile, where a grid stacks into a long
+      # column. The swipe is native CSS so it works before the bundle loads.
+      assert response =~ "data-trainer-carousel"
+      assert response =~ "data-trainer-track"
+      assert response =~ "snap-x"
+      assert response =~ "snap-mandatory"
+
+      slides = response |> String.split("data-trainer-slide") |> length() |> Kernel.-(1)
+      assert slides == 5
+
+      dots = response |> String.split("data-trainer-dot") |> length() |> Kernel.-(1)
+      assert dots == 5
+    end
+
+    test "GET / carousel slides are narrower than the viewport on mobile", %{conn: conn} do
+      response = conn |> get(~p"/") |> html_response(200)
+
+      # A partial next card is what signals the row is swipeable at all.
+      assert response =~ "w-[78%]"
+    end
+
+    test "GET / trainer photos are lazy loaded with explicit dimensions", %{conn: conn} do
+      response = conn |> get(~p"/") |> html_response(200)
+
+      [_, rest | _] = String.split(response, ~s(id="trainers"))
+      [section | _] = String.split(rest, ~s(id="packages"))
+
+      # Width/height prevent layout shift as the images load in.
+      assert section =~ ~s(loading="lazy")
+      assert section =~ ~s(width="800")
+      assert section =~ ~s(height="1066")
     end
   end
 
