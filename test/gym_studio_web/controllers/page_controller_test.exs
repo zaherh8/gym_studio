@@ -225,6 +225,30 @@ defmodule GymStudioWeb.PageControllerTest do
       refute section =~ "Jal El Dib"
     end
 
+    test "GET / trainers render as a scroll-snap carousel", %{conn: conn} do
+      response = conn |> get(~p"/") |> html_response(200)
+
+      # Traffic is almost entirely mobile, where a grid stacks into a long
+      # column. The swipe is native CSS so it works before the bundle loads.
+      assert response =~ "data-trainer-carousel"
+      assert response =~ "data-trainer-track"
+      assert response =~ "snap-x"
+      assert response =~ "snap-mandatory"
+
+      slides = response |> String.split("data-trainer-slide") |> length() |> Kernel.-(1)
+      assert slides == 5
+
+      dots = response |> String.split("data-trainer-dot") |> length() |> Kernel.-(1)
+      assert dots == 5
+    end
+
+    test "GET / carousel slides are narrower than the viewport on mobile", %{conn: conn} do
+      response = conn |> get(~p"/") |> html_response(200)
+
+      # A partial next card is what signals the row is swipeable at all.
+      assert response =~ "w-[78%]"
+    end
+
     test "GET / trainer photos are lazy loaded with explicit dimensions", %{conn: conn} do
       response = conn |> get(~p"/") |> html_response(200)
 

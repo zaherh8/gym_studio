@@ -360,30 +360,70 @@
       </p>
     </div>
 
-    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10 max-w-6xl mx-auto">
-      <div :for={trainer <- @trainers} class="group">
-        <div class="relative overflow-hidden rounded-2xl mb-4 bg-neutral">
-          <img
-            src={GymStudioWeb.CDN.url("/images/trainers/#{trainer.slug}-800w.jpg")}
-            srcset={
-              "#{GymStudioWeb.CDN.url("/images/trainers/#{trainer.slug}-400w.jpg")} 400w, " <>
-                "#{GymStudioWeb.CDN.url("/images/trainers/#{trainer.slug}-800w.jpg")} 800w"
-            }
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            alt={"#{trainer.name}, personal trainer at React Gym"}
-            loading="lazy"
-            decoding="async"
-            width="800"
-            height="1066"
-            class="w-full aspect-[3/4] object-cover group-hover:scale-105 transition-transform duration-500"
-          />
+    <%!-- Scroll-snap carousel rather than a grid. Traffic is almost entirely
+         mobile, where a grid stacks into a long column nobody scrolls to the
+         end of. Snapping keeps one card in view at a time and the partial
+         next card signals there is more to swipe.
+
+         The scrolling itself is native CSS — no JS needed for the gesture, so
+         it works before the bundle loads and with momentum on iOS. The hook
+         only syncs the dots. --%>
+    <div data-trainer-carousel class="max-w-6xl mx-auto">
+      <div
+        data-trainer-track
+        class="flex gap-5 sm:gap-8 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        tabindex="0"
+        role="group"
+        aria-label="Our trainers"
+      >
+        <div
+          :for={{trainer, i} <- Enum.with_index(@trainers)}
+          data-trainer-slide
+          aria-label={"#{i + 1} of #{length(@trainers)}"}
+          class="group snap-start shrink-0 w-[78%] sm:w-[46%] lg:w-[31%]"
+        >
+          <div class="relative overflow-hidden rounded-2xl mb-4 bg-neutral">
+            <img
+              src={GymStudioWeb.CDN.url("/images/trainers/#{trainer.slug}-800w.jpg")}
+              srcset={
+                "#{GymStudioWeb.CDN.url("/images/trainers/#{trainer.slug}-400w.jpg")} 400w, " <>
+                  "#{GymStudioWeb.CDN.url("/images/trainers/#{trainer.slug}-800w.jpg")} 800w"
+              }
+              sizes="(max-width: 640px) 78vw, (max-width: 1024px) 46vw, 31vw"
+              alt={"#{trainer.name}, personal trainer at React Gym"}
+              loading="lazy"
+              decoding="async"
+              width="800"
+              height="1066"
+              class="w-full aspect-[3/4] object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          </div>
+          <h3 class="text-xl font-bold mb-1 text-gray-900">{trainer.name}</h3>
+          <%!-- Comma-separated: "A & B & C" reads badly once there are three. --%>
+          <p :if={trainer.specializations != []} class="text-primary font-medium text-sm mb-2">
+            {Enum.join(trainer.specializations, " · ")}
+          </p>
+          <p :if={trainer.bio} class="text-gray-600 text-sm leading-relaxed">{trainer.bio}</p>
         </div>
-        <h3 class="text-xl font-bold mb-1 text-gray-900">{trainer.name}</h3>
-        <%!-- Comma-separated: "A & B & C" reads badly once there are three. --%>
-        <p :if={trainer.specializations != []} class="text-primary font-medium text-sm mb-2">
-          {Enum.join(trainer.specializations, " · ")}
-        </p>
-        <p :if={trainer.bio} class="text-gray-600 text-sm leading-relaxed">{trainer.bio}</p>
+      </div>
+
+      <%!-- Dots are a position indicator, not a control surface: they are the
+           cheapest way to show how many trainers there are on a narrow screen.
+           Still buttons so they are keyboard reachable. --%>
+      <div class="flex justify-center gap-2 mt-6" role="tablist" aria-label="Trainer navigation">
+        <button
+          :for={{_trainer, i} <- Enum.with_index(@trainers)}
+          data-trainer-dot
+          type="button"
+          role="tab"
+          aria-selected={"#{i == 0}"}
+          aria-label={"Go to trainer #{i + 1}"}
+          class={[
+            "w-2.5 h-2.5 rounded-full transition-colors duration-300 cursor-pointer",
+            if(i == 0, do: "bg-primary", else: "bg-gray-300")
+          ]}
+        >
+        </button>
       </div>
     </div>
   </div>
