@@ -187,14 +187,32 @@ defmodule GymStudioWeb.PageControllerTest do
     test "GET / renders every trainer with a photo", %{conn: conn} do
       response = conn |> get(~p"/") |> html_response(200)
 
-      for slug <- ~w(mario lynn maroun elio sandy) do
+      for slug <- ~w(mario lynn maroun elio sandy chris) do
         assert response =~ "/images/trainers/#{slug}-400w.jpg 400w"
         assert response =~ "/images/trainers/#{slug}-800w.jpg 800w"
       end
 
-      for name <- ~w(Mario Lynn Maroun Elio Sandy) do
+      for name <- ~w(Mario Lynn Maroun Elio Sandy Chris) do
         assert response =~ name
       end
+    end
+
+    test "GET / leads with Elio, then Lynn", %{conn: conn} do
+      response = conn |> get(~p"/") |> html_response(200)
+
+      [_, rest | _] = String.split(response, ~s(id="trainers"))
+      [section | _] = String.split(rest, ~s(id="packages"))
+
+      # Elio is founder and head of training, so he leads. Order below that is
+      # not a ranking, but the first two are deliberate.
+      order =
+        ~w(elio lynn sandy mario chris maroun)
+        |> Enum.map(fn slug ->
+          {slug, :binary.match(section, "trainers/#{slug}-") |> elem(0)}
+        end)
+
+      positions = Enum.map(order, &elem(&1, 1))
+      assert positions == Enum.sort(positions)
     end
 
     test "GET / renders the bios that exist", %{conn: conn} do
@@ -203,6 +221,9 @@ defmodule GymStudioWeb.PageControllerTest do
       assert response =~ "HYROX Certified Coach"
       assert response =~ "four years of experience in personal training"
       assert response =~ "Sports Science at UA University"
+      assert response =~ "React&#39;s founder and head trainer"
+      assert response =~ "Step Ahead Sports School"
+      assert response =~ "CFSC certified at Levels 1 and 2"
     end
 
     test "GET / specializations exclude the job title itself", %{conn: conn} do
@@ -224,16 +245,16 @@ defmodule GymStudioWeb.PageControllerTest do
     test "GET / omits the specializations line when the list is empty", %{conn: conn} do
       response = conn |> get(~p"/") |> html_response(200)
 
-      # Elio and Sandy have no copy yet; their cards should not render an
-      # empty red line where the specializations would go.
+      # A trainer without specializations should not render an empty red line
+      # where they would go.
       refute response =~ ~s(<p class="text-primary font-medium text-sm mb-2"></p>)
     end
 
     test "GET / omits the bio paragraph for trainers without one", %{conn: conn} do
       response = conn |> get(~p"/") |> html_response(200)
 
-      # Elio and Sandy have photos but no copy yet. Their cards should render
-      # name, photo, and specializations rather than an empty paragraph.
+      # A trainer without a bio should render name, photo, and specializations
+      # rather than an empty paragraph.
       refute response =~ ~s(<p class="text-gray-600 text-sm leading-relaxed"></p>)
     end
 
@@ -260,10 +281,10 @@ defmodule GymStudioWeb.PageControllerTest do
       assert response =~ "snap-mandatory"
 
       slides = response |> String.split("data-trainer-slide") |> length() |> Kernel.-(1)
-      assert slides == 5
+      assert slides == 6
 
       dots = response |> String.split("data-trainer-dot") |> length() |> Kernel.-(1)
-      assert dots == 5
+      assert dots == 6
     end
 
     test "GET / carousel slides are narrower than the viewport on mobile", %{conn: conn} do

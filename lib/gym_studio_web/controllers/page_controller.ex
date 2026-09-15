@@ -76,16 +76,18 @@ defmodule GymStudioWeb.PageController do
   # not one — every trainer here does that. Leave the list empty rather than
   # filling it with the job title.
   #
-  # Elio and Sandy have photos but no copy yet. The template skips both the
-  # bio and the specializations line when they are absent, so their cards
-  # render photo and name until the detail arrives.
+  # The template skips both the bio and the specializations line when they are
+  # absent, so a card with only a photo and a name still renders cleanly while
+  # the rest of the roster is filled in.
+  # Order is deliberate: Elio leads as founder and head of training, Lynn
+  # second, and the rest follow in no particular ranking.
   @static_trainers [
     %{
-      name: "Mario",
-      slug: "mario",
-      specializations: ["Hybrid Training", "HYROX", "Calisthenics"],
+      name: "Elio",
+      slug: "elio",
+      specializations: ["Founder", "Head of Training"],
       bio:
-        "Certified Personal Trainer and HYROX Certified Coach specialising in hybrid training, combining running and strength work to balance physical performance with overall development. He has coached athletes for HYROX Paris and self-coached his own preparation for HYROX Turkey. He also teaches calisthenics fundamentals and progressive bodyweight training, helping clients build strength, control, and movement efficiency."
+        "Elio is React's founder and head trainer. He holds a Bachelor's Degree in Physical Education and leads the training programme across both studios."
     },
     %{
       name: "Lynn",
@@ -95,23 +97,32 @@ defmodule GymStudioWeb.PageController do
         "Lynn has four years of experience in personal training, with a background in Physical Education. She holds certifications in Personal Training, Post-Rehabilitation, and Special Populations, and has worked with clients across a wide range of ages, fitness levels, and goals."
     },
     %{
+      name: "Sandy",
+      slug: "sandy",
+      specializations: ["Athletic Training", "Post-Injury Rehabilitation"],
+      bio:
+        "Sandy trains athletes across all sports and age groups, and works with clients returning from injury of any kind. She studied personal training, strength and conditioning, and post-rehabilitation at Step Ahead Sports School, holds a management degree from USJ, and has four years in the field. Her continued study includes workshops in youth athletic development, applied sports science, and speed and agility."
+    },
+    %{
+      name: "Mario",
+      slug: "mario",
+      specializations: ["Hybrid Training", "HYROX", "Calisthenics"],
+      bio:
+        "Certified Personal Trainer and HYROX Certified Coach specialising in hybrid training, combining running and strength work to balance physical performance with overall development. He has coached athletes for HYROX Paris and self-coached his own preparation for HYROX Turkey. He also teaches calisthenics fundamentals and progressive bodyweight training, helping clients build strength, control, and movement efficiency."
+    },
+    %{
+      name: "Chris",
+      slug: "chris",
+      specializations: ["Strength & Conditioning", "Post-Injury Rehabilitation"],
+      bio:
+        "Chris is a strength and conditioning coach, CFSC certified at Levels 1 and 2, focusing on post-injury training and rehabilitation. He has been with React for a year and a half and has worked with Division 1 athletes and professional futsal and basketball players."
+    },
+    %{
       name: "Maroun",
       slug: "maroun",
       specializations: ["Sports Science", "Basketball", "Athletic Conditioning"],
       bio:
         "Maroun Naffaa is studying Sports Science at UA University and brings a competitive basketball background to his coaching. He has played for Chiyah Forum, Chabeb Zahle, and Damour, and currently plays for Beit Mery Basketball in Divisions 3 and 4. His training carries over the discipline and teamwork that competitive sport demands."
-    },
-    %{
-      name: "Elio",
-      slug: "elio",
-      specializations: [],
-      bio: nil
-    },
-    %{
-      name: "Sandy",
-      slug: "sandy",
-      specializations: [],
-      bio: nil
     }
   ]
 
