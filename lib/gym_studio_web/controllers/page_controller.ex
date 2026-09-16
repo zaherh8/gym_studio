@@ -65,7 +65,72 @@ defmodule GymStudioWeb.PageController do
     }
   ]
 
+  # [LANDING-PAGE] Static trainer data, matching the branches and testimonials
+  # above — the portal stays gated behind #92, so this avoids depending on
+  # seeded records for a public page.
+  #
+  # No branch on the cards, by request: trainers move between studios and the
+  # badge dates quickly.
+  #
+  # Specializations name what sets a trainer apart, so "Personal Training" is
+  # not one — every trainer here does that. Leave the list empty rather than
+  # filling it with the job title.
+  #
+  # The template skips both the bio and the specializations line when they are
+  # absent, so a card with only a photo and a name still renders cleanly while
+  # the rest of the roster is filled in.
+  # Order is deliberate: Elio leads as founder and head of training, Lynn
+  # second, and the rest follow in no particular ranking.
+  @static_trainers [
+    %{
+      name: "Elio",
+      slug: "elio",
+      specializations: ["Founder", "Head of Training"],
+      bio:
+        "Elio is React's founder and head of training, and the one who holds it all together. He supervises training across both studios, reviews and signs off on client programmes, and keeps standards consistent from one trainer to the next."
+    },
+    %{
+      name: "Lynn",
+      slug: "lynn",
+      specializations: ["Post-Rehabilitation", "Special Populations"],
+      bio:
+        "Lynn has four years of experience in personal training, with a background in Physical Education. She holds certifications in Personal Training, Post-Rehabilitation, and Special Populations, and has worked with clients across a wide range of ages, fitness levels, and goals."
+    },
+    %{
+      name: "Sandy",
+      slug: "sandy",
+      specializations: ["Athletic Training", "Post-Injury Rehabilitation"],
+      bio:
+        "Sandy trains athletes across all sports and age groups, and works with clients returning from injury of any kind. She studied personal training, strength and conditioning, and post-rehabilitation at Step Ahead Sports School, and has four years in the field. Her continued study includes workshops in youth athletic development, applied sports science, and speed and agility."
+    },
+    %{
+      name: "Mario",
+      slug: "mario",
+      specializations: ["Hybrid Training", "HYROX", "Calisthenics"],
+      bio:
+        "Certified Personal Trainer and HYROX Certified Coach specialising in hybrid training, combining running and strength work to balance physical performance with overall development. He has coached athletes for HYROX Paris and self-coached his own preparation for HYROX Turkey. He also teaches calisthenics fundamentals and progressive bodyweight training, helping clients build strength, control, and movement efficiency."
+    },
+    %{
+      name: "Chris",
+      slug: "chris",
+      specializations: ["Strength & Conditioning", "Post-Injury Rehabilitation"],
+      bio:
+        "Chris is a strength and conditioning coach, CFSC certified at Levels 1 and 2, focusing on post-injury training and rehabilitation. He has been with React for a year and a half and has worked with Division 1 athletes and professional futsal and basketball players."
+    },
+    %{
+      name: "Maroun",
+      slug: "maroun",
+      specializations: ["Sports Science", "Basketball", "Athletic Conditioning"],
+      bio:
+        "Maroun Naffaa is studying Sports Science at UA University and brings a competitive basketball background to his coaching. He has played for Chiyah Forum, Chabeb Zahle, and Damour, and currently plays for Beit Mery Basketball in Divisions 3 and 4. His training carries over the discipline and teamwork that competitive sport demands."
+    }
+  ]
+
   def home(conn, _params) do
-    render(conn, :home, branches: @static_branches, testimonials: @static_testimonials)
+    render(conn, :home,
+      branches: @static_branches,
+      testimonials: @static_testimonials,
+      trainers: @static_trainers
+    )
   end
 end
