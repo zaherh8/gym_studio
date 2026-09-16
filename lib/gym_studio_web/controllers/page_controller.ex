@@ -101,14 +101,14 @@ defmodule GymStudioWeb.PageController do
       slug: "sandy",
       specializations: ["Athletic Training", "Post-Injury Rehabilitation"],
       bio:
-        "Sandy trains athletes across all sports and age groups, and works with clients returning from injury of any kind. She studied personal training, strength and conditioning, and post-rehabilitation at Step Ahead Sports School, holds a management degree from USJ, and has four years in the field. Her continued study includes workshops in youth athletic development, applied sports science, and speed and agility."
+        "Sandy trains athletes across all sports and age groups, and works with clients returning from injury of any kind. She studied personal training, strength and conditioning, and post-rehabilitation at Step Ahead Sports School, and has four years in the field. Her continued study includes workshops in youth athletic development, applied sports science, and speed and agility."
     },
     %{
       name: "Mario",
       slug: "mario",
-      specializations: ["Hybrid Training", "HYROX", "Calisthenics"],
+      specializations: ["Supervisor", "Hybrid Training", "HYROX"],
       bio:
-        "Certified Personal Trainer and HYROX Certified Coach specialising in hybrid training, combining running and strength work to balance physical performance with overall development. He has coached athletes for HYROX Paris and self-coached his own preparation for HYROX Turkey. He also teaches calisthenics fundamentals and progressive bodyweight training, helping clients build strength, control, and movement efficiency."
+        "Mario supervises the floor and keeps the day running: sessions covered, trainers supported, standards consistent across both studios. He is a Certified Personal Trainer and HYROX Certified Coach specialising in hybrid training, combining running and strength work. He has coached athletes for HYROX Paris, self-coached his own preparation for HYROX Turkey, and teaches calisthenics and progressive bodyweight training."
     },
     %{
       name: "Chris",

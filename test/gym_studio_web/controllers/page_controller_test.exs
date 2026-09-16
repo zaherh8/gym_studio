@@ -224,6 +224,19 @@ defmodule GymStudioWeb.PageControllerTest do
       assert response =~ "React&#39;s founder and head trainer"
       assert response =~ "Step Ahead Sports School"
       assert response =~ "CFSC certified at Levels 1 and 2"
+      assert response =~ "Mario supervises the floor"
+
+      # A management degree says nothing about how someone trains clients.
+      refute response =~ "management degree"
+    end
+
+    test "GET / the carousel keeps the first card off the screen edge", %{conn: conn} do
+      response = conn |> get(~p"/") |> html_response(200)
+
+      # The track bleeds edge to edge with -mx-4/px-4 so cards can scroll past
+      # the container. Without scroll-px-4 the snap lands on the padding edge
+      # and the first card sits flush against the phone bezel.
+      assert response =~ "scroll-px-4"
     end
 
     test "GET / specializations exclude the job title itself", %{conn: conn} do
