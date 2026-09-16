@@ -4,20 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <meta
-      name="description"
-      content="React Gym - Private personal training studio in Horsh Tabet, Lebanon. One-on-one sessions, certified trainers, flexible scheduling."
-    />
-    <meta
-      name="keywords"
-      content="personal training, gym, Lebanon, Horsh Tabet, Sin El Fil, private studio, fitness, React Gym"
-    />
+    <meta name="description" content={GymStudioWeb.Helpers.SeoHelpers.description()} />
+    <%!-- No keywords tag: Google has ignored it since 2009, and ours listed
+         Sin El Fil, which is not a branch. Removed rather than rewritten. --%>
     <%!-- Open Graph --%>
     <meta property="og:title" content="React Gym — Your Personal Training Studio" />
-    <meta
-      property="og:description"
-      content="React Gym - Private personal training studio in Horsh Tabet, Lebanon. One-on-one sessions, certified trainers, flexible scheduling."
-    />
+    <meta property="og:description" content={GymStudioWeb.Helpers.SeoHelpers.description()} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={GymStudioWeb.Endpoint.url() <> "/"} />
     <meta property="og:locale" content="en_US" />
@@ -26,10 +18,7 @@
     <%!-- Twitter Card --%>
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="React Gym — Your Personal Training Studio" />
-    <meta
-      name="twitter:description"
-      content="React Gym - Private personal training studio in Horsh Tabet, Lebanon. One-on-one sessions, certified trainers, flexible scheduling."
-    />
+    <meta name="twitter:description" content={GymStudioWeb.Helpers.SeoHelpers.description()} />
     <meta name="twitter:image" content={GymStudioWeb.CDN.url("/images/hero-gym.jpg")} />
     <%!-- Additional SEO --%>
     <meta name="robots" content="index, follow" />

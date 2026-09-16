@@ -35,6 +35,37 @@ defmodule GymStudioWeb.SeoTest do
       assert address["addressCountry"] == "LB"
     end
 
+    test "lists both studios as departments" do
+      json = SeoHelpers.json_ld()
+      {:ok, decoded} = Jason.decode(json)
+
+      names = Enum.map(decoded["department"], & &1["name"])
+      assert "React — Horsh Tabet" in names
+      assert "React — Jal El Dib" in names
+    end
+
+    test "each department carries its own address, phone, and coordinates" do
+      json = SeoHelpers.json_ld()
+      {:ok, decoded} = Jason.decode(json)
+
+      for dept <- decoded["department"] do
+        assert dept["address"]["addressCountry"] == "LB"
+        assert dept["address"]["addressLocality"]
+        assert dept["telephone"]
+        assert is_number(dept["geo"]["latitude"])
+        assert is_number(dept["geo"]["longitude"])
+      end
+    end
+
+    test "phone matches a real branch line" do
+      json = SeoHelpers.json_ld()
+      {:ok, decoded} = Jason.decode(json)
+
+      # The old value (+961 71 104 483) matched neither branch — it pointed
+      # Google at a number that appears nowhere else in the project.
+      assert decoded["telephone"] in ["+961 70 379 764", "+961 71 633 970"]
+    end
+
     test "geo has latitude and longitude" do
       json = SeoHelpers.json_ld()
       {:ok, decoded} = Jason.decode(json)
@@ -64,6 +95,32 @@ defmodule GymStudioWeb.SeoTest do
   end
 
   describe "root layout SEO meta tags" do
+    test "description names both branches" do
+      html = build_conn() |> get("/") |> html_response(200)
+
+      assert html =~ ~s(name="description")
+      assert html =~ "Jal El Dib and Horsh Tabet"
+    end
+
+    test "description is shared across description, og, and twitter tags" do
+      html = build_conn() |> get("/") |> html_response(200)
+
+      # One source, so the branches cannot drift apart between tags again:
+      # description, og:description, twitter:description, and the JSON-LD.
+      occurrences =
+        html |> String.split(SeoHelpers.description()) |> length() |> Kernel.-(1)
+
+      assert occurrences == 4
+    end
+
+    test "no keywords tag" do
+      html = build_conn() |> get("/") |> html_response(200)
+
+      # Google has ignored it since 2009, and ours listed Sin El Fil, which is
+      # not a branch. Removed rather than rewritten.
+      refute html =~ ~s(name="keywords")
+    end
+
     test "home page has og:image meta tag" do
       conn = build_conn()
       conn = get(conn, "/")
