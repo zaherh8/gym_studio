@@ -87,7 +87,7 @@ defmodule GymStudioWeb.PageController do
       slug: "elio",
       specializations: ["Founder", "Head of Training"],
       bio:
-        "Elio is React's founder and head trainer. He holds a Bachelor's Degree in Physical Education and leads the training programme across both studios."
+        "Elio is React's founder and head of training, and the one who holds it all together. He supervises training across both studios, reviews and signs off on client programmes, and keeps standards consistent from one trainer to the next."
     },
     %{
       name: "Lynn",
@@ -106,9 +106,9 @@ defmodule GymStudioWeb.PageController do
     %{
       name: "Mario",
       slug: "mario",
-      specializations: ["Supervisor", "Hybrid Training", "HYROX"],
+      specializations: ["Hybrid Training", "HYROX", "Calisthenics"],
       bio:
-        "Mario supervises the floor and keeps the day running: sessions covered, trainers supported, standards consistent across both studios. He is a Certified Personal Trainer and HYROX Certified Coach specialising in hybrid training, combining running and strength work. He has coached athletes for HYROX Paris, self-coached his own preparation for HYROX Turkey, and teaches calisthenics and progressive bodyweight training."
+        "Certified Personal Trainer and HYROX Certified Coach specialising in hybrid training, combining running and strength work to balance physical performance with overall development. He has coached athletes for HYROX Paris and self-coached his own preparation for HYROX Turkey. He also teaches calisthenics fundamentals and progressive bodyweight training, helping clients build strength, control, and movement efficiency."
     },
     %{
       name: "Chris",

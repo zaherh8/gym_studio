@@ -221,13 +221,18 @@ defmodule GymStudioWeb.PageControllerTest do
       assert response =~ "HYROX Certified Coach"
       assert response =~ "four years of experience in personal training"
       assert response =~ "Sports Science at UA University"
-      assert response =~ "React&#39;s founder and head trainer"
+      assert response =~ "React&#39;s founder and head of training"
       assert response =~ "Step Ahead Sports School"
       assert response =~ "CFSC certified at Levels 1 and 2"
-      assert response =~ "Mario supervises the floor"
 
-      # A management degree says nothing about how someone trains clients.
+      # Elio is the one who ties the studios together: supervising training and
+      # signing off on programmes, not just a title.
+      assert response =~ "supervises training across both studios"
+      assert response =~ "signs off on client programmes"
+
+      # Credentials that say nothing about how someone trains clients.
       refute response =~ "management degree"
+      refute response =~ "Bachelor"
     end
 
     test "GET / the carousel keeps the first card off the screen edge", %{conn: conn} do
